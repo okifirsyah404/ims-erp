@@ -1406,3 +1406,54 @@ berhasil hingga kesalahan validasi.
   cepat. Peran SDM dan Pekerja Lepas mendapat dasbor kosong.
 - `README.md`: baris baru.
 - Tidak ada perubahan kode.
+
+## 2026-11-27 - Keputusan menu, dasbor, dan form
+
+Hasil tanya-jawab programmer B atas `rancangan-menu-dasbor-dan-form.md`.
+
+**Menu dan dasbor**
+- **RM1–RM4:** menu disusun per pekerjaan, nama usulan dipakai, halaman
+  Perlu Tindakan dibuat, dan halaman "Segera hadir" disembunyikan.
+- **RD1–RD3:** kartu dasbor per role disetujui dan dicek lagi saat UAT;
+  baris "Hari ini" ada di semua dasbor; Penjualan melihat angka semua orang
+  dengan saringan "milik saya".
+
+**Aturan form**
+- **RF-A, RF-B:** aturan RF-1 sampai RF-26 disetujui dan diterapkan
+  bertahap.
+- **RF-27 (baru):** kesalahan server menampilkan nomor referensi.
+- **TF-A, TF-B:** TanStack Form dengan skema zod bersama, dikerjakan setelah
+  audit dan K1.
+
+**Form FU1–FU13:** dibahas per form, lalu disetujui (tanda [27/11]).
+
+| Form | Keputusan |
+|---|---|
+| FU1 Prospek | Nomor telepon/WA ganda **ditolak**; follow-up tidak boleh di waktu yang sudah lewat |
+| FU2 Pelanggan | Minimal telepon atau email; email dan NPWP ganda **ditolak**; cabang perusahaan = satu pelanggan dengan beberapa alamat |
+| FU3 SPH | Berlaku sampai wajib, bawaan +14 hari, lalu ditandai Kedaluwarsa; diskon Rp atau %; SPH yang disetujui tidak bisa diubah, revisi membuat versi baru yang disetujui ulang |
+| FU4 SO | Satu SPH satu SO |
+| FU5 Surat jalan | Stok kurang: draf boleh disimpan, Kirim ditolak |
+| FU6 PO | Harga terisi dari harga beli terakhir; peringatan bila selisih lebih dari 20% |
+| FU7 BPB | Kelebihan dari sisa PO ditolak |
+| FU8 Penyesuaian stok | Harga pokok memakai harga rata-rata otomatis; Aqim bisa mengubahnya saat menyetujui |
+| FU9 Faktur | Lebih bayar ditolak dan dicatat terpisah; jatuh tempo wajib, diambil dari syarat bayar |
+| FU10 Tiket | Seri tidak ditemukan atau garansi habis: tiket tetap dibuat, ditandai berbayar |
+| FU11 dan FU12 Cuti | Pengajuan yang melebihi kuota ditolak (kelebihannya diajukan sebagai izin tanpa gaji) |
+| FU12 Lembur | Maksimal 4 jam per hari |
+| FU12 Kasbon | Tanpa batas nominal; ditolak bila kasbon lama belum dipertanggungjawabkan |
+| FU13 Peminjaman | Lewat tanggal kembali: status Terlambat otomatis dan peminjam diberi pengingat |
+
+Aturan server baru yang muncul dari keputusan ini (belum dikodekan):
+- nomor telepon prospek unik;
+- email dan NPWP pelanggan unik;
+- satu SO per SPH;
+- batas lembur 4 jam;
+- satu kasbon terbuka per orang;
+- status peminjaman Terlambat.
+
+Saat dikerjakan, semuanya dicek ke `docs/database/docs.dbml` (indeks unik)
+sesuai Gate 1.
+
+Commit lokal saja: push ditahan karena PR #171 sedang ditahan.
+Tidak ada perubahan kode.

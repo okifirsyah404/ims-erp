@@ -2,7 +2,9 @@
 
 Disusun 2026-11-27. Kembali ke [catatan penyesuaian](README.md).
 
-**Status: usulan untuk dibahas.** Isinya rancangan tampilan web-admin supaya
+**Status: disetujui programmer B lewat tanya-jawab 2026-11-27** (tabel
+keputusan di bawah). Bagian yang menyentuh wilayah Oki ditinjau lewat PR.
+Isinya rancangan tampilan web-admin supaya
 setiap orang tidak bingung memakainya: susunan menu, isi dasbor per role,
 aturan baku semua form, dan rincian form yang paling sering dipakai
 (isian, aturan validasi, pesan berhasil, pesan salah). Dasar hak dan alurnya
@@ -26,7 +28,8 @@ diubah.
 | RD3 | Penjualan melihat angka **semua orang, dengan saringan "milik saya"** |
 | RF-A | Aturan RF-1 sampai RF-26 dan pola pesan 4.5 **disetujui semua** |
 | RF-B | Diterapkan **bertahap**: form utama dulu, form lain saat disentuh |
-| FU-A/FU-B | **Rincian form dibahas per form dulu** sebelum disetujui (status per form di bagian 5.2) |
+| FU-A/FU-B | Rincian form dibahas per form, lalu **FU1–FU13 disetujui** dengan keputusan khusus per form (tanda [27/11] di bagian 5.2). Urutan pengerjaan: alur uang (SPH → SO → Surat Jalan → Faktur → Pembayaran), lalu PO → BPB, lalu sisanya |
+| RF-27 | Kesalahan server menampilkan **nomor referensi**; kesalahan isian tidak |
 | TF-A/TF-B | **TanStack Form + skema zod bersama**; dasar teknis TF-1 sampai TF-3 dikerjakan setelah audit dan K1, sebelum perbaikan form |
 
 Menu, dasbor, dan pembaruan form ini menyentuh wilayah Oki (M01 dasbor,
@@ -257,6 +260,7 @@ yang sama dengan gaya tampilannya sendiri.
 | RF-24 | **Tolak dan Batalkan wajib alasan** (menutup FR3); alasan tampil di riwayat dokumen |
 | RF-25 | Menutup form yang sudah diubah tanpa menyimpan: "Perubahan belum disimpan. Tinggalkan halaman?" |
 | RF-26 | Setiap dokumen menampilkan **riwayat**: dibuat, diajukan, disetujui (termasuk "disetujui oleh pembuat" untuk K1), dengan nama dan waktu |
+| RF-27 | **[27/11]** Kesalahan server (bukan kesalahan isian) menampilkan nomor referensi untuk dilaporkan: "Terjadi kesalahan di server (ref: ABC123). Coba lagi atau laporkan nomor ini ke admin." Kesalahan isian tidak menampilkan nomor |
 
 ### 4.5 Pola kalimat pesan
 
@@ -317,11 +321,13 @@ ilustrasi; format sebenarnya mengikuti Pengaturan → Nomor Dokumen.
 
 #### FU1. Prospek baru / ubah prospek
 
+**Status: disetujui programmer B 27/11** (keputusan khusus form ini ditandai **[27/11]**).
+
 **Siapa:** Penjualan. **Dari:** Penjualan → Prospek → **+ Prospek baru**.
 
 | Isian | Aturan | Pesan salah |
 |---|---|---|
-| Nama \* | 2–120 huruf | "Nama wajib diisi." |
+| Nama \* | 1–200 huruf (sama dengan server) | "Nama wajib diisi." |
 | Perusahaan | maks. 120 | — |
 | Telepon / WhatsApp / Email | **minimal satu** diisi; telepon dan WA format Indonesia; email valid | Di atas ketiga isian: "Isi minimal satu kontak: telepon, WhatsApp, atau email." · "Nomor WhatsApp tidak valid. Contoh: 0812 3456 7890." · "Email tidak valid. Contoh: nama@perusahaan.com." |
 | Sumber \* | pilihan (WhatsApp, website, rujukan, …) | "Sumber wajib dipilih." |
@@ -331,11 +337,15 @@ ilustrasi; format sebenarnya mengikuti Pengaturan → Nomor Dokumen.
 
 - **Berhasil:** toast "Prospek {nama} disimpan." → halaman detail prospek;
   follow-up masuk ke Perlu Tindakan pada tanggalnya.
-- **Kesalahan server:** nomor telepon sudah dipakai prospek lain → di bawah
-  isian telepon: "Nomor ini sudah dipakai prospek {nama}. Buka prospek itu?"
-  (dengan tautan).
+- **Nomor ganda [27/11]: ditolak.** Telepon atau WhatsApp yang sudah dipakai
+  prospek lain tidak bisa disimpan. Di bawah isiannya: "Nomor {nomor} sudah
+  dipakai prospek {nama}." dengan tautan **Buka prospek**. Perlu aturan baru
+  di server (sekarang tidak dicek).
+- **Follow-up [27/11]:** waktu yang sudah lewat tidak boleh.
 
 #### FU2. Pelanggan baru (perorangan / perusahaan)
+
+**Status: disetujui programmer B 27/11** (keputusan khusus form ini ditandai **[27/11]**).
 
 **Siapa:** Penjualan. **Dari:** Penjualan → Pelanggan → **+ Pelanggan**.
 
@@ -344,17 +354,21 @@ ilustrasi; format sebenarnya mengikuti Pengaturan → Nomor Dokumen.
 | Jenis \* | Perorangan / Perusahaan (OA4: pelanggan biasa / bisnis) | — |
 | Nama \* | 2–120 | "Nama wajib diisi." |
 | Kode | otomatis bila kosong; huruf besar, angka, tanda hubung | "Kode hanya boleh huruf besar, angka, dan tanda hubung." · server: "Kode CUS-00012 sudah dipakai. Gunakan yang lain." |
-| Email | valid; wajib bila akan diundang ke portal | "Email tidak valid. Contoh: nama@perusahaan.com." |
+| Email | valid; **minimal telepon atau email** diisi [27/11]; email wajib saat diundang ke portal | "Isi minimal satu kontak: telepon atau email." · "Email tidak valid. Contoh: nama@perusahaan.com." · "Email wajib diisi untuk mengundang ke portal." |
 | Telepon | format Indonesia | "Nomor telepon tidak valid. Contoh: 0812 3456 7890." |
-| NPWP (perusahaan) | 15 atau 16 digit | "NPWP harus 15 atau 16 digit." |
+| NPWP (perusahaan) | 15 atau 16 digit; **unik** [27/11] | "NPWP harus 15 atau 16 digit." · server: "NPWP {npwp} sudah dipakai pelanggan {nama}." |
 | Perusahaan (untuk perorangan) | pilih yang ada atau buat baru | "Pilih perusahaan atau isi nama perusahaan baru." |
 | Foto | gambar, maks. 2 MB | "Pilih berkas gambar maksimal 2 MB." |
 
 - **Berhasil:** "Pelanggan {nama} disimpan." → detail pelanggan.
-- **Server:** email sudah dipakai → di bawah isian email dengan tautan ke
-  pelanggan itu.
+- **Email dan NPWP ganda [27/11]: keduanya ditolak**, pesan di bawah isiannya
+  dengan tautan ke pelanggan yang sudah ada. Catatan: cabang perusahaan yang
+  memakai NPWP sama dicatat sebagai **satu pelanggan perusahaan dengan
+  beberapa alamat**, bukan pelanggan terpisah.
 
 #### FU3. Penawaran (SPH): buat, ubah, ajukan, setujui, kirim
+
+**Status: disetujui programmer B 27/11** (keputusan khusus form ini ditandai **[27/11]**).
 
 **Siapa:** Penjualan membuat; rekan Penjualan atau Aqim menyetujui (K1, K2b).
 **Dari:** Penjualan → Penawaran (SPH) → **+ Penawaran baru**.
@@ -365,13 +379,13 @@ ilustrasi; format sebenarnya mengikuti Pengaturan → Nomor Dokumen.
 | | Kepada (attention) | — | — |
 | Dokumen | Judul \* | 3–200 | "Judul wajib diisi." |
 | | Tanggal SPH \* | bawaan hari ini | "Tanggal SPH wajib diisi." |
-| | Berlaku sampai | ≥ Tanggal SPH; bawaan +14 hari | "Berlaku sampai tidak boleh sebelum Tanggal SPH." |
+| | Berlaku sampai \* | **wajib, bawaan +14 hari** dari Tanggal SPH [27/11]; ≥ Tanggal SPH | "Berlaku sampai wajib diisi." · "Berlaku sampai tidak boleh sebelum Tanggal SPH." |
 | Barang | Tabel baris \* | minimal satu baris | Ringkasan atas: "Tambahkan minimal satu barang." |
 | | Nama barang \* | dari katalog atau baris bebas | "Baris {n}: nama barang wajib diisi." |
 | | Jumlah \* | > 0 | "Baris {n}: jumlah minimal 1." |
 | | Satuan \* | pilihan | "Baris {n}: satuan wajib dipilih." |
 | | Harga \* | uang ≥ 0 | "Baris {n}: harga tidak boleh negatif." |
-| | Diskon | 0 ≤ diskon ≤ harga × jumlah | "Baris {n}: diskon melebihi nilai baris." |
+| | Diskon | **pilih Rp atau %** [27/11]; yang lain dihitung otomatis; 0 ≤ diskon ≤ nilai baris (0–100%) | "Baris {n}: diskon melebihi nilai baris." · "Baris {n}: diskon maksimal 100%." |
 | Pajak | PPN | tarif dari master pada Tanggal SPH (OC4); mengubah tarif membuka isian **Alasan \*** | "Alasan perubahan tarif wajib diisi." |
 | Pembayaran | Jadwal termin | total persen tepat 100 | "Total termin {x}%; harus tepat 100%." |
 | | Syarat bayar, garansi, catatan | — | — |
@@ -392,8 +406,16 @@ saat mengetik.
   {pembuat}."
 - **Server:** penjual mencoba menyetujui SPH sendiri → "Penawaran buatan Anda
   sendiri harus disetujui rekan Penjualan atau Pemilik."
+- **Kedaluwarsa [27/11]:** SPH yang lewat Berlaku sampai ditandai
+  **Kedaluwarsa** dan muncul di dasbor Penjualan.
+- **Revisi [27/11]:** SPH yang sudah disetujui atau dikirim tidak bisa diubah.
+  Tombol **Revisi** membuat versi baru berstatus draf (SPH/2611/014-R1) yang
+  harus diajukan dan disetujui lagi; versi lama tetap tersimpan dan ditandai
+  "Diganti revisi". Pesan: "Revisi SPH/2611/014-R1 dibuat sebagai draf."
 
 #### FU4. Pesanan Penjualan (SO) dari SPH
+
+**Status: disetujui programmer B 27/11** (keputusan khusus form ini ditandai **[27/11]**).
 
 **Siapa:** Penjualan. **Dari:** detail SPH yang disetujui → **Buat SO**.
 
@@ -407,10 +429,13 @@ saat mengetik.
 - **Berhasil:** "Pesanan SO/2611/009 dibuat dari SPH/2611/014." → detail SO.
   Status SO selanjutnya berubah sendiri: Diproses → Terkirim → Selesai (C1);
   SO masuk Perlu Tindakan Gudang ("siap dikirim") dan Keuangan ("belum ditagih").
-- **Server:** SPH sudah punya SO → "SPH ini sudah dibuatkan SO/2611/009." dengan
-  tautan.
+- **Satu SPH satu SO [27/11].** Tombol Buat SO hilang setelah SO dibuat;
+  pengiriman bertahap lewat beberapa surat jalan dari SO yang sama. Bila
+  dipaksa, server: "SPH ini sudah dibuatkan SO/2611/009." dengan tautan.
 
 #### FU5. Surat Jalan
+
+**Status: disetujui programmer B 27/11** (keputusan khusus form ini ditandai **[27/11]**).
 
 **Siapa:** Gudang. **Dari:** Gudang → Surat Jalan → **+ Surat jalan**, atau
 dari Perlu Tindakan (SO siap dikirim).
@@ -423,7 +448,7 @@ dari Perlu Tindakan (SO siap dikirim).
 | | Tanggal \* | bawaan hari ini | "Tanggal wajib diisi." |
 | Penerima | Nama penerima \* | — | "Nama penerima wajib diisi." |
 | | Proyek, lokasi, PIC, kontak, alamat | opsional (ditandai) | "Nomor kontak tidak valid." |
-| Barang | Jumlah kirim per baris | 0 ≤ jumlah ≤ sisa SO; ≤ stok gudang; minimal satu baris > 0 | "Baris {n}: jumlah melebihi sisa pesanan ({sisa} {satuan})." · "Baris {n}: stok di gudang ini hanya {stok} {satuan}." · "Isi jumlah kirim minimal pada satu barang." |
+| Barang | Jumlah kirim per baris | 0 ≤ jumlah ≤ sisa SO; minimal satu baris > 0. **Stok kurang [27/11]:** draf tetap bisa disimpan dengan peringatan kuning; **Kirim ditolak** sampai stok cukup | "Baris {n}: jumlah melebihi sisa pesanan ({sisa} {satuan})." · peringatan: "Baris {n}: stok di gudang ini hanya {stok} {satuan}." · saat Kirim: "Stok {barang} tidak cukup ({stok} dari {jumlah} {satuan}). Terima barang dulu atau ubah jumlah." · "Isi jumlah kirim minimal pada satu barang." |
 | | Nomor seri (barang berseri) | jumlah dicentang = jumlah kirim | "Baris {n}: pilih {jumlah} nomor seri (baru {x})." |
 | Pengiriman | Sopir, no. kendaraan, catatan | opsional | — |
 
@@ -434,6 +459,8 @@ dari Perlu Tindakan (SO siap dikirim).
 - **Tandai diterima:** wajib nama penerima → "Barang diterima oleh {nama}."
 
 #### FU6. Pesanan Pembelian (PO)
+
+**Status: disetujui programmer B 27/11** (keputusan khusus form ini ditandai **[27/11]**).
 
 **Siapa:** Aqim membuat, menyetujui, membatalkan (K2c, K1).
 **Dari:** Pembelian → Pesanan Pembelian (PO) → **+ PO baru**.
@@ -448,7 +475,7 @@ dari Perlu Tindakan (SO siap dikirim).
 | | Ref./tanggal penawaran pemasok, proyek, proyek anggaran, kontak pembeli | opsional (ditandai) | — |
 | Barang | Tabel baris \* | minimal satu; setiap baris terhubung ke barang | "Baris {n}: hubungkan ke barang di katalog." |
 | | Jumlah \* | > 0 | "Baris {n}: jumlah minimal 1." |
-| | Harga \* | uang ≥ 0 | "Baris {n}: harga wajib diisi." |
+| | Harga \* | uang ≥ 0; **terisi otomatis dari harga beli terakhir** [27/11], bisa diubah; selisih > 20% dari harga terakhir memunculkan peringatan kuning | "Baris {n}: harga wajib diisi." · peringatan: "Baris {n}: harga {x}% di atas harga beli terakhir (Rp {harga})." |
 | | Ambil dari PR | hanya PR disetujui | — |
 | Pembayaran | Mode PPN, syarat bayar, ketentuan, catatan | PPN dari master (OC4) | — |
 
@@ -464,6 +491,8 @@ dari Perlu Tindakan (SO siap dikirim).
 
 #### FU7. Penerimaan Barang (BPB)
 
+**Status: disetujui programmer B 27/11** (keputusan khusus form ini ditandai **[27/11]**).
+
 **Siapa:** Gudang. **Dari:** Gudang → Penerimaan Barang, atau Perlu Tindakan
 (PO siap diterima).
 
@@ -473,7 +502,7 @@ dari Perlu Tindakan (SO siap dikirim).
 | Gudang \*, rak | rak milik gudang itu | "Gudang wajib dipilih." · "Rak tidak ada di gudang ini." |
 | Tanggal terima \* | ≤ hari ini | "Tanggal terima tidak boleh di masa depan." |
 | No. surat jalan pemasok | disarankan | — |
-| Jumlah per baris | 0 ≤ jumlah ≤ sisa PO; minimal satu > 0 | "Baris {n}: jumlah melebihi sisa PO ({sisa} {satuan})." |
+| Jumlah per baris | 0 ≤ jumlah ≤ sisa PO (**kelebihan ditolak** [27/11]: dikembalikan ke pemasok atau dibuatkan PO baru); minimal satu > 0 | "Baris {n}: jumlah melebihi sisa PO ({sisa} {satuan}). Kelebihan dikembalikan atau dibuatkan PO baru." |
 | Nomor seri (barang berseri) | **tepat satu per unit**, tidak ganda, belum ada di stok | "Baris {n}: isi {jumlah} nomor seri (baru {x})." · "Nomor seri {sn} ganda." · server: "Nomor seri {sn} sudah ada di stok." |
 | Catatan | — | — |
 
@@ -482,6 +511,8 @@ dari Perlu Tindakan (SO siap dikirim).
   "Penerimaan BPB/2611/005 diposting. Stok bertambah {n} barang."
 
 #### FU8. Penyesuaian Stok
+
+**Status: disetujui programmer B 27/11** (keputusan khusus form ini ditandai **[27/11]**).
 
 **Siapa:** Gudang membuat; Aqim menyetujui dan memposting (K1).
 **Dari:** Gudang → Penyesuaian Stok → **+ Penyesuaian**.
@@ -492,7 +523,7 @@ dari Perlu Tindakan (SO siap dikirim).
 | Jenis \* | stok opname / rusak / hilang / koreksi | "Jenis wajib dipilih." |
 | Alasan \* | kode alasan + catatan | "Alasan wajib diisi." |
 | Baris \*: barang, rak, stok hitung | minimal satu; stok hitung ≥ 0; barang tidak ganda di rak yang sama | "Tambahkan minimal satu barang." · "Baris {n}: stok hitung tidak boleh negatif." · "Barang {nama} di rak {rak} sudah ada di baris {m}." |
-| Harga pokok | wajib untuk stok bertambah (hanya bila berhak melihat harga pokok) | "Baris {n}: harga pokok wajib diisi untuk penambahan stok." |
+| Harga pokok | **tidak diisi Gudang** [27/11]: sistem memakai harga pokok rata-rata barang itu; Aqim bisa mengubahnya saat menyetujui (kolom hanya tampil bagi yang berhak melihat harga pokok) | Saat disetujui, bila barang belum punya harga rata-rata: "Barang {nama} belum punya harga pokok. Isi harga sebelum posting." |
 
 Kolom stok sistem dan selisih dihitung otomatis.
 
@@ -504,15 +535,17 @@ Kolom stok sistem dan selisih dihitung otomatis.
 
 #### FU9. Faktur dan Catat Pembayaran
 
+**Status: disetujui programmer B 27/11** (keputusan khusus form ini ditandai **[27/11]**).
+
 **Siapa:** Keuangan (Bella). **Dari:** detail SO → Penagihan → **Buat
 faktur**; detail faktur → **Terbitkan** / **Catat pembayaran**.
 
 | Form | Isian | Aturan | Pesan salah |
 |---|---|---|---|
 | Buat faktur | Termin \*, persen / jumlah \* | 0 < persen ≤ sisa; jumlah ≤ sisa tagihan SO | "Jumlah melebihi sisa yang belum ditagih (Rp {sisa})." |
-| | Jatuh tempo | ≥ hari ini; bawaan dari syarat bayar | "Jatuh tempo tidak boleh sebelum tanggal faktur." |
+| | Jatuh tempo \* | **wajib, terisi dari syarat bayar** SPH/SO [27/11], bisa diubah; ≥ tanggal faktur | "Jatuh tempo wajib diisi." · "Jatuh tempo tidak boleh sebelum tanggal faktur." |
 | Terbitkan | Tanggal terbit \*, jatuh tempo | jatuh tempo ≥ tanggal terbit; periode belum ditutup | "Periode {bulan} sudah ditutup. Pilih tanggal di periode yang masih buka." |
-| Catat pembayaran | Jumlah \* | 0 < jumlah ≤ sisa tagihan (bawaan = sisa) | "Jumlah melebihi sisa tagihan (Rp {sisa})." |
+| Catat pembayaran | Jumlah \* | 0 < jumlah ≤ sisa tagihan (bawaan = sisa). **Lebih bayar ditolak** [27/11]; kelebihan dicatat Bella terpisah (transaksi kas lain atau nota kredit) | "Jumlah melebihi sisa tagihan (Rp {sisa}). Catat kelebihannya sebagai transaksi kas terpisah." |
 | | Tanggal \*, metode \*, rekening tujuan \*, referensi | — | "Metode bayar wajib dipilih." |
 | Void / batal kuitansi | Alasan \* | — | "Alasan wajib diisi." |
 
@@ -525,11 +558,13 @@ faktur**; detail faktur → **Terbitkan** / **Catat pembayaran**.
 
 #### FU10. Tiket Servis
 
+**Status: disetujui programmer B 27/11** (keputusan khusus form ini ditandai **[27/11]**).
+
 **Siapa:** Layanan Pelanggan, Manajer Proyek membuat; Teknisi menyelesaikan.
 
 | Form | Isian | Aturan | Pesan salah |
 |---|---|---|---|
-| Buat tiket | Nomor seri | dicari saat diketik; mengisi pelanggan, proyek, perangkat, dan status garansi | "Nomor seri {sn} tidak ditemukan. Isi data perangkat manual." (peringatan kuning, bukan kesalahan) |
+| Buat tiket | Nomor seri | dicari saat diketik; mengisi pelanggan, proyek, perangkat, dan status garansi. **Seri tidak ditemukan atau garansi habis [27/11]: tiket tetap bisa dibuat**, ditandai **berbayar** | Peringatan kuning: "Nomor seri {sn} tidak ditemukan. Isi data perangkat manual; tiket ditandai berbayar." · "Garansi perangkat ini berakhir {tanggal}; tiket ditandai berbayar." |
 | | Pelanggan \* | pencarian | "Pelanggan wajib dipilih." |
 | | Proyek | opsional (ditandai) | — |
 | | Pelapor \*, kontak | kontak format telepon | "Pelapor wajib diisi." |
@@ -543,13 +578,15 @@ faktur**; detail faktur → **Terbitkan** / **Catat pembayaran**.
 
 #### FU11. SDM: lembar absensi harian dan catat cuti
 
+**Status: disetujui programmer B 27/11** (keputusan khusus form ini ditandai **[27/11]**).
+
 **Siapa:** SDM (Aqim).
 
 | Form | Isian | Aturan | Pesan salah |
 |---|---|---|---|
 | Lembar absensi | Tanggal \* | ≤ hari ini | — |
 | | Per karyawan: status \*, jam masuk, jam pulang | jam pulang > jam masuk; status Hadir wajib jam masuk | "Baris {nama}: jam pulang harus setelah jam masuk." |
-| Catat cuti | Karyawan \*, jenis \*, mulai \*, selesai \* | selesai ≥ mulai; tidak melebihi sisa kuota (12 hari); tidak bertabrakan dengan cuti lain | "Sisa cuti {nama} {x} hari; pengajuan {y} hari." · "Tanggal bertabrakan dengan cuti {tanggal}." |
+| Catat cuti | Karyawan \*, jenis \*, mulai \*, selesai \* | selesai ≥ mulai; **melebihi sisa kuota 12 hari ditolak** [27/11] (kelebihan diajukan sebagai izin tanpa gaji); tidak bertabrakan dengan cuti lain | "Sisa cuti {nama} {x} hari; pengajuan {y} hari. Ajukan kelebihannya sebagai izin tanpa gaji." · "Tanggal bertabrakan dengan cuti {tanggal}." |
 
 - Lembar absensi: ganti tanggal saat ada isian belum disimpan →
   "Perubahan absensi {tanggal} belum disimpan. Simpan dulu?" (RF-25).
@@ -559,14 +596,16 @@ faktur**; detail faktur → **Terbitkan** / **Catat pembayaran**.
 
 #### FU12. Portal karyawan: cuti, lembur, absen, kasbon
 
+**Status: disetujui programmer B 27/11** (keputusan khusus form ini ditandai **[27/11]**).
+
 **Siapa:** semua karyawan kecuali Pekerja Lepas (OG4).
 
 | Form | Isian | Aturan | Pesan salah |
 |---|---|---|---|
-| Ajukan cuti | Jenis \*, mulai \*, selesai \*, alasan | selesai ≥ mulai; sisa kuota tampil di atas form | "Tanggal selesai tidak boleh sebelum tanggal mulai." · "Sisa cuti Anda {x} hari." |
-| Catat lembur | Tanggal \*, jam \*, alasan \* | 0,25–12 jam; tanggal ≤ hari ini | "Jam lembur antara 0,25 dan 12." |
+| Ajukan cuti | Jenis \*, mulai \*, selesai \*, alasan | selesai ≥ mulai; sisa kuota tampil di atas form; **melebihi kuota ditolak** [27/11] | "Tanggal selesai tidak boleh sebelum tanggal mulai." · "Sisa cuti Anda {x} hari; pengajuan {y} hari. Ajukan kelebihannya sebagai izin tanpa gaji." |
+| Catat lembur | Tanggal \*, jam \*, alasan \* | **0,25–4 jam per hari** [27/11] (batas umum UU Ketenagakerjaan); tanggal ≤ hari ini | "Lembur maksimal 4 jam per hari." · "Tanggal lembur tidak boleh di masa depan." |
 | Absen masuk / pulang | — (tombol) | lokasi proyek: di luar radius ditolak (OG1, PK-1) | "Anda berada {jarak} m dari lokasi proyek (batas {radius} m). Absen tidak bisa dicatat." · "Izinkan akses lokasi di browser untuk absen." |
-| **Ajukan kasbon [baru]** | Tanggal \*, jumlah \*, keperluan \*, proyek | jumlah > 0 | "Jumlah kasbon wajib diisi." |
+| **Ajukan kasbon [baru]** | Tanggal \*, jumlah \*, keperluan \*, proyek | jumlah > 0; **tanpa batas nominal**, Aqim yang memutuskan [27/11]; **ditolak bila masih ada kasbon lama yang belum dipertanggungjawabkan** | "Jumlah kasbon wajib diisi." · "Kasbon {nomor} belum dipertanggungjawabkan. Selesaikan dulu sebelum mengajukan kasbon baru." |
 | **Pertanggungjawaban [baru]** | Baris \*: kategori, keterangan, jumlah, foto nota | minimal satu baris; total tampil dibanding kasbon | "Tambahkan minimal satu pengeluaran." · info: "Sisa kasbon Rp {x} dikembalikan ke kantor." / "Kekurangan Rp {x} akan dibayar kantor." |
 
 - **Berhasil:** "Pengajuan cuti terkirim. Menunggu persetujuan." · "Lembur
@@ -575,6 +614,8 @@ faktur**; detail faktur → **Terbitkan** / **Catat pembayaran**.
 - Portal karyawan memakai tanda wajib dan pesan yang sama dengan web-admin.
 
 #### FU13. Peminjaman aset
+
+**Status: disetujui programmer B 27/11** (keputusan khusus form ini ditandai **[27/11]**).
 
 **Siapa:** Penjualan, Layanan Pelanggan, Manajer Proyek, Teknisi mengajukan;
 Manajer Proyek menyetujui; Gudang menyerahkan dan menerima kembali.
@@ -591,6 +632,9 @@ Manajer Proyek menyetujui; Gudang menyerahkan dan menerima kembali.
 - **Berhasil:** "Peminjaman PJM/2611/004 diajukan. Menunggu persetujuan." →
   detail (sekarang tetap di form). Setelah disetujui masuk Perlu Tindakan
   Gudang; tombol Serahkan baru aktif setelah disetujui (C13).
+- **Terlambat [27/11]:** lewat tanggal kembali, status otomatis
+  **Terlambat**, muncul di dasbor Gudang dan Manajer Proyek, dan peminjam
+  mendapat notifikasi pengingat.
 
 ---
 
