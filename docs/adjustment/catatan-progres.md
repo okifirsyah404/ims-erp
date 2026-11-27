@@ -1951,3 +1951,19 @@ Diperbarui:
 - `peta-halaman.md`.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - Pesan WA grup dan usulan teks pesan pelanggan
+
+- Pesan WA untuk grup disusun: bagian Pak Aqim (permintaan data dan akses)
+  dan Bella (pertanyaan pajak). Bagian Oki disampaikan langsung secara lisan,
+  dengan poin pembicaraan diberikan di chat.
+- `3-rancangan/teks-pesan-wa-pelanggan.md` (baru):
+  - Usulan teks 8 jenis pesan: SPH terkirim + PDF, faktur terbit,
+    pembayaran diterima, pesanan dikirim/selesai (baru), tiket servis,
+    lisensi, retur penjualan, retur ke pemasok.
+  - Setiap jenis memuat teks sekarang dari
+    `docs/integrations/n8n/src/3-compose-messages.js` dan usulannya, dengan
+    kotak setuju/ubah untuk Pak Aqim.
+  - Ditautkan dari `README.md` dan `rancangan-n8n-whatsapp.md`.
+
+Tidak ada perubahan kode.

@@ -137,5 +137,5 @@ sequenceDiagram
 | Nomor WhatsApp khusus perusahaan untuk WAHA | Aqim |
 | Akses server untuk n8n dan alamat HTTPS | Aqim / Oki (deploy) |
 | Penyedia AI dan anggaran token | Aqim |
-| Persetujuan teks pesan pelanggan dan pemasok | Aqim |
+| Persetujuan teks pesan pelanggan dan pemasok (usulan di [`teks-pesan-wa-pelanggan.md`](teks-pesan-wa-pelanggan.md)) | Aqim |
 | Nomor WA tiap staf di profil pengguna ERP | Setiap staf / Aqim |

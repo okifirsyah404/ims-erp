@@ -74,6 +74,7 @@ tulis entri di [`catatan-progres.md`](catatan-progres.md).
 | [`rancangan-n8n-whatsapp.md`](3-rancangan/rancangan-n8n-whatsapp.md) | n8n, WhatsApp (WAHA dulu, Meta nanti, langkah pendaftaran), penerima staf, sakelar pesan pelanggan, event baru, asisten AI (N8-1–N8-8) |
 | [`rancangan-biaya-perjalanan.md`](3-rancangan/rancangan-biaya-perjalanan.md) | Biaya perjalanan teknisi: kasbon, nota, klaim, uang makan harian, batas, kategori (BP-1–BP-6) |
 | [`rancangan-investor-m11.md`](3-rancangan/rancangan-investor-m11.md) | Investor dan suntikan dana: modal, pinjaman, dana per proyek, bagi hasil, portal investor (IV-1–IV-6; mengubah K10) |
+| [`teks-pesan-wa-pelanggan.md`](3-rancangan/teks-pesan-wa-pelanggan.md) | Usulan teks pesan WA ke pelanggan dan pemasok (8 jenis), menunggu persetujuan Pak Aqim |
 | [`kekurangan-fitur.md`](3-rancangan/kekurangan-fitur.md) | Fitur yang belum ada atau setengah jadi di Proyek, Gudang, Pengadaan, Aset, Keuangan, Pajak |
 
 ### 4-rencana-kerja
