@@ -85,6 +85,11 @@ OA1–OA7, OB7/OB8, OD1/OD2, OE1, OG1) ada di
 | B-36 | Tombol **konfirmasi tiket** di portal pelanggan (backend `POST /tickets/:id/confirm` sudah ada, portal belum memetakannya) | Alur lengkap 10, titik 17 | Tinggi | Ditambahkan 27/11 dari alur lengkap; **Tinggi, diputuskan programmer B 28/11** (fitur utama) |
 | B-37 | Halaman cetak / PDF untuk **SO, kuitansi, BPB, retur pembelian, retur penjualan** (sekarang hanya tercatat di daftar dokumen) | Alur lengkap 6, titik 9 | Tinggi (kuitansi lebih dulu) | Ditambahkan 27/11 dari alur lengkap; **Tinggi, diputuskan programmer B 28/11** (fitur utama) |
 | B-38 | **Portal pelanggan dan website**: pesanan online (T21), terima/revisi SPH, lihat faktur, bayar lewat gateway, dokumen (T25). Sekarang hanya tampilan; checkout website belum tersambung. Butuh rancangan dulu (Gate 2). **Rancangan dan urutan diputuskan 28/11:** `3-rancangan/rancangan-portal-pesanan.md` (PP-1–PP-8; urutan P2 + P7 → P3 → P5 → P4) | Alur lengkap 4, titik 6; kontrak T21, T25 | Tinggi (dirancang dulu, Gate 2) | Ditambahkan 27/11 dari alur lengkap; **Tinggi, diputuskan programmer B 28/11** (fitur utama) |
+| B-39 | **Gaji memakai absensi**: potongan tidak hadir dan izin tanpa gaji, pro-rata karyawan masuk/keluar, **upah lembur dihitung** dari jam yang disetujui | KF-H1, KF-H2 (T19, ERP-0018) | Tinggi | Diputuskan 28/11 (KF bagian kedua) |
+| B-40 | **Riwayat dan saldo pelanggan** di halaman pelanggan: SPH, SO, faktur, sisa piutang, proyek, lisensi, tiket | KF-S1 | Tinggi | Diputuskan 28/11 (KF bagian kedua) |
+| B-41 | **Kirim SPH/faktur tanpa n8n**: unduh PDF, salin tautan berbagi, tombol `wa.me` / email | KF-S2 | Tinggi | Diputuskan 28/11 (KF bagian kedua) (dinaikkan dari Sedang) |
+| B-42 | **Faktur tanpa SO** (jasa, biaya tambahan, perpanjangan lisensi); backend sudah ada; dibangun bersama B-31 | KF-S6 | Tinggi | Diputuskan 28/11 (KF bagian kedua) (dinaikkan dari Sedang) |
+| B-43 | Daftar tunggu bagian kedua modul programmer B: KF-N1 (notifikasi di aplikasi), KF-L1 (lisensi di portal, kontrak T25), KF-S3–S5, S7–S11, KF-L2–L6, KF-I1–I5, KF-H3–H7; butir "Tambahan" menunggu permintaan Pemilik | KF bagian kedua | Sedang/Rendah | Diputuskan 28/11 (KF bagian kedua) |
 
 ## 3. Temuan di modul Oki (pertanyaan untuk Oki)
 

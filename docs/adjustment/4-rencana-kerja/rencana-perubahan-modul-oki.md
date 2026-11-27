@@ -73,6 +73,10 @@ risiko OA2 (diganti 27/11: kolom dihapus di tahap 3), OD8 diputuskan.
 | M12-11 | Terjemahan `INVALID_USERNAME_OR_PASSWORD` di `i18n.auth.ts`; bundel `id/claim.ts` diberi tipe `Record<keyof typeof en, string>` | UAT M12; AGENTS.md i18n | Rendah | Tidak |
 | M12-12 | Log Audit: filter tanggal Asia/Jakarta, pilihan filter diterjemahkan dan mencakup modul lain, metadata terbaca | UAT M12 | Sedang | Tidak |
 | M12-13 | Daftar organisasi: jumlah proyek acak dan data contoh statis di tab Info | UAT M12 | Rendah | Gugur bila K12 tahap 1 |
+| M12-14 | **Ubah role pengguna (beberapa) dari halaman Pengguna**, sebelum halaman Organisasi disembunyikan (K12); **perbaiki form ubah karyawan yang menimpa semua role** (form milik M08, dikerjakan bersama Dafrin) | KF-R1, KF-R2 | Tinggi | Diputuskan 28/11 (KF bagian kedua) |
+| M12-15 | **Atur ulang kata sandi oleh admin** / kata sandi sementara (Better Auth `setUserPassword`) | KF-R3 | Tinggi | Diputuskan 28/11 (KF bagian kedua) |
+| M12-16 | **Ekspor CSV/XLSX daftar utama** (pelanggan, faktur, piutang, karyawan, log audit) untuk izin `export` yang belum punya endpoint, dengan audit; **PDF laporan keuangan berkop** | KF-R5, KF-R6 | Tinggi | Diputuskan 28/11 (KF bagian kedua) (dinaikkan dari Sedang; endpoint per modul dikerjakan pemilik modulnya) |
+| M12-17 | Daftar tunggu bagian kedua modul Oki: KF-R4, KF-R7–R10, KF-D1–D4, KF-E2–E7 | KF bagian kedua | Sedang/Rendah | Diputuskan 28/11 (KF bagian kedua) |
 
 ### M09 Keuangan
 
@@ -163,6 +167,7 @@ risiko OA2 (diganti 27/11: kolom dihapus di tahap 3), OD8 diputuskan.
 | PK-6 | Seeder demo portal deterministik (`ORDER BY`), lembur seed tidak disetujui pemohon sendiri | UAT portal 9 | Rendah | Tidak |
 | PK-7 | Hak `self_service` diperiksa di guard portal atau dihapus (kaitan: Anggota "hapus") → Anggota dihapus (27/11) | UAT portal 12; OA9 | Rendah | Ya |
 | PK-8 | Login portal karyawan tanpa Google: karyawan diundang, mengganti kata sandi, lalu login dengan username/email + kata sandi | K13 | Sedang | Diputuskan programmer B 27/11 |
+| PK-9 | **Layar admin kunjungan lokasi dan swafoto teknisi** untuk Aqim (bukan hanya PIC proyek) | KF-E1 | Tinggi | Diputuskan 28/11 (KF bagian kedua) |
 
 ## 3. Lintas modul yang dipegang atau ikut dipegang Oki
 

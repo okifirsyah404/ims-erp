@@ -99,6 +99,19 @@ Sedang/Rendah = langkah 9 dan sesudahnya (lihat README).
 | Cetak SO, Kuitansi, BPB, Retur **[baru]** | Halaman cetak / PDF | B-37 | Tinggi | D |
 | Portal pelanggan + website: Pesanan, SPH, Faktur, Bayar | Disambungkan ke ERP (T21, T25); urutan: akun + website → pesanan/SPH/faktur/bayar → dokumen + notifikasi → lacak (PP-8) | B-38 | Tinggi | D |
 
+## Tambahan dari kekurangan fitur bagian kedua (28/11)
+
+| Halaman | Perbaikan | Rencana | Prioritas | Oleh |
+|---|---|---|---|---|
+| Penggajian | Potongan absensi, pro-rata, upah lembur dihitung | B-39 | Tinggi | D |
+| Detail pelanggan | Riwayat SPH/SO/faktur/proyek/lisensi/tiket dan saldo | B-40 | Tinggi | D |
+| Detail SPH / faktur | Unduh PDF, salin tautan, wa.me / email | B-41 | Tinggi | D |
+| Faktur tanpa SO **[baru]** | Faktur jasa / biaya tambahan / perpanjangan | B-42 | Tinggi | D |
+| Pengguna | Ubah beberapa role; reset kata sandi | M12-14, M12-15 | Tinggi | O |
+| Ubah karyawan | Bug role tambahan hilang | M12-14 | Tinggi | O + D |
+| Ekspor di daftar utama; PDF laporan keuangan | Ekspor CSV/XLSX, laporan berkop | M12-16 | Tinggi | O (+ pemilik modul) |
+| Kunjungan lokasi teknisi **[baru]** | Layar admin check-in lokasi dan swafoto | PK-9 | Tinggi | O |
+
 **Jumlah:** sekitar 35 halaman, termasuk 5 halaman baru (Pembayaran
 Pemasok, Servis & Kondisi, Kasbon portal, Riwayat absen lokasi, Perlu
 Tindakan). Tambahan dari pemeriksaan kekurangan fitur ada di bagian bawah

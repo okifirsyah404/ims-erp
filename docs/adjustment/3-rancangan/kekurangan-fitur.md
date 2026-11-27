@@ -146,3 +146,124 @@ rencana tidak diulang; nomornya disebut di bagian "Sudah direncanakan".
 | KF-4 | KF-T2 rezim pajak | Bella memastikan sebelum UAT Pajak | — |
 
 **Keputusan 27/11:** KF-1 (a) semua 10 butir masuk rencana; KF-2 (a) daftar tunggu; KF-3 (a) menunggu permintaan Pemilik; KF-4 ditanyakan ke Bella.
+
+---
+
+## Bagian kedua: modul yang diperiksa 2026-11-28
+
+Diperiksa atas permintaan programmer B agar semua modul tercakup: M02, M03,
+M04, M08 (programmer B), M01, M12, portal karyawan (Oki). M11 ditunda (K10):
+yang ada hanya tiga halaman "Segera hadir", izin investor di
+`erp-permissions.ts`, dan `apps/web-investor` templat kosong.
+
+**Catatan penting:**
+- **Checklist UAT M08 sebagian sudah usang.** Ubah karyawan dan ubah tugas
+  SDM sudah dibangun, jadi temuan M08 no. 1, 2, 9 dan sebagian B-17 selesai.
+  Sisa B-17: tolak/batal cuti tanpa alasan, contoh impor `EMP-0001`.
+- **Gaji (T19/T20) sebagian besar sudah dibangun:** hitung PPh 21 TER dan
+  BPJS, persetujuan Pemilik memposting jurnal, slip gaji PDF dan ZIP, slip di
+  portal karyawan, BP21 XML, pembayaran lewat Keuangan. Yang kurang ada di
+  KF-H1 dan KF-H2.
+
+**Keputusan programmer B 28/11 (bagian kedua):**
+- **Tinggi:** KF-H1 + KF-H2 (B-39), KF-S1 (B-40), KF-S2 (B-41), KF-S6 (B-42), KF-R1 + KF-R2 (M12-14), KF-R3 (M12-15), KF-R5 + KF-R6 (M12-16), KF-E1 (PK-9).
+- **Daftar tunggu:** KF-N1, KF-L1, KF-D1, KF-I3 dan semua butir Sedang/Rendah lain (B-43, M12-17); butir "Tambahan" menunggu permintaan Pemilik.
+- Catatan: KF-L1 (lisensi di portal) termasuk kontrak T25, dan KF-N1 membuat pemberitahuan tetap bergantung pada n8n sampai dikerjakan.
+
+### Ringkasan: butir terpenting bagian kedua
+
+| No | Kekurangan | Modul | Kontrak | Prioritas usulan | Oleh |
+|---|---|---|---|---|---|
+| KF-R1 | **Ubah role pengguna (beberapa role) dari halaman Pengguna.** Sekarang hanya lewat Organisasi → anggota, yang akan disembunyikan K12 | M12 | Ya | Tinggi | O |
+| KF-R2 | **Bug: form ubah karyawan menghapus role tambahan** saat disimpan (satu pilihan role menimpa semua) | M12/M08 | Ya | Tinggi | O + D |
+| KF-R3 | **Admin mengatur ulang kata sandi** atau memberi kata sandi sementara | M12 | Abu-abu | Tinggi | O |
+| KF-E1 | **Layar admin untuk kunjungan lokasi dan swafoto teknisi** (sekarang hanya PIC proyek di portal) | Portal karyawan | Tambahan | Tinggi | O |
+| KF-H1 | **Gaji memakai absensi**: potongan tidak hadir / izin tanpa gaji, pro-rata karyawan masuk/keluar | M08 | Ya (T19) | Tinggi | D |
+| KF-L1 | **Lisensi di portal pelanggan** (kontrak T25 menyebut lisensi; B-38 belum) | M03 | Ya | Tinggi | D |
+| KF-N1 | **Notifikasi di aplikasi pengganti n8n**: SPH menunggu persetujuan / diputuskan, follow-up jatuh tempo, lisensi jatuh tempo, chat WA diserahkan ke admin, prospek website baru | M02/M03/M04 | Ya / Abu-abu | Tinggi | D |
+| KF-S1 | **Riwayat dan saldo pelanggan** di halaman pelanggan (SPH, SO, faktur, sisa piutang, proyek, lisensi, tiket) | M02 | Ya | Tinggi | D |
+
+### 7. Penjualan (M02, programmer B)
+
+| No | Kekurangan | Jenis | Kontrak | Prioritas | Bukti / alasan |
+|---|---|---|---|---|---|
+| KF-S1 | Riwayat dan saldo pelanggan | Belum ada | Ya | Tinggi | `crm/customers/$customerId.tsx:231-276` hanya data, alamat, kartu portal |
+| KF-S2 | Kirim SPH/faktur tanpa n8n: tombol unduh PDF, salin tautan, `wa.me`/email (tautan PDF sudah dibuat, hanya dikirim ke n8n) | Setengah jadi | Ya (S02) | Sedang | `quotation-delivery.service.ts:25-35, 64` |
+| KF-S3 | Laporan penjualan per periode, penjual, pelanggan, barang; konversi SPH; ekspor | Belum ada | Abu-abu | Sedang | Tinjauan bulanan Pemilik dan Penjualan |
+| KF-S4 | Retur penjualan diselesaikan dengan nota kredit / pengembalian uang, bukan hanya barang pengganti | Belum ada | Abu-abu | Sedang | `sales-return.service.ts:100`; SO yang dibuka lagi tetap terbuka |
+| KF-S5 | Unggah lampiran prospek oleh staf (foto survei, gambar) | Setengah jadi | Ya (S01) | Sedang | Tabel `lead_attachments` ada, hanya unduh |
+| KF-S6 | Faktur tanpa SO (jasa, biaya tambahan, perpanjangan lisensi): backend siap, layar belum; bersama B-31 | Setengah jadi | Ya | Sedang | `invoice.contract.ts:32` |
+| KF-S7 | Faktur proforma (permintaan DP) dan berulang belum dipakai | Setengah jadi | Abu-abu | Rendah | `sale.schema.ts:118,736` |
+| KF-S8 | Status kuitansi draf/diverifikasi/void tidak dipakai (verifikasi manual S03 tanpa langkah) | Setengah jadi | Ya | Rendah | `invoice.repository.ts:512` |
+| KF-S9 | Ekspor CSV prospek, pelanggan, SPH, faktur | Belum ada | Ya (ekspor) | Rendah | — |
+| KF-S10 | Penjualan tunai cepat tanpa rantai SPH | Belum ada | Tambahan | Rendah | — |
+| KF-S11 | Konversi prospek tanpa dialog kredensial portal; "Perusahaan terdaftar" tanpa pilihan tersimpan diam-diam; halaman `/sales` dan `/crm` "Segera hadir" | Setengah jadi | Ya | Rendah | Temuan UAT M02; RM4 |
+
+### 8. Langganan dan Lisensi (M03, programmer B)
+
+| No | Kekurangan | Jenis | Kontrak | Prioritas | Bukti / alasan |
+|---|---|---|---|---|---|
+| KF-L1 | Lisensi di portal pelanggan | Belum ada | Ya (T25) | Tinggi | `erp-routes.ts` tanpa lisensi |
+| KF-L2 | Pengingat lisensi jatuh tempo di aplikasi (sekarang hanya event n8n) | Setengah jadi | Ya | Tinggi | `licensing.service.ts:362-399`; termasuk KF-N1 |
+| KF-L3 | Tagihan berulang / perpanjangan otomatis untuk kontrak bulanan/triwulan (`billingCycle` tersimpan, tidak dipakai) | Setengah jadi | Abu-abu | Sedang | `licensing.service.ts:451` |
+| KF-L4 | Temuan UAT M03 yang belum punya nomor: pemilih dibatasi 100 (#6), "berlaku sampai" kunci tidak dicek (#12), toast salah (#5), label opsional (#7), catatan kunci tidak tampil (#9), nilai kontrak tanpa batas (#11) | Setengah jadi | Ya | Sedang (#6, #12) / Rendah | `subscription/$contractId/index.tsx`, `contract-form.tsx` |
+| KF-L5 | Masa tenggang 7 hari tertulis di kode, seharusnya pengaturan | Setengah jadi | Ya | Rendah | `license.ts:64` |
+| KF-L6 | Draf kontrak lisensi dari SO yang berisi barang lisensi; ekspor daftar jatuh tempo | Belum ada | Abu-abu | Rendah | — |
+
+### 9. Integrasi (M04, sisi ERP; n8n tidak dibahas)
+
+| No | Kekurangan | Jenis | Kontrak | Prioritas | Bukti / alasan |
+|---|---|---|---|---|---|
+| KF-I1 | Notifikasi/lencana saat chat WA perlu admin dan saat ada prospek website baru (sekarang hanya event n8n; kotak masuk hanya diperbarui saat dibuka) | Setengah jadi | Ya (T28) | Tinggi | Termasuk KF-N1 |
+| KF-I2 | Penangkal spam di form website (honeypot / batas per pengunjung) | Belum ada | Ya | Sedang | `public-website.controller.ts:60-90` |
+| KF-I3 | Website berbahasa Indonesia (`lang="en"`, teks Inggris) | Setengah jadi | Ya (DoD M04) | Sedang | `BaseLayout.astro:24` |
+| KF-I4 | Foto/berkas WA masuk disimpan sebagai teks `[media]` | Setengah jadi | Abu-abu | Sedang | `whatsapp.service.ts:85`; pelanggan mengirim foto kerusakan |
+| KF-I5 | Kirim pesan WA keluar dari ERP (misalnya SPH); hubungkan chat ke pelanggan yang ada | Belum ada | Abu-abu / Tambahan | Rendah | — |
+
+### 10. Karyawan, Kehadiran, Gaji (M08, programmer B)
+
+| No | Kekurangan | Jenis | Kontrak | Prioritas | Bukti / alasan |
+|---|---|---|---|---|---|
+| KF-H1 | Gaji memakai absensi: potongan, izin tanpa gaji, pro-rata | Belum ada | Ya (T19) | Tinggi | `salary.service.ts:177-182`, `payroll-calculation.service.ts:38-55` |
+| KF-H2 | Upah lembur selalu 0 dan diketik manual | Setengah jadi | Ya | Tinggi | `salary.service.ts:182` (ERP-0018) |
+| KF-H3 | Kalender libur nasional (cuti di hari libur memotong kuota) | Belum ada | Abu-abu | Sedang | `hr.ts:25-26` |
+| KF-H4 | Jabatan dan departemen karyawan (untuk slip gaji dan perjanjian kerja) | Belum ada | Ya | Sedang | `human-resource.schema.ts:114-186` |
+| KF-H5 | Tanggal akhir kontrak / masa percobaan + pengingat | Belum ada | Abu-abu | Sedang | — |
+| KF-H6 | Keterlambatan dibanding jadwal tidak dihitung | Setengah jadi | Abu-abu | Sedang | jadwal dan absensi sudah ada |
+| KF-H7 | Layar jenis cuti dan kuota; ekspor rekap absensi/lembur; pilihan atasan; bantuan THR | Belum ada | Abu-abu / Tambahan | Rendah | — |
+
+### 11. Dasbor (M01, Oki)
+
+| No | Kekurangan | Jenis | Kontrak | Prioritas | Bukti / alasan |
+|---|---|---|---|---|---|
+| KF-D1 | Kartu umur piutang dan utang (endpoint `/ar/aging`, `/ap/aging` sudah ada) | Setengah jadi | Ya | Tinggi | Murah; bagian RD1 |
+| KF-D2 | Kartu tahap 2: gaji disetujui, transaksi gateway terverifikasi | Belum ada | Ya (M01 tahap 2) | Sedang | `m01-dasbor.md:543` |
+| KF-D3 | Dasbor tanpa organisasi aktif menautkan ke `/organizations`, yang disembunyikan K12 | Setengah jadi | Ya | Sedang | `dashboard-page.tsx:118-137` |
+| KF-D4 | Jumlah dan nilai SPH terbuka di kartu Penjualan | Belum ada | Ya | Rendah | — |
+
+### 12. Laporan dan Hak Akses (M12, Oki)
+
+| No | Kekurangan | Jenis | Kontrak | Prioritas | Bukti / alasan |
+|---|---|---|---|---|---|
+| KF-R1 | Ubah role pengguna (beberapa) dari halaman Pengguna | Belum ada | Ya | Tinggi | `admin/users/index.tsx:565-590` |
+| KF-R2 | Bug form ubah karyawan menimpa semua role | Setengah jadi | Ya | Tinggi | `employee-edit-form.tsx:95-110` |
+| KF-R3 | Atur ulang kata sandi oleh admin / kata sandi sementara | Belum ada | Abu-abu | Tinggi | Better Auth `setUserPassword` tanpa layar |
+| KF-R4 | Audit login berhasil dan gagal | Belum ada | Ya | Sedang | `session.auth.ts:142` |
+| KF-R5 | Ekspor CSV/XLSX daftar (pelanggan, faktur, piutang, karyawan, log audit); ±20 izin `export` tanpa endpoint | Setengah jadi | Ya | Sedang | `erp-permissions.ts:32-111` |
+| KF-R6 | PDF laporan keuangan berkop | Belum ada | Abu-abu | Sedang | Untuk bank dan tender |
+| KF-R7 | Arsip bulanan juga memuat ringkasan operasional, otomatis saat tutup, sebagai berkas | Setengah jadi | Ya | Sedang | `report-archive.service.ts:87-111` |
+| KF-R8 | Undang / hubungkan login untuk karyawan yang sudah ada | Setengah jadi | Ya | Sedang | `employee-account-card.tsx:12-16` |
+| KF-R9 | Menu Laporan hanya berisi Arsip Bulanan; `/reports` tidak ada di menu | Setengah jadi | Ya | Sedang | `nav-config.ts:585-597` (ikut PM-6) |
+| KF-R10 | Halaman baca hak per role; kolom login terakhir; 2FA akun Pemilik; batas percobaan login | Belum ada | Abu-abu / Tambahan | Rendah | — |
+
+### 13. Portal karyawan (Oki, tambahan K9)
+
+| No | Kekurangan | Jenis | Kontrak | Prioritas | Bukti / alasan |
+|---|---|---|---|---|---|
+| KF-E1 | Layar admin kunjungan lokasi dan swafoto | Belum ada | Tambahan | Tinggi | `site-attendance.service.ts:208-216` hanya PIC |
+| KF-E2 | Pengajuan koreksi absen (lupa absen); izinnya sudah ada | Belum ada | Abu-abu | Sedang | `erp-permissions.ts:69, 821` |
+| KF-E3 | Cuti yang sudah disetujui bisa dibatalkan karyawan tanpa SDM | Setengah jadi | Abu-abu | Sedang | `leave.service.ts:198-207` |
+| KF-E4 | Absen mandiri tidak ditandai di absensi SDM dan bisa ditimpa tanpa jejak | Setengah jadi | Abu-abu | Sedang | `employee-portal.service.ts:205-235` |
+| KF-E5 | Lampiran surat sakit, cuti setengah hari | Belum ada | Tambahan | Sedang | — |
+| KF-E6 | Batalkan lembur sendiri; klik notifikasi tidak membuka apa pun; sisa cuti menghitung pengajuan tertunda; label kecil | Setengah jadi | Tambahan | Rendah | Temuan UAT portal |
+| KF-E7 | Pasang di ponsel (PWA) dan notifikasi push | Belum ada | Tambahan | Rendah | — |

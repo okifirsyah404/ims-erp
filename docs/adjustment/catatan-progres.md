@@ -1622,3 +1622,39 @@ File yang diperbarui:
 D4 dan urutan port di sana diperbarui saat langkah 8 dimulai.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - Kekurangan fitur bagian kedua (semua modul)
+
+Atas permintaan programmer B ("harus kita bahas semua"), dua agen pemeriksa
+membaca kode M02, M03, M04, M08 (programmer B) dan M01, M12, serta portal
+karyawan (Oki). M11 dicatat satu baris karena ditunda (K10).
+
+Hasil ditambahkan di `3-rancangan/kekurangan-fitur.md` bagian kedua:
+KF-S1–S11, KF-L1–L6, KF-I1–I5, KF-H1–H7, KF-D1–D4, KF-R1–R10, KF-E1–E7,
+dan KF-N1.
+
+Temuan samping:
+- Checklist UAT M08 sebagian usang (ubah karyawan dan ubah tugas SDM sudah
+  ada; sebagian B-17 selesai).
+- Gaji T19/T20 sebagian besar sudah dibangun.
+
+Keputusan programmer B:
+- **Tinggi, modul programmer B:**
+  - B-39 gaji memakai absensi dan upah lembur;
+  - B-40 riwayat dan saldo pelanggan;
+  - B-41 kirim SPH/faktur tanpa n8n;
+  - B-42 faktur tanpa SO.
+- **Tinggi, modul Oki:**
+  - M12-14 ubah role di halaman Pengguna, ditambah perbaikan bug role
+    hilang;
+  - M12-15 reset kata sandi oleh admin;
+  - M12-16 ekspor daftar dan PDF laporan keuangan;
+  - PK-9 layar kunjungan lokasi teknisi.
+- **Daftar tunggu:** B-43 dan M12-17, termasuk KF-N1 (notifikasi di
+  aplikasi), KF-L1 (lisensi di portal, kontrak T25), KF-D1, dan KF-I3.
+  Butir "Tambahan" menunggu permintaan Pemilik.
+
+Diperbarui: `rencana-perubahan.md`, `rencana-perubahan-modul-oki.md`,
+`peta-halaman.md`, `README.md` (langkah 8).
+
+Tidak ada perubahan kode.
