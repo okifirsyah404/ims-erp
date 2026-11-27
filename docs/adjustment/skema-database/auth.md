@@ -78,12 +78,12 @@ Tidak ada tabel `code_numberings` di schema ini. Namun `organizations.slug` (hur
 
 | Perubahan | Sumber | Dampak ke schema | Status |
 |---|---|---|---|
-| Rapikan role anggota (Aqim: Pemilik + SDM; hapus rangkapan) | `validasi-konsep-saat-ini.md` 3.8, R7; `bahan-keputusan.md` D1 | none (data `members.role` saja) | menunggu keputusan |
-| SDM hanya untuk Aqim | R1 (3.2) | none (data) | menunggu keputusan |
+| Rapikan role anggota (Aqim: Pemilik + SDM; hapus rangkapan) | `validasi-konsep-saat-ini.md` 3.8, R7; `bahan-keputusan.md` D1 | none (data `members.role` saja) | disetujui 27/11 (K2); diatur Aqim di data |
+| SDM hanya untuk Aqim | R1 (3.2) | none (data) | disetujui 27/11 (K2a) |
 | Beberapa role per orang tetap dipakai | `bahan-keputusan.md` D2 (sudah didukung) | none | usulan |
-| Hak baru (Gudang baca PO/SO, Admin tambah pelanggan, Admin baca proyek) di `erp-permissions.ts` | `bahan-keputusan.md` B3, B4, C3, D3 | none (kode) | menunggu keputusan |
+| Hak baru (Gudang baca PO/SO, Admin tambah pelanggan, Admin baca proyek) di `erp-permissions.ts` | `bahan-keputusan.md` B3, B4, C3, D3 | none (kode) | B3, B4 disetujui 27/11; C3, D3 tidak berlaku (role Admin dihapus) |
 | CRUD pengaturan organisasi memakai `organization_settings` | ERP-0045b | none (tabel sudah ada) | direncanakan |
 | ADR-0029 (undangan saja) masih `proposed` walau sudah berjalan | ADR-0029 | none | usulan |
-| `security-and-access.md` masih menulis 19 role; seharusnya 17 (ADR-0018) | `bahan-keputusan.md` E3, `ringkasan-arsitektur.md` D3 | none (dokumen) | menunggu keputusan |
-| Hapus lapisan organisasi: `organizations`, `members`, `invitations` (organisasi), dan role per organisasi pindah ke tingkat pengguna | `../lembar-keputusan-rapat.md` K12 (arah baru 2026-11-26) | tabel + aturan (dan kolom `organization_id` di schema lain) | menunggu keputusan |
-| Login web-admin tanpa Google; portal pelanggan dengan Google (`accounts` provider google untuk pelanggan) | K13 | none (Better Auth sudah punya `accounts`) | menunggu keputusan |
+| `security-and-access.md` masih menulis 19 role; seharusnya 17 (ADR-0018) | `bahan-keputusan.md` E3, `ringkasan-arsitektur.md` D3 | none (dokumen) | untuk Oki (E3); belum diubah atas arahan programmer B |
+| Hapus lapisan organisasi: `organizations`, `members`, `invitations` (organisasi), dan role per organisasi pindah ke tingkat pengguna | `../lembar-keputusan-rapat.md` K12 (arah baru 2026-11-26) | tabel + aturan (dan kolom `organization_id` di schema lain) | disetujui 27/11 (K12 bertahap; OA2: kolom dihapus di tahap 3) |
+| Login web-admin tanpa Google; portal pelanggan dengan Google (`accounts` provider google untuk pelanggan) | K13 | none (Better Auth sudah punya `accounts`) | disetujui 27/11 (K13, OA4) |

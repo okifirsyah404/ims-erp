@@ -84,8 +84,8 @@ erDiagram
 
 | Perubahan | Sumber | Dampak ke schema | Status |
 |---|---|---|---|
-| Pemilik boleh menyetujui PR/PO/retur miliknya sendiri, tercatat di audit | A1 (b), R2, 3.8 | aturan | menunggu keputusan (Pemilik + Oki, ubah ADR-0006) |
-| PO approved langsung bisa diterima tanpa "Tandai terkirim" | B1, 3.3 no. 3, 3.8 butir 5 | aturan (status `sent` jadi opsional) | menunggu keputusan |
-| Pembelian boleh membatalkan draf miliknya; Manajer Operasional semua PO sebelum diterima | B2 | aturan | menunggu keputusan |
-| Gudang diberi hak baca PO | B4 | none (hak) | menunggu keputusan (rekomendasi b) |
+| Pemilik boleh menyetujui PR/PO/retur miliknya sendiri, tercatat di audit | A1 (b), R2, 3.8 | aturan | disetujui 27/11 (K1) |
+| PO approved langsung bisa diterima tanpa "Tandai terkirim" | B1, 3.3 no. 3, 3.8 butir 5 | aturan (status `sent` jadi opsional) | disetujui 27/11 (B1) |
+| Pembelian boleh membatalkan draf miliknya; Manajer Operasional semua PO sebelum diterima | B2 | aturan | disetujui 27/11 (B2): berlaku bila ada staf pembelian; sekarang pembatal Aqim |
+| Gudang diberi hak baca PO | B4 | none (hak) | disetujui 27/11 (B4) |
 | Perbaiki catatan dbml `purchase_returns.total_amount` ("no journal") | Temuan dokumen ini | none (dokumen) | usulan |

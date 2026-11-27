@@ -28,21 +28,21 @@ Tim: Aqim Pemilik (+SDM), Bella akuntan, Agus MD dan Bilal penjualan,
 Agus/Jamil/Hatta PM, Fahri/Alex/Ade teknisi, Dafrin/Oki pekerja lepas.
 
 **Diperbarui 2026-11-27 sesuai keputusan tanya-jawab** (jawaban programmer B,
-menunggu konfirmasi Pemilik dan Oki; sumber: lembar rapat bagian 0): K1a
+disetujui Pemilik 27/11 (tinjauan Oki di PR #171); sumber: lembar rapat bagian 0): K1a
 diganti, kasbon dan pertanggungjawaban ikut K1 (Aqim tidak mengajukan kasbon),
 jurnal manual tetap orang kedua; RO5 pertanggungjawaban satu langkah oleh Aqim;
 K2b Penjualan digabung; K2d Akuntan digabung ke Keuangan (Bella); Anggota dan
 role organisasi Admin dihapus (tanda admin aplikasi Aqim tetap); K12 bertahap;
 K13 web-admin dan portal karyawan tanpa Google, karyawan diundang; OA4
 pelanggan satu jenis akun; OB7/OB8 diterima; OD1 daftar unit khusus; K10/OE1
-ditunda; OG1 tolak. K8, K9, K11 dibahas di rapat.
+ditunda; OG1 tolak. K8, K9, K11 diputuskan di rapat 27/11 (lihat di bawah).
 
 **Rapat 2026-11-27:** Pemilik menyetujui semua keputusan sesuai usulan. OB11 = (a). K8: kontrak disesuaikan dengan pembagian modul. K9: fitur di luar kontrak diterima sebagai tambahan. K11: bagian bersama dipegang bersama, perubahan wajib lewat PR. Tinggal tinjauan Oki di PR #171.
 
 **Diperbarui 2026-11-27 (tanya-jawab kedua):** semua kolom Keputusan yang masih
 kosong diisi dari lembar rapat bagian 0 (OA2, OA8, OA12–OA14, OB2, OB3, OB5,
 OB10, OB12–OB15, OC1–OC8, OD3–OD9, OE3/OE4, OF1–OF3, OG2–OG6). Yang masih
-**dibahas di rapat**: OB11 (dan K8, K9, K11 di lembar rapat); diputuskan di rapat 27/11 (lihat di atas). OA2 sempat dijawab "langsung dihapus di tahap pertama", lalu diganti 27/11: kolom
+**dibawa ke rapat**: OB11 (dan K8, K9, K11 di lembar rapat); diputuskan di rapat 27/11 (lihat di atas). OA2 sempat dijawab "langsung dihapus di tahap pertama", lalu diganti 27/11: kolom
 `organization_id` baru dihapus di tahap 3, selaras dengan K12
 bertahap; perlu dikonfirmasi Oki dan Dafrin sebelum ADR K12 ditulis.
 

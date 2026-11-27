@@ -133,7 +133,7 @@ flowchart LR
 
 | Perubahan | Sumber | Dampak | Status |
 |---|---|---|---|
-| Tetapkan pemilik modul `document` (dan `shared/numbering`, `shared/media`) | temuan 1 | Keputusan tim; menentukan siapa boleh mengubah `documents.code` | menunggu keputusan |
+| Tetapkan pemilik modul `document` (dan `shared/numbering`, `shared/media`) | temuan 1 | Keputusan tim; menentukan siapa boleh mengubah `documents.code` | diputuskan 27/11 (K11): dipegang bersama, perubahan lewat PR dan diberitahukan |
 | Perlebar `document.documents.code` bila opsi 3 penomoran dipilih | [penomoran-dokumen.md](penomoran-dokumen.md) | Migrasi append-only + `docs.dbml` + validasi | usulan |
 | Pasang Chromium di image backend (atau layanan renderer terpisah) dan isi `PDF_CHROMIUM_PATH`/`PDF_RENDER_BASE_URL` di compose | temuan 2, ERP-0067 | Dockerfile + compose (wilayah deploy, Oki); ukuran image naik | direncanakan (belum dijadwalkan) |
 | Tambahkan layanan S3 (RustFS atau penyedia awan) ke compose dev/server | temuan 3, `../catatan-progres.md` 2026-11-25 | `docker-compose.yml` (wilayah Oki); dokumen runbook | usulan |

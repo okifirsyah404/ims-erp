@@ -72,7 +72,7 @@ erDiagram
 
 | Perubahan | Sumber | Dampak ke schema | Status |
 |---|---|---|---|
-| Halaman Produk mengikuti hak role (Pembelian, dan Gudang bila perlu), bukan hanya admin aplikasi | B3 (`bahan-keputusan.md`), A2 | none (guard halaman) | menunggu keputusan |
+| Halaman Produk mengikuti hak role (Pembelian, dan Gudang bila perlu), bukan hanya admin aplikasi | B3 (`bahan-keputusan.md`), A2 | none (guard halaman) | disetujui 27/11 (B3) |
 | Katalog: saring hanya `product_kind = product`, cegah menimpa listing yang sudah ada | Temuan UAT M04 no. 8 | aturan | usulan |
-| Halaman konten website (testimoni, gambar) untuk Pemasaran | D5, M04 C9 | belum jelas (hak `web_content` ada, route/halaman belum ada) | menunggu keputusan (rekomendasi: tunda) |
+| Halaman konten website (testimoni, gambar) untuk Pemasaran | D5, M04 C9 | belum jelas (hak `web_content` ada, route/halaman belum ada) | ditunda (D5, disetujui 27/11) |
 | Bedakan singkatan komponen dari perusahaan pelanggan (misalnya `CMP` → `KMP`) | Temuan dokumen ini | none (nilai `CODE_TYPE_CODES`) | usulan |

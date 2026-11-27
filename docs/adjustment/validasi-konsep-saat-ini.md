@@ -55,7 +55,7 @@ Setiap role punya akun uji: username `<role>_seed`, password `<role>123456`\
 | `marketing`          | Pemasaran           | Konten website, katalog, promo, pesanan online                                | Bilal                                  |  (jawaban programmer B 27/11) |                                                                                               |
 | `auditor`            | Auditor             | Hanya baca dan ekspor                                                         | —                                      |  (jawaban programmer B 27/11) | Tidak dipakai                                                                                 |
 
-Diperbarui 2026-11-27 sesuai keputusan tanya-jawab: kolom Keputusan diisi dari lembar rapat bagian 0 dan bagian 5 (menunggu konfirmasi Pemilik dan Oki).
+Diperbarui 2026-11-27 sesuai keputusan tanya-jawab: kolom Keputusan diisi dari lembar rapat bagian 0 dan bagian 5 (disetujui Pemilik 27/11; tinjauan Oki di PR #171).
 
 Satu orang **bisa memegang beberapa role** sekaligus (dicek di kode\
 \
@@ -203,7 +203,7 @@ Data dari programmer B: siapa memegang role apa. Dicocokkan dengan hak di\
 | **Dafrin**, **Oki** | Pekerja Lepas, Anggota                                                      | Tugas dan laporan harian sendiri, pertanggungjawaban biaya, profil/absen/slip sendiri                                             |
 | **Bella**           | Akuntan                                                                     | Bagan akun, jurnal (buat sampai posting), periode, pajak, laporan keuangan, catat tagihan pemasok, rekonsiliasi kas/bank          |
 
-Diperbarui 2026-11-27 sesuai keputusan tanya-jawab (jawaban programmer B, menunggu Pemilik dan Oki): tabel di atas adalah susunan **sekarang**. Susunan sesudahnya: Penjualan digabung (Agus MD, Bilal memegang satu role "Penjualan", K2b); Keuangan digabung dengan Akuntan (Bella, K2d); role Anggota dihapus (Dafrin dan Oki hanya Pekerja Lepas, tanpa absensi/slip gaji di aplikasi); role organisasi Admin dihapus (tanda admin aplikasi di akun Aqim tetap). Rincian per orang di 3.8.
+Diperbarui 2026-11-27 sesuai keputusan tanya-jawab (disetujui Pemilik 27/11): tabel di atas adalah susunan **sekarang**. Susunan sesudahnya: Penjualan digabung (Agus MD, Bilal memegang satu role "Penjualan", K2b); Keuangan digabung dengan Akuntan (Bella, K2d); role Anggota dihapus (Dafrin dan Oki hanya Pekerja Lepas, tanpa absensi/slip gaji di aplikasi); role organisasi Admin dihapus (tanda admin aplikasi di akun Aqim tetap). Rincian per orang di 3.8.
 
 ### 3.2 Temuan dari susunan ini
 

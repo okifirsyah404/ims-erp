@@ -67,9 +67,9 @@ Tidak ada `code_numberings`.
 
 | Perubahan | Sumber | Dampak ke schema | Status |
 |---|---|---|---|
-| Catat setiap persetujuan oleh pembuatnya sendiri (Pemilik) dengan penanda "disetujui oleh pembuat (Pemilik)", tampil di Laporan -> Audit | A1 (b) `bahan-keputusan.md`; `validasi-konsep-saat-ini.md` 3.8 butir 1-2; R2 | aturan: `action` baru (mis. `purchase_order.approved` + `meta.self_approved = true`, atau aksi `*.self_approved`) untuk SPH, PR, PO, retur pembelian/penjualan, cuti/lembur, penyesuaian stok; tanpa kolom baru | menunggu keputusan (Pemilik + Oki ubah ADR-0006 butir 6) |
-| Penulis audit baru di `sale`, `procurement`, `human_resource` (persetujuan) dan mungkin `payment` | 3.8 "Yang perlu dikerjakan", R6 | aturan (vocabulary `AUDIT_ACTIONS`) | menunggu keputusan |
-| Ganti pengecualian penyesuaian stok dengan aturan Pemilik saja, tercatat audit | 3.8 butir 4, D5 | aturan | menunggu keputusan |
+| Catat setiap persetujuan oleh pembuatnya sendiri (Pemilik) dengan penanda "disetujui oleh pembuat (Pemilik)", tampil di Laporan -> Audit | A1 (b) `bahan-keputusan.md`; `validasi-konsep-saat-ini.md` 3.8 butir 1-2; R2 | aturan: `action` baru (mis. `purchase_order.approved` + `meta.self_approved = true`, atau aksi `*.self_approved`) untuk SPH, PR, PO, retur pembelian/penjualan, cuti/lembur, penyesuaian stok; tanpa kolom baru | disetujui 27/11 (K1); ADR-0006 butir 6 diubah Oki |
+| Penulis audit baru di `sale`, `procurement`, `human_resource` (persetujuan) dan mungkin `payment` | 3.8 "Yang perlu dikerjakan", R6 | aturan (vocabulary `AUDIT_ACTIONS`) | disetujui 27/11 (OA5–OA7), dikerjakan sebelum K1 |
+| Ganti pengecualian penyesuaian stok dengan aturan Pemilik saja, tercatat audit | 3.8 butir 4, D5 | aturan | disetujui 27/11 (K1) |
 | Putuskan audit persetujuan sendiri ikut transaksi bisnis (tidak boleh hilang) | temuan | aturan | usulan |
 | Audit sebagai umpan aktivitas bisnis (`target_type` diperluas, filter bisnis) | ERP-0061 | aturan | direncanakan |
 | Pemeriksaan uang keluar-masuk lewat audit log dan rekonsiliasi Bella (semua titik 🟡) | 3.7 | none | usulan |

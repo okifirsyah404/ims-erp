@@ -100,10 +100,10 @@ erDiagram
 | `ExportedJournalService` (rekap pajak dari GL) | `module-ownership.md` (Finance) | none | usulan |
 | Perbarui angka tabel di `module-ownership.md` | temuan | none (dokumen) | usulan |
 | Keputusan A1/R2 tidak menyentuh schema pajak | `bahan-keputusan.md` | none | — |
-| Catatan pajak draf dihitung ulang otomatis (DPP × tarif) saat dasar diubah, di service | OC2 (jawaban programmer B 27/11) | aturan (`tax.service.ts`) | diputuskan, menunggu konfirmasi |
-| Masa Bupot (`withholding_tax_records.period_year/month`) diisi otomatis dari tanggal transaksi (Asia/Jakarta) | OC3 (jawaban programmer B 27/11) | aturan | diputuskan, menunggu konfirmasi |
-| Tarif PPN dokumen dari `taxes` (berlaku per `effective_from`..`effective_to`); dokumen menyimpan salinan tarif; pengecualian per dokumen dengan alasan | OC4 (jawaban programmer B 27/11) | aturan di `tax`; kolom alasan pengecualian mungkin perlu di `sale`/`procurement` (Dafrin), dicek ke `docs.dbml` | diputuskan, menunggu konfirmasi |
-| Pemotongan berstatus terbayar bisa dibatalkan dengan alasan (tombol di layar) | OC5 (jawaban programmer B 27/11) | mungkin kolom alasan pembatalan; dicek ke `docs.dbml` | diputuskan, menunggu konfirmasi |
-| Kode pemotongan ganda (unique `withholding_tax_records_org_code_uq`) dipetakan ke pesan jelas | OC6 (jawaban programmer B 27/11) | none | diputuskan, menunggu konfirmasi |
-| Masa pajak yang sudah ditutup read-only (ikut status periode keuangan) | OC7 (jawaban programmer B 27/11) | aturan | diputuskan, menunggu konfirmasi |
-| **PPh 21 otomatis belum dipakai**: setelan PPh 21 di penggajian dimatikan, PPh 21 dihitung di luar aplikasi; tabel `pph21_*` tetap (tidak dihapus), TER resmi tidak diimpor sekarang | OC8 (jawaban programmer B 27/11) | none | diputuskan, menunggu konfirmasi |
+| Catatan pajak draf dihitung ulang otomatis (DPP × tarif) saat dasar diubah, di service | OC2 (jawaban programmer B 27/11) | aturan (`tax.service.ts`) | disetujui Pemilik 27/11 |
+| Masa Bupot (`withholding_tax_records.period_year/month`) diisi otomatis dari tanggal transaksi (Asia/Jakarta) | OC3 (jawaban programmer B 27/11) | aturan | disetujui Pemilik 27/11 |
+| Tarif PPN dokumen dari `taxes` (berlaku per `effective_from`..`effective_to`); dokumen menyimpan salinan tarif; pengecualian per dokumen dengan alasan | OC4 (jawaban programmer B 27/11) | aturan di `tax`; kolom alasan pengecualian mungkin perlu di `sale`/`procurement` (Dafrin), dicek ke `docs.dbml` | disetujui Pemilik 27/11 |
+| Pemotongan berstatus terbayar bisa dibatalkan dengan alasan (tombol di layar) | OC5 (jawaban programmer B 27/11) | mungkin kolom alasan pembatalan; dicek ke `docs.dbml` | disetujui Pemilik 27/11 |
+| Kode pemotongan ganda (unique `withholding_tax_records_org_code_uq`) dipetakan ke pesan jelas | OC6 (jawaban programmer B 27/11) | none | disetujui Pemilik 27/11 |
+| Masa pajak yang sudah ditutup read-only (ikut status periode keuangan) | OC7 (jawaban programmer B 27/11) | aturan | disetujui Pemilik 27/11 |
+| **PPh 21 otomatis belum dipakai**: setelan PPh 21 di penggajian dimatikan, PPh 21 dihitung di luar aplikasi; tabel `pph21_*` tetap (tidak dihapus), TER resmi tidak diimpor sekarang | OC8 (jawaban programmer B 27/11) | none | disetujui Pemilik 27/11 |

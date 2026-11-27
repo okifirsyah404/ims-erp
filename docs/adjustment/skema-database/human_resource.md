@@ -78,11 +78,11 @@ erDiagram
 
 | Perubahan | Sumber | Dampak ke schema | Status |
 |---|---|---|---|
-| Pemilik boleh menyetujui cuti/lembur miliknya sendiri, dengan audit | A1 (b), A3, 3.8 | aturan | menunggu keputusan |
-| Role SDM hanya untuk Aqim; yang lain layanan mandiri | R1 | none (pemberian role) | menunggu keputusan Pemilik |
+| Pemilik boleh menyetujui cuti/lembur miliknya sendiri, dengan audit | A1 (b), A3, 3.8 | aturan | disetujui 27/11 (K1); Aqim tidak cuti lewat aplikasi (A3a) |
+| Role SDM hanya untuk Aqim; yang lain layanan mandiri | R1 | none (pemberian role) | disetujui 27/11 (K2a) |
 | Uang lembur dihitung otomatis dari jam disetujui | Temuan M08 no. 4, ERP-0018 | aturan | direncanakan (ERP-0018 planned, Oki) |
 | Layar ubah karyawan dan atur `employment_status` | Temuan M08 no. 1–2 | none (kolom ada) | usulan |
 | Kotak alasan Tolak/Batalkan cuti dan lembur, tampilkan `decision_note` | Temuan M08 no. 8 | none (kolom ada) | usulan |
-| Teknisi hanya melihat tugasnya sendiri | D4, temuan M08 no. 10 | aturan | menunggu keputusan |
+| Teknisi hanya melihat tugasnya sendiri | D4, temuan M08 no. 10 | aturan | disetujui 27/11 (D4) |
 | Ubah `hire_date`/`termination_date` menjadi `date` | Temuan dokumen ini | kolom (migrasi baru) | usulan |
 | Bandingkan kehadiran dengan jadwal (telat, tidak masuk) | Catatan dbml `schedules` | aturan | usulan |

@@ -8,7 +8,7 @@ Kebenaran stok: buku besar pergerakan barang, saldo per gudang/rak, unit bernomo
 
 ## Pembagian pemilik tabel
 
-Diperbarui 2026-11-27 (OD8, jawaban programmer B, menunggu konfirmasi Oki): satu schema, dua pemilik.
+Diperbarui 2026-11-27 (OD8, disetujui Pemilik 27/11 Oki): satu schema, dua pemilik.
 
 | Bagian | Tabel | Pemilik |
 |---|---|---|
@@ -100,16 +100,16 @@ erDiagram
 
 | Perubahan | Sumber | Dampak ke schema | Status |
 |---|---|---|---|
-| Hanya Pemilik yang boleh menyetujui penyesuaiannya sendiri (dengan audit); pengecualian lama dihapus | A1 (b), 3.8 butir 4 | aturan | menunggu keputusan (Pemilik + Oki, ADR-0006) |
+| Hanya Pemilik yang boleh menyetujui penyesuaiannya sendiri (dengan audit); pengecualian lama dihapus | A1 (b), 3.8 butir 4 | aturan | disetujui 27/11 (K1); ADR-0006 diubah Oki |
 | Barang tanpa seri yang diretur "Rusak" tidak menambah stok jual (misalnya ke rak/gudang rusak) | Temuan UAT M02 E6 | aturan (mungkin rak khusus) | usulan |
 | Pindah stok produk antar gudang/rak (pasangan transfer_out + transfer_in) | ERP-0032, ADR-0010 | none (tipe sudah ada) | usulan (ADR-0010 `proposed`) |
 | Tampilan saldo per gudang/rak dan riwayat pergerakan | ERP-0033 | none | usulan |
 | Rekonsiliasi nilai persediaan ke akun GL | ERP-0014 | none | direncanakan |
 | Reservasi stok saat SO dikonfirmasi (isi `quantity_reserved`) atau hapus janji di dbml | Temuan dokumen ini | aturan | usulan |
 | Salin CHECK `stock_adjustments` dari Drizzle ke dbml | Temuan dokumen ini | none (dokumen) | usulan |
-| Nilai uang aset (`items.acquisition_cost`, `book_value`, nilai disposal/penyusutan): sen di penyimpanan, rupiah di layar; perbaiki form, tampilan, dan seeder | OD3 (jawaban programmer B 27/11), ADR-0002 | none (aturan + data seed dev) | diputuskan, menunggu konfirmasi |
-| Penghapusan/nonaktif `items` berstatus `borrowed` ditolak | OD6 (jawaban programmer B 27/11) | aturan (`disposal.service.ts`, `item.service.ts`) | diputuskan, menunggu konfirmasi |
-| Pengembalian pinjaman dengan kondisi Baik/Rusak/Tidak lengkap + catatan; peminjaman yang semua unitnya hilang bisa ditutup | OD7 (jawaban programmer B 27/11) | aturan (kosakata kondisi di `borrowing_items` dicek ke dbml sebelum dikerjakan) | diputuskan, menunggu konfirmasi |
-| Unit pinjaman wajib disetujui sebelum diserahkan | C13 (jawaban programmer B 27/11) | aturan (`borrowing.service.ts`) | diputuskan, menunggu konfirmasi |
-| Catatan servis dan cek kondisi dipakai layar; `tool_sets` disembunyikan di menu (tabel tetap) | OD5 (jawaban programmer B 27/11) | none | diputuskan, menunggu konfirmasi |
-| Schema tetap: aset fisik di `inventory`, nilai di `finance`; tanpa modul `assets`. Pemilik tabel dibagi (lihat "Pembagian pemilik tabel"); dipecah ke schema sendiri hanya bila muncul tanda: aset banyak/rumit, kedua programmer saling ganggu di schema ini, atau aset jadi aplikasi terpisah | OD8 (jawaban programmer B 27/11) | none (dokumen: `module-ownership.md`, rencana M06) | diputuskan, menunggu konfirmasi |
+| Nilai uang aset (`items.acquisition_cost`, `book_value`, nilai disposal/penyusutan): sen di penyimpanan, rupiah di layar; perbaiki form, tampilan, dan seeder | OD3 (jawaban programmer B 27/11), ADR-0002 | none (aturan + data seed dev) | disetujui Pemilik 27/11 |
+| Penghapusan/nonaktif `items` berstatus `borrowed` ditolak | OD6 (jawaban programmer B 27/11) | aturan (`disposal.service.ts`, `item.service.ts`) | disetujui Pemilik 27/11 |
+| Pengembalian pinjaman dengan kondisi Baik/Rusak/Tidak lengkap + catatan; peminjaman yang semua unitnya hilang bisa ditutup | OD7 (jawaban programmer B 27/11) | aturan (kosakata kondisi di `borrowing_items` dicek ke dbml sebelum dikerjakan) | disetujui Pemilik 27/11 |
+| Unit pinjaman wajib disetujui sebelum diserahkan | C13 (jawaban programmer B 27/11) | aturan (`borrowing.service.ts`) | disetujui Pemilik 27/11 |
+| Catatan servis dan cek kondisi dipakai layar; `tool_sets` disembunyikan di menu (tabel tetap) | OD5 (jawaban programmer B 27/11) | none | disetujui Pemilik 27/11 |
+| Schema tetap: aset fisik di `inventory`, nilai di `finance`; tanpa modul `assets`. Pemilik tabel dibagi (lihat "Pembagian pemilik tabel"); dipecah ke schema sendiri hanya bila muncul tanda: aset banyak/rumit, kedua programmer saling ganggu di schema ini, atau aset jadi aplikasi terpisah | OD8 (jawaban programmer B 27/11) | none (dokumen: `module-ownership.md`, rencana M06) | disetujui Pemilik 27/11 |

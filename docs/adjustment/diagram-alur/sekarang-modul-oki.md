@@ -472,7 +472,7 @@ sequenceDiagram
 * OG5: Aqim (admin aplikasi) ditolak portal karyawan.
 * OG6: tanda tangan tanpa konfirmasi, teks Inggris tersisa.
 * RO6: portal tidak punya halaman kasbon dan pertanggungjawaban.
-* RO19: tombol Google di portal karyawan belum diputuskan.
+* RO19: tombol Google di portal karyawan masih ada di kode; diputuskan dihapus (K13, disetujui 27/11).
 
 ---
 

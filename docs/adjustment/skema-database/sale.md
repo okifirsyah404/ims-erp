@@ -93,10 +93,10 @@ Semua memakai pola bawaan `{SEQ:4}/{TYPE}/{COMPANY}/{MM_ROMAN}/{YY}`, reset year
 
 | Perubahan | Sumber | Dampak ke schema | Status |
 |---|---|---|---|
-| SO otomatis delivered saat semua barang terkirim, completed saat lunas | C1, A4 | aturan (status sudah ada) | menunggu keputusan (rekomendasi a) |
-| Buka menu Uang Muka (invoice termin `down_payment`) | C2, A5 | none | menunggu keputusan (kemungkinan bug) |
-| Pemilik boleh menyetujui SPH/retur miliknya sendiri, dengan audit | A1 (b), A2 | aturan | menunggu keputusan |
-| Gudang diberi hak baca SO | B4 | none (hak) | menunggu keputusan |
+| SO otomatis delivered saat semua barang terkirim, completed saat lunas | C1, A4 | aturan (status sudah ada) | disetujui 27/11 (C1) |
+| Buka menu Uang Muka (invoice termin `down_payment`) | C2, A5 | none | disetujui 27/11 (C2) |
+| Pemilik boleh menyetujui SPH/retur miliknya sendiri, dengan audit | A1 (b), A2 | aturan | disetujui 27/11 (K1) |
+| Gudang diberi hak baca SO | B4 | none (hak) | disetujui 27/11 (B4) |
 | Draf invoice tanpa nomor (nomor saat terbit) atau ubah teks "Draf (belum bernomor)" | A8 | aturan | usulan |
 | Isi `orders.company_id` dan `lead_id` dari SPH | Temuan dokumen ini | aturan | usulan |
 | Tolak kwitansi Rp 0 di validasi API | M02 D4 | aturan | usulan |

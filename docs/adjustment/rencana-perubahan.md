@@ -35,7 +35,7 @@ Rincian setiap butir ada di file sumber yang disebut.
 | K11 | Pemilik modul yang belum jelas: `document`, `notification`, `webhook`, `company`, `location`, `src/shared`, `src/http`, deploy/CI | `lintas-modul/di-luar-scope.md` | Kedua programmer | Rapat 27/11: dipegang bersama; setiap perubahan wajib diberitahukan ke programmer lain lewat PR |
 | K12 | Hapus lapisan organisasi (satu perusahaan, role tidak per organisasi) | `lembar-keputusan-rapat.md` K12 | Pemilik + O (M12) | Diputuskan programmer B 27/11: (b) bertahap (1 sembunyikan pemilih organisasi, 2 role ke tingkat pengguna, 3 hapus `organization_id`, ADR baru). Disetujui Pemilik 27/11 |
 | K13 | Login: web-admin dan portal karyawan email/username + kata sandi (Google dihapus; karyawan diundang, lalu mengganti kata sandi); portal pelanggan dengan Google, satu jenis akun (OA4) | K13 | Pemilik + O (M12) + B (portal M07) | Diputuskan programmer B 27/11: (a), portal karyawan juga tanpa Google (karyawan diundang), pelanggan satu jenis akun (OA4). Disetujui Pemilik 27/11 |
-| K2c | Role Pembelian dipakai sekarang atau tidak | K2c | Pemilik | Diputuskan programmer B 27/11: (a) tidak dipakai. Menunggu konfirmasi Pemilik |
+| K2c | Role Pembelian dipakai sekarang atau tidak | K2c | Pemilik | Diputuskan programmer B 27/11: (a) tidak dipakai. Disetujui Pemilik 27/11 |
 | K2d | Akuntan digabung ke Keuangan atau Bella diberi dua role | K2d | Pemilik + O | Diputuskan programmer B 27/11: (a) gabung di kode (`erp-permissions.ts`, wilayah Oki); Bella melihat gaji dan rekening karyawan. Disetujui Pemilik 27/11 |
 
 Status di atas diperbarui 2026-11-27 sesuai keputusan tanya-jawab
@@ -47,7 +47,7 @@ OA1–OA7, OB7/OB8, OD1/OD2, OE1, OG1) ada di
 
 | No | Perubahan | Sumber | Prioritas | Perlu keputusan |
 |---|---|---|---|---|
-| B-1 | Aturan persetujuan bersama sesuai K1 di PR, PO, retur, SPH, retur penjualan, cuti/lembur, penyesuaian stok; tombol Setujui untuk Pemilik. Dikerjakan **setelah L-1** (audit dalam transaksi) | K1 | Tinggi | Diputuskan programmer B 27/11, menunggu konfirmasi |
+| B-1 | Aturan persetujuan bersama sesuai K1 di PR, PO, retur, SPH, retur penjualan, cuti/lembur, penyesuaian stok; tombol Setujui untuk Pemilik. Dikerjakan **setelah L-1** (audit dalam transaksi) | K1 | Tinggi | Disetujui Pemilik 27/11 |
 | B-2 | Error JSON/foto di form barang (sudah terbukti karena penyimpanan file mati; uji ulang) | `uat-modul/modul-dafrin/m05` A2–A7 | Sedang | Tidak |
 | B-3 | Form barang per jenis: Komponen/Bahan/bernomor seri hanya menampilkan kolom yang relevan | M05 A2, A3, A7 | Sedang | Tidak |
 | B-4 | Batas nilai: harga, stok minimum, kapasitas rak; tampilan kapasitas 100 → 100.000 | M05 A4, A10; uji UI | Sedang | Tidak |
@@ -67,11 +67,11 @@ OA1–OA7, OB7/OB8, OD1/OD2, OE1, OG1) ada di
 | B-18 | Stok tidak pernah dipesan (reserved); pindah stok produk antar-gudang belum ada | `skema-database/inventory.md` | Sedang | Ya (cakupan) |
 | B-19 | Kolom yang tidak pernah diisi: `company_id`/`lead_id` di SO dan proyek, beberapa kolom tiket | `skema-database/sale.md`, `project.md`, `ticket.md` | Rendah | Tidak |
 | B-20 | Lanjutkan otomatisasi UAT (Playwright) untuk sisa M05 dan modul lain | `catatan-progres.md` | Rendah | Tidak |
-| B-21 | Hapus langkah "Tandai terkirim" pada PO: PO yang disetujui langsung muncul di Penerimaan Barang | K3 / B1 | Tinggi | Diputuskan programmer B 27/11, menunggu konfirmasi |
-| B-22 | SO otomatis Terkirim saat semua barang terkirim dan Selesai saat lunas; menu Uang Muka dibuka untuk pemegang hak baca invoice | K5 / C1, C2 | Sedang | Diputuskan programmer B 27/11, menunggu konfirmasi |
-| B-23 | Halaman barang dan gudang ikut hak role (B3); Gudang diberi hak baca PO dan SO (B4, hak diajukan ke Oki) | K4 / B3, B4 | Sedang | Diputuskan programmer B 27/11, menunggu konfirmasi |
-| B-24 | Portal pelanggan: satu jenis akun (tanpa tipe perorangan/perusahaan saat login), login Google dicocokkan lewat email, data perusahaan diisi di profil | K13 / OA4 | Sedang | Diputuskan programmer B 27/11, menunggu konfirmasi |
-| B-25 | Menu Tugas: teknisi dan pekerja lepas hanya melihat tugasnya sendiri | D4 | Rendah | Diputuskan programmer B 27/11, menunggu konfirmasi |
+| B-21 | Hapus langkah "Tandai terkirim" pada PO: PO yang disetujui langsung muncul di Penerimaan Barang | K3 / B1 | Tinggi | Disetujui Pemilik 27/11 |
+| B-22 | SO otomatis Terkirim saat semua barang terkirim dan Selesai saat lunas; menu Uang Muka dibuka untuk pemegang hak baca invoice | K5 / C1, C2 | Sedang | Disetujui Pemilik 27/11 |
+| B-23 | Halaman barang dan gudang ikut hak role (B3); Gudang diberi hak baca PO dan SO (B4, hak diajukan ke Oki) | K4 / B3, B4 | Sedang | Disetujui Pemilik 27/11 |
+| B-24 | Portal pelanggan: satu jenis akun (tanpa tipe perorangan/perusahaan saat login), login Google dicocokkan lewat email, data perusahaan diisi di profil | K13 / OA4 | Sedang | Disetujui Pemilik 27/11 |
+| B-25 | Menu Tugas: teknisi dan pekerja lepas hanya melihat tugasnya sendiri | D4 | Rendah | Disetujui Pemilik 27/11 |
 
 ## 3. Temuan di modul Oki (pertanyaan untuk Oki)
 

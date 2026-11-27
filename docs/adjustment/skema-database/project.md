@@ -100,7 +100,7 @@ erDiagram
 | Perpanjangan lisensi: jangan pindahkan kunci sebelum periode baru mulai; hitung masa dengan tahun kalender | Temuan M03 no. 1–2 | aturan | menunggu keputusan |
 | Kunci `code`/`source` aplikasi lisensi setelah dipakai | Temuan M03 no. 13 | aturan | menunggu keputusan |
 | Catat aktivasi manual kontrak di `license_events` | Temuan M03 no. 10 | aturan (`event_type` mungkin perlu nilai baru) | usulan |
-| Admin diberi hak baca proyek | D3 | none (hak) | menunggu keputusan |
+| Admin diberi hak baca proyek | D3 | none (hak) | tidak berlaku (role Admin dihapus, 27/11) |
 | Isian tenggat tugas di form | Temuan M07 no. 10 | none | usulan |
 | Putuskan tabel target (laporan harian, milestone, KPI, dll.) | S6 | tabel | menunggu keputusan |
 | Hapus `lead_reference` atau pakai; rapikan catatan dbml penomoran | Temuan dokumen ini | none (dokumen) | usulan |

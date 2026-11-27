@@ -52,7 +52,7 @@ Pemilik (`owner`) memegang semua hak; Admin aplikasi (tanda `admin` di
 | `member` | Anggota | Agus, Jamil, Fahri, Bilal, Dafrin, Oki → Dafrin, Oki (lembar: "Hapus") | Dasbor | — | — | — | — | — |  (jawaban programmer B 27/11) |
 | Lainnya (`sales_manager`/Penjualan, `customer_service`, `marketing`) | | Agus MD, Bilal | Kartu sesuai hak | Ajukan peminjaman (⚠️ form tidak bisa dipakai) | — | — | — | — | Penjualan digabung (K2b, jawaban programmer B 27/11) |
 
-Diperbarui 2026-11-27 sesuai keputusan tanya-jawab: kolom Keputusan diisi dari lembar rapat bagian 0 (menunggu konfirmasi Pemilik dan Oki).
+Diperbarui 2026-11-27 sesuai keputusan tanya-jawab: kolom Keputusan diisi dari lembar rapat bagian 0 (disetujui Pemilik 27/11; tinjauan Oki di PR #171).
 
 **Portal karyawan (`apps/web-employee`) tidak memakai role.** Syaratnya: punya data
 karyawan hidup di `human_resource.employees` dan **bukan** pemegang role aplikasi
@@ -97,7 +97,7 @@ Keputusan: ______________________
 
 ✋ `apps/backend/src/app/finance/services/receivable-adjustment.service.ts:205` (`WriteOffSelfApprovalError`).
 
-Diperbarui 2026-11-27: penghapusan piutang yang disetujui langsung dibukukan ke **beban kerugian piutang**, tanpa cadangan (OB10). Dengan K2d gabung, kolom finance dan accountant dipegang Bella; ✋ tetap berlaku (Bella ↔ Aqim). Jawaban programmer B, menunggu konfirmasi.
+Diperbarui 2026-11-27: penghapusan piutang yang disetujui langsung dibukukan ke **beban kerugian piutang**, tanpa cadangan (OB10). Dengan K2d gabung, kolom finance dan accountant dipegang Bella; ✋ tetap berlaku (Bella ↔ Aqim). Disetujui Pemilik 27/11.
 
 Keputusan: ______________________
 
@@ -116,7 +116,7 @@ Keputusan: ______________________
 
 Tidak ada ✋: pembayaran hanya mencatat `approvedBy` (`apps/backend/src/app/payment/services/payment.service.ts:150-155`), klaim biaya tidak mengecek pengaju (`apps/backend/src/app/finance/services/expense-claim.service.ts:291`), tagihan pemasok juga tidak.
 
-Diperbarui 2026-11-27: layar **bayar tagihan pemasok** dibuat, termasuk potongan PPh (OB3); tagihan manual bisa memilih akun beban (OB14); pembayaran dan klaim biaya tanpa pemeriksa kedua diterima (OB7/OB8). Jawaban programmer B, menunggu konfirmasi.
+Diperbarui 2026-11-27: layar **bayar tagihan pemasok** dibuat, termasuk potongan PPh (OB3); tagihan manual bisa memilih akun beban (OB14); pembayaran dan klaim biaya tanpa pemeriksa kedua diterima (OB7/OB8). Disetujui Pemilik 27/11.
 
 Keputusan: ______________________
 
@@ -148,7 +148,7 @@ Keputusan: ______________________
 
 ✋ `apps/backend/src/app/finance/services/employee-advance.service.ts:126` (kasbon), `:217` (verifikasi), `:235` (persetujuan). Keuangan dan Akuntan tidak punya hak `advance`/`settlement` sama sekali.
 
-Diperbarui 2026-11-27: kasbon teknisi dicairkan Aqim, diajukan dan dilihat dari portal karyawan (OB13/RO6); pertanggungjawaban satu langkah oleh Aqim (RO5); Aqim tidak mengajukan kasbon. Jawaban programmer B, menunggu konfirmasi.
+Diperbarui 2026-11-27: kasbon teknisi dicairkan Aqim, diajukan dan dilihat dari portal karyawan (OB13/RO6); pertanggungjawaban satu langkah oleh Aqim (RO5); Aqim tidak mengajukan kasbon. Disetujui Pemilik 27/11.
 
 Keputusan: ______________________
 
@@ -163,7 +163,7 @@ Keputusan: ______________________
 | Entri penyusutan manual (Inventaris → Penyusutan) | | ✓ | | | |
 | Lihat penyusutan | | ✓ | ✓ | ✓ | auditor |
 
-Diperbarui 2026-11-27: role Keuangan gabungan (Bella) **bisa membuka Aset tetap** dan laporan fiskal (OB5, K2d), jadi "⚠️ tidak bisa" di kolom accountant gugur setelah dikerjakan. Jawaban programmer B, menunggu konfirmasi.
+Diperbarui 2026-11-27: role Keuangan gabungan (Bella) **bisa membuka Aset tetap** dan laporan fiskal (OB5, K2d), jadi "⚠️ tidak bisa" di kolom accountant gugur setelah dikerjakan. Disetujui Pemilik 27/11.
 
 Keputusan: ______________________
 
@@ -182,7 +182,7 @@ Keputusan: ______________________
 
 Peminjaman **tidak** ✋ dalam praktik: lihat RO7. Penghapusan tidak mengecek pengusul (`apps/backend/src/app/inventory/services/disposal.service.ts:94-106`).
 
-Diperbarui 2026-11-27: unit wajib disetujui sebelum diserahkan (C13); penghapusan/nonaktif aset yang sedang dipinjam **ditolak** (OD6); pengembalian punya pilihan kondisi Baik/Rusak/Tidak lengkap dan unit hilang bisa menutup peminjaman (OD7); teknisi mengajukan dari daftar unit khusus (OD1); catatan servis/kondisi dilengkapi, Set Peralatan disembunyikan (OD5). Jawaban programmer B, menunggu konfirmasi.
+Diperbarui 2026-11-27: unit wajib disetujui sebelum diserahkan (C13); penghapusan/nonaktif aset yang sedang dipinjam **ditolak** (OD6); pengembalian punya pilihan kondisi Baik/Rusak/Tidak lengkap dan unit hilang bisa menutup peminjaman (OD7); teknisi mengajukan dari daftar unit khusus (OD1); catatan servis/kondisi dilengkapi, Set Peralatan disembunyikan (OD5). Disetujui Pemilik 27/11.
 
 Keputusan: ______________________
 
@@ -205,7 +205,7 @@ Keputusan: ______________________
 
 Tidak ada ✋: verifikasi hanya mencatat `verifiedBy` (`apps/backend/src/app/tax/services/tax.service.ts:322-324`). Hak `tax:create` tidak dipakai route mana pun; semua route tulis memakai `tax:update` (`m10-pajak.md` catatan 8).
 
-Diperbarui 2026-11-27: **PPh 21 otomatis belum dipakai** (OC8): pengaturan PPh 21 dimatikan, baris "Impor tabel TER" dan "Hitung ulang PPh 21" tidak dipakai, PPh 21 dihitung di luar aplikasi. Pemotongan yang sudah terbayar bisa dibatalkan dengan alasan (OC5); masa pajak tertutup read-only (OC7). Kolom accountant dipegang Bella (K2d). Jawaban programmer B, menunggu konfirmasi.
+Diperbarui 2026-11-27: **PPh 21 otomatis belum dipakai** (OC8): pengaturan PPh 21 dimatikan, baris "Impor tabel TER" dan "Hitung ulang PPh 21" tidak dipakai, PPh 21 dihitung di luar aplikasi. Pemotongan yang sudah terbayar bisa dibatalkan dengan alasan (OC5); masa pajak tertutup read-only (OC7). Kolom accountant dipegang Bella (K2d). Disetujui Pemilik 27/11.
 
 Keputusan: ______________________
 
@@ -223,7 +223,7 @@ Keputusan: ______________________
 | Lihat dan ekspor laporan keuangan | ✓ | ✓ | auditor |
 | Simpan dan aktifkan anggaran proyek (`journal:approve`) | ✓ (server; halaman butuh `project.read`) | | |
 
-Diperbarui 2026-11-27: "Siapkan periode" untuk Pemilik dan Keuangan (RO1); buka kembali hanya Pemilik (RO4); anggaran proyek bisa dibuka Keuangan gabungan (OB5). Jawaban programmer B, menunggu konfirmasi.
+Diperbarui 2026-11-27: "Siapkan periode" untuk Pemilik dan Keuangan (RO1); buka kembali hanya Pemilik (RO4); anggaran proyek bisa dibuka Keuangan gabungan (OB5). Disetujui Pemilik 27/11.
 
 Keputusan: ______________________
 
@@ -243,7 +243,7 @@ Keputusan: ______________________
 | Pengaturan penggajian | | | | hanya admin aplikasi |
 | Ubah organisasi; hapus organisasi | ✓; — | | | hapus hanya Pemilik |
 
-Diperbarui 2026-11-27: Log Audit **hanya dibaca Pemilik** (OA8); `invitation:create` dicabut dari SDM, mengundang lewat Pemilik (OA12); hapus undangan dan nonaktifkan pengguna pakai dialog konfirmasi (OA13); role organisasi Admin dan Auditor tidak dipakai/dihapus (K2). Jawaban programmer B, menunggu konfirmasi.
+Diperbarui 2026-11-27: Log Audit **hanya dibaca Pemilik** (OA8); `invitation:create` dicabut dari SDM, mengundang lewat Pemilik (OA12); hapus undangan dan nonaktifkan pengguna pakai dialog konfirmasi (OA13); role organisasi Admin dan Auditor tidak dipakai/dihapus (K2). Disetujui Pemilik 27/11.
 
 Keputusan: ______________________
 
@@ -260,7 +260,7 @@ Keputusan: ______________________
 Semua baris ini **baru kosakata hak**: halaman admin masih "Segera hadir", tidak ada
 route backend, dan schema `investor` sudah dihapus (ADR-0024). Lihat K10.
 
-Diperbarui 2026-11-27: M11 ditunda, halaman investor hanya Pemilik; hak investor di role dibiarkan sampai dibangun (K10, OE1–OE4). Jawaban programmer B, menunggu konfirmasi.
+Diperbarui 2026-11-27: M11 ditunda, halaman investor hanya Pemilik; hak investor di role dibiarkan sampai dibangun (K10, OE1–OE4). Disetujui Pemilik 27/11.
 
 Keputusan: ______________________
 
@@ -302,7 +302,7 @@ butuh orang kedua; perlu dikonfirmasi saat rapat karena rekomendasinya berbeda
 untuk kasbon); K2 = (a); K2a = Aqim SDM; K2d belum diisi, rekomendasi (b) Bella
 memegang Akuntan **dan** Keuangan.
 
-Diperbarui 2026-11-27 sesuai keputusan tanya-jawab (lembar rapat bagian 0, menunggu konfirmasi Pemilik dan Oki): K1a diganti, kasbon dan pertanggungjawaban ikut K1 dan Aqim tidak mengajukan kasbon, jurnal tetap orang kedua; RO5 satu langkah oleh Aqim; K2d **(a) gabung** (Bella memegang role Keuangan gabungan); Anggota dihapus (Dafrin dan Oki hanya Pekerja Lepas); role organisasi Admin dihapus; RO1 periode dibuat Pemilik dan Keuangan; RO4 buka kembali hanya Pemilik; OG1 absen di luar radius ditolak; K10 ditunda.
+Diperbarui 2026-11-27 sesuai keputusan tanya-jawab (lembar rapat bagian 0, disetujui Pemilik 27/11 (tinjauan Oki di PR #171)): K1a diganti, kasbon dan pertanggungjawaban ikut K1 dan Aqim tidak mengajukan kasbon, jurnal tetap orang kedua; RO5 satu langkah oleh Aqim; K2d **(a) gabung** (Bella memegang role Keuangan gabungan); Anggota dihapus (Dafrin dan Oki hanya Pekerja Lepas); role organisasi Admin dihapus; RO1 periode dibuat Pemilik dan Keuangan; RO4 buka kembali hanya Pemilik; OG1 absen di luar radius ditolak; K10 ditunda.
 
 ### 3.1 Tim dan haknya di modul Oki
 
@@ -429,7 +429,7 @@ Menu ditulis seperti di aplikasi (`packages/locales/src/id/nav.ts`). "→" berar
 10. **K10:** M11 dibangun atau ditunda? (Pemilik + Oki) *(27/11: ditunda, halaman investor hanya Pemilik; portal dan hak investor ikut ditunda, OE3/OE4)*
 11. **PPh 21:** dihitung otomatis di aplikasi? (Pemilik + Bella) *(27/11: belum dipakai, dihitung di luar aplikasi; tabel TER belum perlu, OC8)*
 
-Diperbarui 2026-11-27 (tanya-jawab ketiga): jawaban no. 4–11 dilengkapi dari lembar rapat bagian 0; statusnya jawaban programmer B, menunggu konfirmasi Pemilik dan Oki.
+Diperbarui 2026-11-27 (tanya-jawab ketiga): jawaban no. 4–11 dilengkapi dari lembar rapat bagian 0; statusnya disetujui Pemilik 27/11, tinjauan Oki di PR #171.
 
 ### 3.7 Peta bentrok persetujuan
 
@@ -509,7 +509,7 @@ Manajer Operasional, Admin, dan Auditor tidak dipakai; role tetap ada di aplikas
 10. **Peminjaman:** unit wajib disetujui sebelum diserahkan (C13); aset yang sedang dipinjam tidak bisa dihapus (OD6); pengembalian mencatat kondisi (OD7).
 11. **PPh 21 dihitung di luar aplikasi** untuk sekarang (OC8); setelan PPh 21 otomatis di penggajian dimatikan.
 
-Diperbarui 2026-11-27 (tanya-jawab ketiga): butir 9–11 ditambahkan; jawaban programmer B, menunggu konfirmasi.
+Diperbarui 2026-11-27 (tanya-jawab ketiga): butir 9–11 ditambahkan; disetujui Pemilik 27/11.
 
 #### Yang perlu dikerjakan bila disetujui
 

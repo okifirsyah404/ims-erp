@@ -85,7 +85,7 @@ erDiagram
 
 | Perubahan | Sumber | Dampak ke schema | Status |
 |---|---|---|---|
-| Persetujuan Pemilik atas dokumennya sendiri dicatat di audit (bukan di `documents`) | A1 (b), 3.8 butir 2 | none (audit di `audit.audit_logs`) | menunggu keputusan |
+| Persetujuan Pemilik atas dokumennya sendiri dicatat di audit (bukan di `documents`) | A1 (b), 3.8 butir 2 | none (audit di `audit.audit_logs`) | disetujui 27/11 (K1, OA7) |
 | Pakai atau buang `tags`/`tag_links`/`settings` dan status register yang tidak terpakai | temuan | tabel/aturan | usulan |
 | Render gambar tanda tangan user ke tata letak cetak | catatan dbml `user_signatures` | none | usulan |
 | Tutup ERP-0085 (UI dan bukti exit) | backlog | none | direncanakan |

@@ -74,7 +74,7 @@ Kode yang diketik pengguna dipakai apa adanya. Kode hasil generate harus muat di
 
 | Perubahan | Sumber | Dampak ke schema | Status |
 |---|---|---|---|
-| Admin Kantor diberi hak tambah/ubah pelanggan | C3 (`bahan-keputusan.md`) | none (hak role) | menunggu keputusan (3.3: tidak relevan selama Admin = Pemilik) |
+| Admin Kantor diberi hak tambah/ubah pelanggan | C3 (`bahan-keputusan.md`) | none (hak role) | tidak berlaku (role Admin dihapus, 27/11) |
 | Wajib ganti kata sandi bawaan saat login pertama portal, login dengan username, UI pemilik/staf | ERP-0115 | aturan (kolom `portal_password_change_required` sudah ada) | direncanakan |
 | Ubah alamat dan tampilkan jalur wilayah | Temuan UAT M02 | none (UI/endpoint) | usulan |
 | Peringatan saat "Perusahaan terdaftar" dipilih tanpa perusahaan | Temuan UAT M02 | aturan (validasi form) | usulan |

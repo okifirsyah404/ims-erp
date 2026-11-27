@@ -1306,3 +1306,40 @@ Perubahan di `menu-dan-form-per-role.md`:
   - Sisanya tetap usulan.
 
 Tidak ada perubahan kode.
+
+## 2026-11-27 - Status catatan disamakan dengan keputusan rapat
+
+Pemeriksaan seluruh `docs/adjustment/`: sekitar 130 baris masih berstatus
+"menunggu keputusan" atau "menunggu konfirmasi", padahal keputusannya sudah
+disetujui 27/11.
+
+- **Ganti otomatis (53 tempat).** Frasa "diputuskan programmer B 27/11,
+  menunggu konfirmasi …" diganti menjadi "disetujui Pemilik 27/11", dengan
+  catatan "tinjauan Oki di PR #171" bila menyangkut Oki. Berlaku di
+  `rencana-perubahan*.md`, `validasi-konsep-*.md`, `skema-database/`,
+  `lintas-modul/`, dan diagram.
+- **Ganti per baris (51 baris).** Status "menunggu keputusan" di
+  `skema-database/` (audit, auth, customer, document, finance,
+  human_resource, inventory, notification, payment, procurement, product,
+  project, sale, ticket, warehouse), `lintas-modul/` (autentikasi, dokumen,
+  notifikasi, portal), `bahan-keputusan*.md`, dan diagram. Isinya diganti
+  dengan nomor keputusannya:
+  - C3, D3, dan M07 C12 ditandai "tidak berlaku" karena role Admin dihapus.
+  - Pemilik `document`/`notification`/`webhook` mengikuti K11.
+  - Tautan gudang–organisasi (ADR-0010) mengikuti K12 tahap 3.
+- **Diagram kasbon** (`sekarang-vs-sesudah.md`): pencairan dipindah dari
+  Bella ke Aqim, sesuai OB13 ("dicairkan Aqim"). Aktor Bella yang tidak
+  terpakai di diagram itu dihapus. Catatan RO19 di `sekarang-modul-oki.md`
+  disesuaikan dengan K13.
+- **Pemeriksa Mermaid:** `sekarang-vs-sesudah.md` 22 blok, 0 error;
+  `sekarang-modul-oki.md` 15 blok, 0 error.
+- **Yang memang belum diputuskan** (dibahas berikutnya):
+  - celah nomor (`penomoran-dokumen.md` temuan 6);
+  - ADR-0020;
+  - tarif dan pembulatan pajak final (ERP-0016);
+  - temuan M03 no. 1, 2, dan 13;
+  - tabel tanpa alur S6 (`sale`, `project`, templat tiket);
+  - aplikasi pilot lisensi T24;
+  - E3 (`security-and-access.md`, untuk Oki).
+
+Tidak ada perubahan kode.

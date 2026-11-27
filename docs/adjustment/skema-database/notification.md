@@ -72,7 +72,7 @@ Tidak ada `code_numberings`. `push_notification_templates.code` adalah kode keja
 
 | Perubahan | Sumber | Dampak ke schema | Status |
 |---|---|---|---|
-| Notifikasi "menunggu persetujuan" / "disetujui pembuat (Pemilik)" bila A1 diterapkan | A1 (b), 3.8 | none (baris template baru di seeder) | menunggu keputusan |
+| Notifikasi "menunggu persetujuan" / "disetujui pembuat (Pemilik)" bila A1 diterapkan | A1 (b), 3.8 | none (baris template baru di seeder) | K1 disetujui 27/11; perlu tidaknya template baru ditentukan saat desain K1 |
 | Rapikan kosakata status/kanal yang tidak terpakai atau mulai memakainya (mis. `failed`) | temuan | aturan | usulan |
 | Seragamkan awalan kode template dengan nama modul (`sale.*`, `human_resource.*`) | temuan | none (data) | usulan |
 | Tutup ERP-0086 | backlog | none | direncanakan |

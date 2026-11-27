@@ -184,18 +184,18 @@ Kode `chart_of_accounts`, `cost_centers`, `payment_terms`, `cash_bank_accounts` 
 
 | Perubahan | Sumber | Dampak ke schema | Status |
 |---|---|---|---|
-| Pemilik boleh menyetujui sendiri (tercatat audit): tentukan apakah berlaku juga untuk jurnal manual, write-off, kasbon, pertanggungjawaban | A1 `bahan-keputusan.md`, 3.8; temuan di atas | aturan (service + audit; kolom `approved_by` sudah ada) | menunggu keputusan |
+| Pemilik boleh menyetujui sendiri (tercatat audit): tentukan apakah berlaku juga untuk jurnal manual, write-off, kasbon, pertanggungjawaban | A1 `bahan-keputusan.md`, 3.8; temuan di atas | aturan (service + audit; kolom `approved_by` sudah ada) | disetujui 27/11 (K1a): kasbon dan pertanggungjawaban ikut K1; jurnal manual tetap orang kedua; write-off tetap tidak boleh menyetujui pengajuan sendiri |
 | Pembayaran dan gaji tanpa pemeriksa kedua; Bella memeriksa lewat jurnal dan rekonsiliasi | R6 (3.2), 3.7 | none | usulan |
 | Tutup buku akhir tahun ke laba ditahan 3-2000 (idempoten per tahun) | ERP-0131 | aturan (mungkin kolom penanda di `journal_entries`/`settings`) | direncanakan |
 | Tes khusus jejak audit buka ulang periode | ERP-0017 | none | direncanakan |
 | Laporan dan rekap pajak: gerbang keuangan D12/D14/D18 | ERP-0016 | none | menunggu keputusan |
 | `journal_templates` dibangun (jurnal berulang) | dbml target | tabel | usulan |
 | Belum dibangun: alokasi nota kredit ke invoice lain dan refund, nota kredit pemasok (GR/IR), impor laporan settlement gateway, kapitalisasi dari penerimaan barang, peringatan GR/IR > 30 hari, blokir anggaran per akun/bulan | `docs/architecture/modules/finance.md` "Not built" | kolom/tabel (sebagian) | usulan |
-| Kontrak laba periode terkunci untuk M11 bagi hasil/investor (`ExportedProfitService`) sudah ada; modul M11 belum | ERP-0153, ERP-0023 | none di finance | menunggu keputusan (skema bagi hasil dari Pemilik) |
+| Kontrak laba periode terkunci untuk M11 bagi hasil/investor (`ExportedProfitService`) sudah ada; modul M11 belum | ERP-0153, ERP-0023 | none di finance | ditunda (K10, disetujui 27/11) |
 | Rapikan catatan dbml `code_type`, `finance.settings`, komentar Drizzle, angka di `module-ownership.md` | temuan | none (dokumen) | usulan |
-| Write-off piutang langsung ke beban kerugian piutang, tanpa cadangan (akun cadangan 1-1390 tidak lagi didebit oleh write-off) | OB10 (jawaban programmer B 27/11) | aturan (`receivable-adjustment.service.ts`, `posting_rules` role untuk write-off) | diputuskan, menunggu konfirmasi |
-| Layar pembayaran pemasok (alokasi ke `supplier_bills`/`ap_open_items`, potongan PPh) | OB3 (jawaban programmer B 27/11) | none (backend `payment` sudah mendukung) | diputuskan, menunggu konfirmasi |
-| Tagihan pemasok manual memilih akun beban (bukan selalu 6-2900) | OB14 (jawaban programmer B 27/11) | mungkin kolom akun di baris tagihan manual; dicek ke `docs.dbml` sebelum dikerjakan | diputuskan, menunggu konfirmasi |
-| Nilai `fixed_asset_books`/`asset_depreciations` mengikuti aturan sen di penyimpanan, rupiah di layar | OD3 (jawaban programmer B 27/11), ADR-0002 | none | diputuskan, menunggu konfirmasi |
-| Data aset tetap: nilai tetap di `finance`, fisik di `inventory` (tanpa schema `assets`) | OD8 (jawaban programmer B 27/11) | none | diputuskan, menunggu konfirmasi |
-| Kasbon dan pertanggungjawaban ikut K1; pertanggungjawaban satu langkah oleh Aqim; jurnal manual tetap orang kedua | K1a/X1, RO5 (jawaban programmer B 27/11) | aturan (`employee-advance.service.ts`) | diputuskan, menunggu konfirmasi |
+| Write-off piutang langsung ke beban kerugian piutang, tanpa cadangan (akun cadangan 1-1390 tidak lagi didebit oleh write-off) | OB10 (jawaban programmer B 27/11) | aturan (`receivable-adjustment.service.ts`, `posting_rules` role untuk write-off) | disetujui Pemilik 27/11 |
+| Layar pembayaran pemasok (alokasi ke `supplier_bills`/`ap_open_items`, potongan PPh) | OB3 (jawaban programmer B 27/11) | none (backend `payment` sudah mendukung) | disetujui Pemilik 27/11 |
+| Tagihan pemasok manual memilih akun beban (bukan selalu 6-2900) | OB14 (jawaban programmer B 27/11) | mungkin kolom akun di baris tagihan manual; dicek ke `docs.dbml` sebelum dikerjakan | disetujui Pemilik 27/11 |
+| Nilai `fixed_asset_books`/`asset_depreciations` mengikuti aturan sen di penyimpanan, rupiah di layar | OD3 (jawaban programmer B 27/11), ADR-0002 | none | disetujui Pemilik 27/11 |
+| Data aset tetap: nilai tetap di `finance`, fisik di `inventory` (tanpa schema `assets`) | OD8 (jawaban programmer B 27/11) | none | disetujui Pemilik 27/11 |
+| Kasbon dan pertanggungjawaban ikut K1; pertanggungjawaban satu langkah oleh Aqim; jurnal manual tetap orang kedua | K1a/X1, RO5 (jawaban programmer B 27/11) | aturan (`employee-advance.service.ts`) | disetujui Pemilik 27/11 |

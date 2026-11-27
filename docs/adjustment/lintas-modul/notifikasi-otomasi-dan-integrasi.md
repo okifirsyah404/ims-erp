@@ -155,8 +155,8 @@ flowchart LR
 
 | Perubahan | Sumber | Dampak | Status |
 |---|---|---|---|
-| Tetapkan pemilik `notification` dan `webhook` | temuan 1 | Keputusan tim | menunggu keputusan |
+| Tetapkan pemilik `notification` dan `webhook` | temuan 1 | Keputusan tim | diputuskan 27/11 (K11): dipegang bersama, perubahan lewat PR dan diberitahukan |
 | Asisten WhatsApp ERP lewat Meta Cloud API (bukan hanya WAHA) | memori M04 2026-11-16, risiko blokir WAHA | Adapter baru di `automation/adapters/`, provider webhook baru | usulan |
-| Event outbox baru bila alur berubah (misalnya SO Terkirim/Selesai, C1) | `../bahan-keputusan.md` C1 | `outbox.contract.ts` + workflow n8n | menunggu keputusan |
+| Event outbox baru bila alur berubah (misalnya SO Terkirim/Selesai, C1) | `../bahan-keputusan.md` C1 | `outbox.contract.ts` + workflow n8n | C1 disetujui 27/11; perlu tidaknya event baru ditentukan saat desain B-22 |
 | Pastikan `SCHEDULER_ENABLED=true` di server dan didokumentasikan di runbook | temuan 4 | Konfigurasi deploy (Oki) | usulan |
 | Konfirmasi ke Pemilik: tetap dua gateway atau pakai satu | temuan 3 | Bisa mengurangi pengujian | usulan |

@@ -9,7 +9,7 @@ Mermaid berurutan:
   ditandai di `Note`.
 - **Sesudah (usulan)**: alur menurut **jawaban programmer B 27/11**
   (bagian 0 [`../lembar-keputusan-rapat.md`](../lembar-keputusan-rapat.md)),
-  menunggu konfirmasi Pemilik dan Oki. Butir yang belum dijawab memakai
+  disetujui Pemilik 27/11 (tinjauan Oki di PR #171). Butir yang belum dijawab memakai
   rekomendasi lembar rapat.
 
 Di bawah setiap pasangan ada daftar singkat **yang perlu diubah di kode**
@@ -45,7 +45,7 @@ penerimaan barang hanya untuk PO `sent`/`partially_received`
 | Label | Arti |
 |---|---|
 | **usulan** | Rekomendasi di catatan, belum ada isian di lembar rapat |
-| **jawaban programmer B 27/11** | Dijawab programmer B lewat tanya-jawab 2026-11-27 (lembar rapat bagian 0), menunggu konfirmasi Pemilik/Oki |
+| **jawaban programmer B 27/11** | Dijawab programmer B lewat tanya-jawab 2026-11-27 (lembar rapat bagian 0), disetujui Pemilik 27/11 |
 | **menunggu keputusan** | Ada beberapa pilihan, belum ada isian, atau isiannya bertentangan dengan rekomendasi |
 
 **Susunan role yang dipakai di diagram Sesudah** (K2 = (a), K2a, K2b (a), K2c (a),
@@ -706,8 +706,8 @@ mengajukan kasbon**, jadi titik macet kasbon buatan Aqim tidak ada lagi.
 | Keputusan | Isi | Status |
 |---|---|---|
 | RO5 / X2 | Pertanggungjawaban satu langkah oleh Aqim; aturan verifikator ≠ penyetuju dihapus | jawaban programmer B 27/11: satu langkah oleh Aqim (mengganti rekomendasi lembar: Bella memverifikasi) |
-| RO6 | Halaman kasbon dan pertanggungjawaban untuk pengaju, usul di portal karyawan | menunggu keputusan |
-| OB13 | Keuangan (Bella) diberi hak `advance` untuk mencairkan, pengaju memilih dirinya sendiri | menunggu keputusan (rekomendasi (a)) |
+| RO6 | Halaman kasbon dan pertanggungjawaban untuk pengaju, usul di portal karyawan | disetujui 27/11: halaman kasbon di portal karyawan |
+| OB13 | Kasbon dicairkan **Aqim** (bukan Bella); pengaju memilih dirinya sendiri | disetujui 27/11 (mengganti rekomendasi lama: Bella diberi hak `advance`) |
 | K1a / OB9 / X1 | Kasbon dan pertanggungjawaban ikut K1; jurnal manual tetap butuh orang kedua; Aqim tidak mengajukan kasbon | jawaban programmer B 27/11 (mengganti isian "B") |
 
 
@@ -739,7 +739,6 @@ sequenceDiagram
 sequenceDiagram
     actor T as Teknisi - Fahri, Jamil, Agus, Alex, Ade
     actor W as Pemilik - Aqim
-    actor B as Keuangan (gabungan Akuntan) - Bella
     participant EP as Portal karyawan
     participant FN as Server (finance)
     participant AU as Log Audit
@@ -747,7 +746,7 @@ sequenceDiagram
     T->>EP: Kasbon: ajukan untuk diri sendiri (RO6)
     EP->>FN: simpan kasbon
     W->>FN: setujui kasbon (bukan pengaju)
-    B->>FN: cairkan lewat pembayaran (hak advance, OB13 menunggu keputusan)
+    W->>FN: cairkan lewat pembayaran (OB13, 27/11)
     T->>EP: Pertanggungjawaban: ajukan dengan bukti
     W->>FN: periksa dan setujui dalam satu langkah (RO5)
     FN->>AU: tercatat
@@ -784,7 +783,7 @@ belum disetujui (M06 C13).
 |---|---|---|
 | OD1 / X7 | Daftar unit pinjam khusus (endpoint pilihan unit tersedia yang dijaga `asset_borrowing:create`) | jawaban programmer B 27/11: (a) daftar unit khusus |
 | OD2 / K7a | Pembuat tidak boleh menyetujui, kecuali Pemilik dengan audit | jawaban programmer B 27/11: OD2 diperbaiki |
-| C13 | Serah tanpa persetujuan hanya untuk Pemilik | menunggu keputusan |
+| C13 | Serah tanpa persetujuan hanya untuk Pemilik | disetujui 27/11 |
 
 ### Sekarang
 
@@ -828,7 +827,7 @@ sequenceDiagram
     end
     G->>SV: serahkan unit yang sudah disetujui
     G->>SV: serahkan tanpa persetujuan
-    SV-->>G: ditolak, hanya Pemilik (C13, menunggu keputusan)
+    SV-->>G: ditolak, hanya Pemilik (C13, disetujui 27/11)
     G->>SV: kembalikan dengan kondisi dan catatan, tutup (OD7)
 ```
 
@@ -964,7 +963,7 @@ Keterangan: 🔴 macet (aplikasi menolak), 🟡 berjalan tanpa orang kedua,
 🟢 ada orang kedua atau persetujuan Pemilik dengan audit, ⚪ belum ada.
 
 **Ringkasan sesudah:** semua 🔴 menjadi 🟢 **dengan syarat** K1, RO1, RO5 (sudah
-dijawab programmer B 27/11, menunggu konfirmasi) dan audit ikut transaksi
+disetujui Pemilik 27/11) dan audit ikut transaksi
 (OA5–OA7) dikerjakan lebih dulu. Sisa 🔴 kasbon buatan Aqim hilang karena Aqim
 tidak mengajukan kasbon dan kasbon ikut K1 (X1).
 
