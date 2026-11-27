@@ -1,5 +1,9 @@
 # Roles, Permissions and Endpoints
 
+> **Background, may be stale.** This page describes the **current code** (17 organization roles, organizations) until task P7-4 changes the role grants (merged Sales, Finance + Accountant, Admin/Member/Auditor removed, extended Freelancer; see `docs/adjustment/4-rencana-kerja/rencana-langkah-7.md`). Do not use it as the target role design. The working scope is
+> `docs/adjustment/` (target behaviour approved by the owner) and the code
+> (current behaviour); see `AGENTS.md` "Source of truth".
+
 Who may call which backend endpoint, and why. The first half of this page is
 written by hand. The second half (role list, grants per role, every endpoint
 with its guard and the roles that pass it) is **generated from code** by

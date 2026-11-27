@@ -1,3 +1,5 @@
+> **Contract scope reference only.** Use these plans to check what the contract (v5.1) includes or excludes; current decisions, designs and priorities live in `docs/adjustment/` (see `AGENTS.md` "Source of truth").
+
 > Historical plan written before ADR-0024; module and schema names below are the pre-refactor ones (see docs/database/module-ownership.md for the current mapping).
 
 # ERP Module Plans — v5.1 Baseline

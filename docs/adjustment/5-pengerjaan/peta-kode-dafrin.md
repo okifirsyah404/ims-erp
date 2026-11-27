@@ -73,6 +73,7 @@ migrasi, test, dan cek UAT. Sumber tugas:
 | [M12-16-D](#m12-16-d-ekspor-daftar-utama-modul-dafrin-tinggi-kf-r5-bagian-pemilik-modul) | Ekspor daftar utama modul Dafrin | Tinggi | Langkah 8, setelah pola Oki |
 | [L-12-D](#l-12-d-templat-impor-data-awal-modul-dafrin-tinggi-nm-1-nm-2) | Templat impor data awal modul Dafrin | Tinggi | Langkah 8–9 |
 | [B-14](#b-14-masa-perpanjangan-lisensi-dan-kode-aplikasi-sedang-t-2-t-3) | Perpanjangan lisensi + kode aplikasi | **Sedang** (diminta masuk peta) | Langkah 9 |
+| [L-18](#l-18-dokumentasi-api-request-body-dan-response-body-per-endpoint-tinggi-untuk-endpoint-eksternal-bersama-nm-8-t32) | Dokumentasi API request/response | Tinggi (eksternal) | Setelah P7-6 |
 
 **Tidak dipetakan di sini (bukan pekerjaan Dafrin):** L-1 (= P7-1), P7-2,
 P7-4, L-4/L-10 (= P7-7), L-11, L-13, L-14 (Oki atau bersama tanpa kode
@@ -1600,5 +1601,48 @@ Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus 
 Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
 Test: apps/backend/test/unit/licensing.service.test.ts, license-api.service.test.ts (jalankan hanya ini saat iterasi).
 Selesai bila semua butir UAT di entri B-14 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/B-14.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
+### L-18 Dokumentasi API: request body dan response body per endpoint (Tinggi untuk endpoint eksternal, bersama, NM-8, T32)
+
+- **Seharusnya:**
+  - Dokumen OpenAPI di `/docs` memuat **request body** (skema zod yang sama dengan validasi) dan **response body** (amplop `ok`/`okPaginated`/`errorEnvelope` + bentuk `data`) untuk setiap endpoint.
+  - Didahulukan **endpoint eksternal** yang diserahkan di T32 ("dokumentasi endpoint dan callback"): `/webhooks/{xendit,singapay,whatsapp}`, `/projects/api/v1/licenses`, `/projects/public/v1`, `/products/public/v1/catalog`, `/sales/public/v1/render/quotations`, `/documents/public/v1/shares`, `/customers/portal/v1`, lalu endpoint baru portal pesanan (B-38) dan investor (M11-7).
+  - Endpoint internal web-admin menyusul bertahap: setiap tugas yang menyentuh controller ikut melengkapi request/response-nya.
+  - `docs/architecture/api/licensing.yaml` diganti tautan ke dokumen OpenAPI yang dibuat dari kode (tidak ada dua sumber).
+- **Sekarang:**
+  - `@elysia/openapi` dipasang di `apps/backend/src/app/app.ts:77` (`path: '/docs'`), tetapi isinya terutama skema Better Auth.
+  - Helper `requestBodyDoc` (`apps/backend/src/http/openapi.ts:29`) baru dipakai di `app/customer/controllers/portal.controller.ts`; dari 95 controller **tidak ada yang mendeklarasikan skema response**, jadi dokumen API belum punya response body.
+  - `apps/api-docs/` di komputer lokal hanya berisi `dist/` dan `node_modules/` (tidak ada di repo).
+- **File yang diubah:**
+
+| Lapisan | Path | Perubahan |
+|---|---|---|
+| backend (bersama) | `apps/backend/src/http/openapi.ts` | Tambah helper `responseDoc(dataSchema, { paginated? })` yang membungkus skema `data` dengan amplop dari `src/http/response.ts`; dokumentasikan `errorEnvelope` sekali |
+| backend (bersama) | `apps/backend/src/http/response.ts` | Ekspor skema zod amplop (tanpa mengubah perilaku) |
+| backend | `apps/backend/src/app/webhook/controllers/webhook.controller.ts`, `apps/backend/src/app/project/controllers/public-website.controller.ts`, `apps/backend/src/app/product/controllers/public-catalog.controller.ts`, `apps/backend/src/app/sale/controllers/quotation-render.controller.ts`, `apps/backend/src/app/document/controllers/document.controller.ts`, `apps/backend/src/app/customer/controllers/portal.controller.ts`, `apps/backend/src/app/project/controllers/license-api.controller.ts` | Pasang `requestBodyDoc` + `responseDoc` di setiap rute eksternal |
+| backend | `apps/backend/src/app/app.ts` | Gabungkan dokumen modul ke `/docs` (bukan hanya Better Auth); judul, versi, server |
+| docs | `docs/architecture/api/licensing.yaml` | Dihapus, diganti tautan ke `/docs` |
+| test | `apps/backend/test/unit/openapi-docs.test.ts` (baru) | Memastikan setiap rute eksternal punya request (bila ada body) dan response di dokumen OpenAPI |
+
+- **Skema/migrasi:** tidak.
+- **Test:** `apps/backend/test/unit/openapi-docs.test.ts` (baru).
+- **UAT:**
+  - Buka `/docs`: setiap endpoint eksternal menampilkan contoh request body dan response body (sukses dan galat).
+  - Contoh response `/projects/api/v1/licenses` sama dengan respons nyata.
+  - Rute tanpa body tidak menampilkan request body palsu.
+- **Bergantung pada:** P7-6 (amplop galat dengan kunci terjemahan dan semua kesalahan validasi), agar response galat yang didokumentasikan sudah final.
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan L-18 Dokumentasi API: request body dan response body per endpoint.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian L-18 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/backend/src/http/openapi.ts, apps/backend/src/http/response.ts, apps/backend/src/app/app.ts, controller eksternal yang disebut di tabel.
+Mulai dari endpoint eksternal; jangan mengubah perilaku endpoint, hanya dokumentasinya.
+Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Test: apps/backend/test/unit/openapi-docs.test.ts (baru; jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri L-18 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/L-18.md dari templat uat-pengerjaan.md.
 Laporkan hanya: file yang diubah dan hasil test.
 ```

@@ -1,5 +1,9 @@
 # Architecture & Technical Documentation
 
+> **Background, may be stale.** Several pages here predate the 2026-11-27/28 decisions (schema and role counts, organizations, security-and-access). They are corrected through tasks B-28/T-6. The working scope is
+> `docs/adjustment/` (target behaviour approved by the owner) and the code
+> (current behaviour); see `AGENTS.md` "Source of truth".
+
 Technical, evidence-based documentation for the IMS/Entragate ERP. Planning and
 status live in `docs/plan/`; agent skills inventory in `.agents/docs/skills.md`.
 

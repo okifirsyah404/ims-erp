@@ -135,6 +135,7 @@ OA1–OA7, OB7/OB8, OD1/OD2, OE1, OG1) ada di
 | L-15 | **Pelatihan tatap muka** per kelompok role; **panduan lengkap per modul** dan **panduan penggunaan dari awal sampai akhir** | NM-7, NM-8 (T18, T32) | Bersama | Sebelum rilis (Diputuskan 28/11) |
 | L-16 | **Rombak seeder uji** mengikuti susunan role K2 dan akun per orang; data uji per alur (penjualan, pembelian, proyek, tiket, lisensi, aset, SDM kantor/lapangan/freelance, keuangan, investor); deterministik dan idempoten. Rincian `3-rancangan/rancangan-data-seeder.md` | Permintaan programmer B 28/11 | Bersama (role: Oki; data modul: pemilik modul) | Tinggi, akhir langkah 7 setelah P7-4 |
 | L-17 | **Informasi penggunaan** (RF-28–RF-34) diterapkan bertahap pada menu, halaman, tabel, dan form yang disentuh setiap tugas; menu baru (RM1) sekaligus dengan keterangan | Permintaan programmer B 28/11 | Bersama | Ikut setiap tugas (A-11) |
+| L-18 | **Dokumentasi API**: request body dan response body per endpoint di OpenAPI `/docs` (helper `responseDoc`), endpoint eksternal dulu (webhook, API lisensi, API website, katalog, render SPH, tautan berbagi, portal pelanggan), internal menyusul bertahap; `docs/architecture/api/licensing.yaml` diganti tautan ke `/docs`. Rincian `5-pengerjaan/peta-kode-dafrin.md#l-18` | Permintaan programmer B 28/11; T32 | Bersama (`src/http`; controller per pemilik modul) | Tinggi untuk eksternal (setelah P7-6), internal ikut setiap tugas |
 
 ## 5. Dokumen yang perlu dirapikan (setelah izin pemiliknya)
 

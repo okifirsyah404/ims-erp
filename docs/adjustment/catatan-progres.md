@@ -2115,3 +2115,37 @@ sesi, tetap bahasa Inggris; `docs/adjustment/` tetap bahasa Indonesia sesuai
 arahan.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - Lingkup AI hanya docs/adjustment; tanda dokumen usang; dokumentasi API (L-18)
+
+Kekhawatiran programmer B: agen AI bisa ikut membaca dokumen usang
+(contohnya `docs/role-permission.md`) lalu salah arah. Programmer B ingin
+lingkup kerja hanya `docs/adjustment/`.
+
+- **`AGENTS.md`:**
+  - Urutan baca diganti: `docs/adjustment/README.md` → aturan
+    `5-pengerjaan/` dan entri peta kode → `runbook.md` → `progress.md`.
+  - Bagian baru **"Source of truth"**:
+    - `docs/adjustment/` menentukan perilaku **target**;
+    - kode menentukan perilaku **sekarang**;
+    - `docs.dbml` menentukan persistensi.
+  - Role, alur, endpoint, dan bentuk request/response **tidak boleh** diambil
+    dari `docs/architecture/`, `docs/role-permission.md`,
+    `docs/user-guide/`, atau `docs/plan/erp-module-plans/`.
+- **Tanda "Background, may be stale"** di bagian atas:
+  - `docs/role-permission.md`: menggambarkan kode sekarang (17 role) sampai
+    P7-4; tanda berada di bagian tulisan tangan, tidak tertimpa generator.
+  - `docs/architecture/README.md`.
+  - `docs/user-guide/README.md`.
+- **Tanda "Contract scope reference only"** di
+  `docs/plan/erp-module-plans/README.md`.
+- **Dicek di kode:**
+  - OpenAPI `/docs` (`app.ts:77`) terutama berisi skema Better Auth.
+  - `requestBodyDoc` baru dipakai di `portal.controller.ts`.
+  - Dari 95 controller, **0** yang mendeklarasikan skema response.
+  - `apps/api-docs/` hanya ada di komputer lokal (`dist`, `node_modules`).
+- **Tugas L-18 (baru):** dokumentasi API, request dan response body per
+  endpoint, eksternal dulu (kontrak T32). Tercatat di `rencana-perubahan.md`
+  dan `peta-kode-dafrin.md` (entri + prompt).
+
+Tidak ada perubahan kode.

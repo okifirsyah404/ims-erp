@@ -5,24 +5,29 @@ maintenance, projects, subscriptions). Monorepo: Bun workspaces + Turborepo,
 Elysia backend (`apps/backend`), React/TanStack web admin, Better Auth,
 Drizzle ORM (Relational v2) on PostgreSQL.
 
-This file is short on purpose. Detailed, evidence-based answers live in
-`docs/architecture/` (tech) and `docs/plan/` (planning/status). Read in this order:
+This file is short on purpose. **Working scope: `docs/adjustment/`** (Indonesian;
+decisions approved by the owner, designs, step plan, implementation rules).
+Read in this order:
 
-1. `docs/architecture/README.md` — navigation and resume reading order (index)
-2. `docs/architecture/project-audit.md` — what actually exists and what works
-3. `docs/architecture/stack-compatibility.md` — exact resolved versions and risks
-4. `docs/plan/progress.md` — where work stopped; the next executable task
-5. `docs/architecture/architecture.md` — boundaries you must not violate
-6. `docs/architecture/runbook.md` — commands before you invent any
+1. `docs/adjustment/README.md` — step guide with statuses (where we are)
+2. `docs/adjustment/5-pengerjaan/README.md` — implementation rules; then only
+   the task entry in `peta-kode-dafrin.md` / `peta-kode-oki.md`
+3. `docs/architecture/runbook.md` — commands before you invent any
+4. `docs/plan/progress.md` — official log and next executable task
 
-Read by need: `docs/architecture/domain-map.md` (business ownership),
-`docs/architecture/data-model.md` (schema), `docs/architecture/api-conventions.md`,
-`docs/architecture/security-and-access.md`, `docs/architecture/testing-strategy.md`,
-`docs/plan/backlog.md` (ERP ledger), `docs/adjustment/` (current decisions,
-designs, step plan and implementation rules; Indonesian),
-`docs/architecture/modules/` (per-module boundaries and
-state), `docs/architecture/decisions/` (ADR history),
-`.agents/docs/skills.md` (skill inventory).
+**Source of truth, in this order:** (1) `docs/adjustment/` for the *target*
+behaviour (roles, flows, forms, menus, priorities); (2) the code for the
+*current* behaviour; (3) `docs/database/docs.dbml` for persistence. **Do not
+take roles, flows, endpoints or request/response shapes from
+`docs/architecture/`, `docs/role-permission.md`, `docs/user-guide/` or
+`docs/plan/erp-module-plans/`:** they are background, partly stale (e.g. 17
+roles, organizations, `security-and-access.md` 19 roles), and are corrected only
+through their planned tasks. When they disagree with `docs/adjustment/` or the
+code, ignore them and verify in code. Read them only when a task entry points
+to them: `docs/architecture/architecture.md` (boundaries),
+`stack-compatibility.md` (versions), `api-conventions.md`,
+`testing-strategy.md`, `docs/architecture/decisions/` (ADR history),
+`docs/plan/backlog.md` (ERP ledger), `.agents/docs/skills.md` (skills).
 
 ## Starting work
 

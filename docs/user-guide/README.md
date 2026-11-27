@@ -1,5 +1,9 @@
 # User guide
 
+> **Background, may be stale.** This guide describes an older build and the old role names; it is replaced by the per-module and end-to-end guides of step 12 (NM-8). The working scope is
+> `docs/adjustment/` (target behaviour approved by the owner) and the code
+> (current behaviour); see `AGENTS.md` "Source of truth".
+
 End-user documentation of the web admin (M02 sales, M05 procurement and
 warehouse, M07 projects and after-sales), as implemented on
 `merge/main-sync` (ADR-0011 port, 2026-11-06).
