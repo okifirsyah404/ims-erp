@@ -182,7 +182,7 @@ sebelum UAT Pajak.
 ## Bagian kedua: modul yang diperiksa 2026-11-28
 
 Diperiksa atas permintaan programmer B agar semua modul tercakup: M02, M03,
-M04, M08 (programmer B), M01, M12, portal karyawan (Oki). M11 ditunda (K10):
+M04, M08 (programmer B), M01, M12, portal karyawan (Oki). M11 ditunda (K10): **[Diubah 28/11, IV-1: M11 dibangun lengkap sekarang, `rancangan-investor-m11.md`]**
 yang ada hanya tiga halaman "Segera hadir", izin investor di
 `erp-permissions.ts`, dan `apps/web-investor` templat kosong.
 

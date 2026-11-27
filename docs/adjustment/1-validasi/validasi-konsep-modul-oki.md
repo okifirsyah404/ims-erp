@@ -260,7 +260,7 @@ Keputusan: ______________________
 Semua baris ini **baru kosakata hak**: halaman admin masih "Segera hadir", tidak ada
 route backend, dan schema `investor` sudah dihapus (ADR-0024). Lihat K10.
 
-Diperbarui 2026-11-27: M11 ditunda, halaman investor hanya Pemilik; hak investor di role dibiarkan sampai dibangun (K10, OE1–OE4). Disetujui Pemilik 27/11.
+Diperbarui 2026-11-27: M11 ditunda, halaman investor hanya Pemilik; hak investor di role dibiarkan sampai dibangun (K10, OE1–OE4). Disetujui Pemilik 27/11. **[Diubah 28/11, IV-1: M11 dibangun lengkap sekarang, `rancangan-investor-m11.md`]**
 
 Keputusan: ______________________
 
@@ -277,7 +277,7 @@ Keputusan: ______________________
 9. **Penghapusan aset hanya Pemilik** (usul sampai eksekusi). Sesuai?
 10. **Siapa membaca log audit?** K1 bergantung pada audit, tetapi halamannya hanya untuk admin aplikasi (Aqim) dan perubahan role tidak tercatat (RO12). Perlukah Bella membacanya?
 11. **Data gaji untuk Bella.** Bila Bella memegang Keuangan (K2d), ia melihat dan mengubah gaji serta rekening semua karyawan. Diterima?
-12. **M11:** dibangun dengan ADR baru atau ditunda (K10). Bila dibangun, siapa selain Pemilik yang mengerjakan?
+12. **M11:** dibangun dengan ADR baru atau ditunda (K10). Bila dibangun, siapa selain Pemilik yang mengerjakan? **[Diubah 28/11, IV-1: M11 dibangun lengkap sekarang, `rancangan-investor-m11.md`]**
 13. **Login portal karyawan** (K13 hanya menyebut web-admin dan portal pelanggan): tombol Google di portal karyawan tetap atau dihapus? Aqim (akun `admin`) tidak bisa masuk portal karyawan; perlu akun kedua atau tidak?
 
 ***
@@ -302,7 +302,7 @@ butuh orang kedua; perlu dikonfirmasi saat rapat karena rekomendasinya berbeda
 untuk kasbon); K2 = (a); K2a = Aqim SDM; K2d belum diisi, rekomendasi (b) Bella
 memegang Akuntan **dan** Keuangan.
 
-Diperbarui 2026-11-27 sesuai keputusan tanya-jawab (lembar rapat bagian 0, disetujui Pemilik 27/11 (tinjauan Oki di PR #171)): K1a diganti, kasbon dan pertanggungjawaban ikut K1 dan Aqim tidak mengajukan kasbon, jurnal tetap orang kedua; RO5 satu langkah oleh Aqim; K2d **(a) gabung** (Bella memegang role Keuangan gabungan); Anggota dihapus (Dafrin dan Oki hanya Pekerja Lepas); role organisasi Admin dihapus; RO1 periode dibuat Pemilik dan Keuangan; RO4 buka kembali hanya Pemilik; OG1 absen di luar radius ditolak; K10 ditunda.
+Diperbarui 2026-11-27 sesuai keputusan tanya-jawab (lembar rapat bagian 0, disetujui Pemilik 27/11 (tinjauan Oki di PR #171)): K1a diganti, kasbon dan pertanggungjawaban ikut K1 dan Aqim tidak mengajukan kasbon, jurnal tetap orang kedua; RO5 satu langkah oleh Aqim; K2d **(a) gabung** (Bella memegang role Keuangan gabungan); Anggota dihapus (Dafrin dan Oki hanya Pekerja Lepas); role organisasi Admin dihapus; RO1 periode dibuat Pemilik dan Keuangan; RO4 buka kembali hanya Pemilik; OG1 absen di luar radius ditolak; K10 ditunda. **[Diubah 28/11, IV-1: M11 dibangun lengkap sekarang, `rancangan-investor-m11.md`]**
 
 ### 3.1 Tim dan haknya di modul Oki
 
@@ -342,7 +342,7 @@ Semua orang di atas bisa membuka dasbor, karena hak `dashboard:read` tidak dipak
 | **RO11** | **Penghapusan aset hanya Pemilik** dan tanpa cek pengusul (`disposal.service.ts:94-106`) | 🟡 Aqim mengusulkan, menyetujui, dan mengeksekusi sendiri. Sesuai K1 | Tambah catatan audit "disetujui pembuat"; sudah ada audit `asset.disposal_approved` |
 | **RO12** | **Audit belum cukup untuk K1.** Perubahan role dan pengeluaran anggota tidak diaudit (`apps/backend/src/app/organization/services/organization.service.ts`, M12 catatan); audit ditulis fire-and-forget (`skema-database/audit.md`); halaman Log Audit hanya untuk admin aplikasi (`nav-config.ts`, item Log Audit `appAdminOnly`) dan filternya hanya tindakan modul user | Persetujuan sendiri Pemilik bisa tidak tercatat, dan hanya Aqim yang bisa membaca log, sehingga tidak ada pemeriksa | L-1 di `rencana-perubahan.md` (audit ikut transaksi) sebelum K1; audit perubahan role; putuskan apakah Bella membaca audit |
 | **RO13** | **Pajak di satu tangan.** Catatan pajak dibuat dan diverifikasi oleh orang yang sama tanpa penolakan (`tax.service.ts:322-324`); semua hak tulis pajak hanya Pemilik dan Akuntan | 🟡 Bella membuat, memverifikasi, melaporkan, dan menutup PPN; setor pajak oleh Keuangan (Bella bila K2d) | Diterima untuk tim kecil; Aqim memeriksa rekap pajak bulanan |
-| **RO14** | **M11 belum dibangun.** Halaman admin "Segera hadir"; tidak ada route backend; `/finance/investors` terbuka untuk semua yang login karena bukan daun menu (`apps/web-admin/src/lib/route-guard.ts:31-32`); `apps/web-investor` masih template | Tidak ada yang perlu disetujui sekarang. Hak bagi hasil hanya Pemilik | K10 |
+| **RO14** | **M11 belum dibangun.** Halaman admin "Segera hadir"; tidak ada route backend; `/finance/investors` terbuka untuk semua yang login karena bukan daun menu (`apps/web-admin/src/lib/route-guard.ts:31-32`); `apps/web-investor` masih template | Tidak ada yang perlu disetujui sekarang. Hak bagi hasil hanya Pemilik | K10 **[Diubah 28/11, IV-1: M11 dibangun lengkap sekarang, `rancangan-investor-m11.md`]** |
 | **RO15** | **Portal karyawan tidak bergantung role.** Aksesnya ditentukan data karyawan dan penolakan role aplikasi `admin`/`investor`/`customer` | Menghapus Anggota (isian lembar) **tidak** menutup portal untuk Dafrin dan Oki selama mereka punya data karyawan. Aqim tidak bisa masuk dengan akun `admin`. Akun teknisi seeder tidak punya data karyawan | Catat; putuskan 1.3 no. 13 |
 | **RO16** | **Dampak K2 di modul Oki.** Manajer Operasional tidak dipakai, padahal ia satu-satunya pemegang non-Pemilik untuk register aset, entri penyusutan manual, persetujuan kasbon, dan verifikasi/persetujuan pertanggungjawaban. Admin dan Auditor tidak dipakai, jadi `audit_log:read` tinggal Pemilik | Semua pekerjaan itu jatuh ke Aqim; pertanggungjawaban macet (RO5) | Terima, atau beri Manajer Operasional ke Agus (PM) bila Aqim ingin melepas urusan aset dan kasbon |
 | **RO17** | **Dampak K2d.** (a) gabung = ubah `erpRoleGrants` (wilayah Oki) dan `docs/role-permission.md`; (b) dua role = data saja. Dengan (b), Bella mendapat `employee:read_private` dan `payroll` read/create/update dari Keuangan | Bella melihat gaji dan rekening semua karyawan; pemisahan bayar gaji (RO8) jadi mungkin | Rekomendasi tetap (b); Pemilik menjawab 1.3 no. 11 |
@@ -426,7 +426,7 @@ Menu ditulis seperti di aplikasi (`packages/locales/src/id/nav.ts`). "→" berar
 7. **RO16:** semua urusan aset dan kasbon tetap di Aqim, atau Manajer Operasional diberikan ke orang kedua? (Pemilik) *(27/11: belum dijawab langsung; kasbon tetap dicairkan Aqim (OB13), Bella hanya melihat Aset tetap dan Anggaran proyek (OB5))*
 8. **RO17 / K2d:** Bella memegang Keuangan dan melihat data gaji? (Pemilik) *(27/11: ya, Akuntan digabung ke Keuangan; Bella juga membuka Aset tetap dan Anggaran proyek, OB5)*
 9. **RO19:** tombol Google di portal karyawan? (Pemilik + Oki) *(27/11: dihapus; karyawan diundang, login dengan kata sandi; halaman lupa kata sandi dibuat, OG3; Aqim tidak perlu portal karyawan, OG5)*
-10. **K10:** M11 dibangun atau ditunda? (Pemilik + Oki) *(27/11: ditunda, halaman investor hanya Pemilik; portal dan hak investor ikut ditunda, OE3/OE4)*
+10. **K10:** M11 dibangun atau ditunda? (Pemilik + Oki) *(27/11: ditunda, halaman investor hanya Pemilik; portal dan hak investor ikut ditunda, OE3/OE4)* **[Diubah 28/11, IV-1: M11 dibangun lengkap sekarang, `rancangan-investor-m11.md`]**
 11. **PPh 21:** dihitung otomatis di aplikasi? (Pemilik + Bella) *(27/11: belum dipakai, dihitung di luar aplikasi; tabel TER belum perlu, OC8)*
 
 Diperbarui 2026-11-27 (tanya-jawab ketiga): jawaban no. 4–11 dilengkapi dari lembar rapat bagian 0; statusnya disetujui Pemilik 27/11, tinjauan Oki di PR #171.
@@ -454,7 +454,7 @@ penyetuju yang sama dengan pembuat, termasuk Pemilik.
 | Penghapusan aset | Aqim | Aqim | 🟡 Tanpa pemeriksa (RO11; sesuai K1). Sesudah OD6 (27/11): ditolak bila aset sedang dipinjam |
 | Peminjaman aset | PM (Agus, Jamil, Hatta), Aqim; teknisi dan Penjualan (⚠️ form) | PM, Aqim | 🟡 Tanpa pemeriksa: PM menyetujui pinjamannya sendiri (`borrowing.controller.ts:38`); Gudang bisa menyerahkan tanpa persetujuan (`borrowing.service.ts:160`). Sesudah OD1/OD2/C13/OD7 (27/11): teknisi mengajukan dari daftar unit khusus; pembuat ≠ penyetuju kecuali Pemilik; unit wajib disetujui sebelum diserahkan; pengembalian dengan pilihan kondisi |
 | Entri penyusutan manual, kapitalisasi | Aqim, Bella (sesudah OB5, 27/11; dulu "setelah RO3") | — | 🟡 Tanpa pemeriksa (tidak butuh persetujuan) |
-| Bagi hasil investor | Aqim | Aqim | ⚪ Belum dibangun (K10); ditunda, halaman investor hanya Pemilik (27/11) |
+| Bagi hasil investor | Aqim | Aqim | ⚪ Belum dibangun (K10); ditunda, halaman investor hanya Pemilik (27/11) **[Diubah 28/11, IV-1: M11 dibangun lengkap sekarang, `rancangan-investor-m11.md`]** |
 | Perubahan role anggota | Aqim | — | 🟡 Tanpa pemeriksa dan **tidak diaudit** (RO12). Sesudah OA5–OA7 (27/11): wajib diaudit, sebelum K1; Log Audit hanya dibaca Pemilik (OA8), jadi pemeriksanya Aqim sendiri |
 | Absen lokasi (portal karyawan) | Karyawan | — | Sesudah OG1 (27/11): absen di luar radius **ditolak**. Kode sekarang: tersimpan dengan tanda `out_of_range` |
 

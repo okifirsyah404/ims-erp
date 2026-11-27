@@ -1883,3 +1883,42 @@ File yang diperbarui:
   (KF-N1 dan KF-I1), `diagram-alur/alur-lengkap-saat-ini.md`, `README.md`.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - Biaya perjalanan teknisi dan investor (M11)
+
+Programmer B mengingatkan dua hal yang belum dibahas: biaya mobilitas
+teknisi (hotel, makan) dan suntikan dana investor.
+
+**Biaya perjalanan, BP-1 sampai BP-6** (`3-rancangan/rancangan-biaya-perjalanan.md`):
+- Kasbon ditambah pertanggungjawaban dengan foto nota, serta klaim ganti
+  uang di portal. Ini mengangkat KF-K10.
+- Uang makan harian tetap (dalam/luar kota) dihitung dari check-in yang
+  sah.
+- Hotel, transport, tiket, bensin, tol, dan parkir memakai nota.
+- Batas di pengaturan; melebihi batas wajib alasan dan muncul peringatan.
+- Kategori baru: makan dan tiket perjalanan.
+- Tugas: B-48 (Dafrin) dan M09-19 (Oki).
+
+**Investor, IV-1 sampai IV-6** (`3-rancangan/rancangan-investor-m11.md`):
+- **M11 dibangun lengkap sekarang**, prioritas Tinggi, langsung berlaku.
+  Keputusan ini **mengubah K10, OE1–OE4, MN5** dan butir 18 ringkasan
+  Pemilik.
+- Bentuk dana: modal, pinjaman (angsuran + imbal tetap), dan dana per
+  proyek. Setoran dicatat Aqim sendiri.
+- Aturan bagi hasil menunggu Aqim.
+- Portal investor menampilkan setoran/saldo, angsuran, bagi hasil, laporan
+  ringkas, dan hasil proyek yang didanai.
+- Tugas Oki: M11-4 sampai M11-7.
+
+**File yang diperbarui:**
+- 32 baris yang menyebut K10, OE, MN5, atau M11 "ditunda" diberi tanda
+  "[Diubah 28/11, IV-1 …]".
+- `lembar-keputusan-rapat.md` bagian 8i.
+- `ringkasan-untuk-pemilik.md`: butir 26 (perlu konfirmasi Aqim) dan butir
+  27 (berlaku); butir 18 ditandai diganti.
+- `peta-halaman.md`, `skema-database/project.md`, `README.md`, dan tabel
+  aplikasi di rancangan kantor/lapangan.
+
+Pemeriksa Mermaid: 2 dokumen baru, masing-masing 0 error.
+
+Tidak ada perubahan kode.

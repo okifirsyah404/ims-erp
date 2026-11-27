@@ -32,7 +32,7 @@ Sumber menyebut nomornya) dan di checklist
 | OA5–OA7 | Audit wajib ikut transaksi; perubahan role, hapus anggota, persetujuan sendiri wajib tercatat; **sebelum K1** | OA5, OA6, OA7, L-1 | Oki | Disetujui Pemilik 27/11; menunggu tinjauan Oki (PR #171) |
 | K7a / OB7 / OB8 | Pembayaran, gaji, klaim biaya tanpa pemeriksa kedua diterima, diawasi lewat laporan dan audit | OB7, OB8 | Pemilik | Disetujui Pemilik 27/11 |
 | OD1 / OD2 | Teknisi mengajukan peminjaman dari daftar unit khusus; persetujuan sendiri yang selalu lolos diperbaiki | OD1, OD2; lembar X7 | Pemilik + Oki | Diputuskan programmer B 27/11, disetujui Pemilik 27/11 |
-| K10 / OE1 | M11 **ditunda**; halaman investor ditutup, hanya Pemilik | OE1, OE2 | Pemilik + Oki | Diputuskan programmer B 27/11, disetujui Pemilik 27/11 |
+| K10 / OE1 | M11 **ditunda**; halaman investor ditutup, hanya Pemilik | OE1, OE2 | Pemilik + Oki | Diputuskan programmer B 27/11, disetujui Pemilik 27/11 **[Diubah 28/11, IV-1: M11 dibangun lengkap sekarang, `rancangan-investor-m11.md`]** |
 | OG1 | Absen lokasi di luar radius **ditolak** (berbeda dari rekomendasi) | OG1 | Pemilik + Oki | Diputuskan programmer B 27/11, disetujui Pemilik 27/11 |
 | K9 | Portal karyawan, absen GPS, PPh 21/Coretax, keuangan ADR-0030 diterima sebagai tambahan | bagian G, `lintas-modul/di-luar-scope.md` | Pemilik | Rapat 27/11: diterima sebagai tambahan |
 | K11 | Pemilik `document`, `notification`, `webhook`, `company`, `location`, `src/shared`, `src/http`, deploy/CI | bagian 3 di bawah | Kedua programmer | Rapat 27/11: dipegang bersama; setiap perubahan wajib lewat PR dan diberitahukan |
@@ -45,7 +45,7 @@ Sumber menyebut nomornya) dan di checklist
 | OC1–OC7 | Bug `vat`; hitung ulang DPP × tarif; masa Bupot otomatis; tarif PPN dari master bertanggal berlaku + salinan di dokumen + pengecualian beralasan; Batalkan + alasan; pesan kode ganda; masa pajak tertutup read-only | OC1–OC7 | Pemilik + Oki (+ Dafrin untuk OC4) | Diputuskan programmer B 27/11, disetujui Pemilik 27/11 |
 | OC8 | **PPh 21 otomatis belum dipakai**: setelan PPh 21 di penggajian dimatikan, PPh 21 dihitung di luar aplikasi; tabel TER resmi belum perlu | OC8 | Pemilik + Bella + Dafrin (gaji M08) | Disetujui Pemilik 27/11 |
 | OD3–OD7 / OD9 | Sen di penyimpanan, rupiah di layar; nama bukan ID; catatan servis/kondisi dilengkapi, Set Peralatan disembunyikan; hapus aset dipinjam ditolak; kondisi pengembalian + unit hilang menutup peminjaman; PIC tetap belum perlu | OD3–OD9 | Pemilik + Oki | Diputuskan programmer B 27/11, disetujui Pemilik 27/11 |
-| OE3 / OE4 | Portal investor dan hak investor ikut K10 | OE3, OE4 | Pemilik + Oki | Ditunda (27/11) |
+| OE3 / OE4 | Portal investor dan hak investor ikut K10 | OE3, OE4 | Pemilik + Oki | Ditunda (27/11) **[Diubah 28/11, IV-1: M11 dibangun lengkap sekarang, `rancangan-investor-m11.md`]** |
 | OF1–OF3 | Kartu/tautan disembunyikan bila tidak berhak; lencana "Sementara" dihapus (buku tidak ditutup rutin); `dashboard:read` diperiksa | OF1–OF3 | Pemilik + Oki | Diputuskan programmer B 27/11, disetujui Pemilik 27/11 |
 | OG2–OG6 | Riwayat absen lokasi sendiri; halaman lupa kata sandi; semua karyawan (kecuali pekerja lepas) punya data karyawan; Aqim tanpa portal karyawan; tanda tangan dengan pratinjau dan konfirmasi | OG2–OG6 | Pemilik + Oki (+ Dafrin untuk data karyawan) | Diputuskan programmer B 27/11, disetujui Pemilik 27/11 |
 
@@ -94,12 +94,13 @@ risiko OA2 (diganti 27/11: kolom dihapus di tahap 3), OD8 diputuskan.
 | M09-10 | Ekspor CSV ke `/finance/reports/*.csv`, tampilkan galat, label tombol berbeda | OB12 | Sedang | Diputuskan programmer B 27/11 |
 | M09-11 | Tagihan pemasok manual: pilihan akun beban (OB14, 27/11) | OB14 | Sedang | Diputuskan programmer B 27/11 |
 | M09-12 | Teks: checklist tutup bulan en + id, peran posting di web disamakan dengan backend, status periode di paket manajemen, label tanggal laporan, pesan anggaran berformat ribuan (OB15: **nanti**) | OB15; UAT M09 | Rendah | Diputuskan programmer B 27/11 (nanti) |
-| M09-13 | Rute laba periode tertutup (`ExportedProfitService`) hanya bila M11 dibangun (M11 ditunda, 27/11) | UAT M09 laporan; OE1 | Rendah | Ya (K10) |
+| M09-13 | Rute laba periode tertutup (`ExportedProfitService`) hanya bila M11 dibangun (M11 ditunda, 27/11) | UAT M09 laporan; OE1 | Rendah | Ya (K10) **[Diubah 28/11, IV-1: M11 dibangun lengkap sekarang, `rancangan-investor-m11.md`]** |
 | M09-14 | Tutup buku akhir tahun ke laba ditahan (ERP-0131), tes audit buka ulang (ERP-0017) | `skema-database/finance.md` | Sedang | Tidak |
 | M09-15 | **Pindah dana antar akun kas/bank** (setor tunai, tarik tunai, isi kas kecil), tercatat di kedua akun | KF-K1 | Tinggi | Diputuskan 27/11 (KF-1) |
 | M09-16 | **Batalkan/koreksi transaksi kas/bank** (status `reversed` sudah ada di skema) dengan alasan | KF-K2 | Tinggi | Diputuskan 27/11 (KF-1) |
 | M09-17 | **PPh 23 dipotong pelanggan**: akun "PPh 23 dibayar dimuka", posting saat kuitansi, sisa faktur tertutup (bersama B-33 di `sale`) | KF-K3 | Tinggi | Diputuskan 27/11 (KF-1) (bersama Dafrin) |
 | M09-18 | **Pembayaran upah freelance** (harian atau borongan) dari rekap B-45, dibayar Bella, dicatat sebagai biaya proyek | KL-4 | Tinggi | Diputuskan programmer B 28/11 |
+| M09-19 | **Kasbon perjalanan + pertanggungjawaban dengan foto nota + klaim penggantian di portal** (mengangkat KF-K10); **pengaturan uang makan dan batas** (hotel per malam, per kategori) dengan peringatan + alasan; masuk biaya proyek | BP-1–BP-6 | Tinggi | Diputuskan 28/11 |
 
 ### M10 Pajak
 
@@ -141,11 +142,21 @@ risiko OA2 (diganti 27/11: kolom dihapus di tahap 3), OD8 diputuskan.
 
 ### M11 Bonus & Investor
 
+**Diubah 28/11 (IV-1): M11 dibangun lengkap sekarang, prioritas Tinggi.** Rincian `3-rancangan/rancangan-investor-m11.md`.
+
+| No | Perubahan | Sumber | Prioritas | Status |
+|---|---|---|---|---|
+| M11-4 | **ADR baru + schema investor** (letak tabel diputuskan; `docs.dbml` dulu) | IV-1 | Tinggi | Diputuskan 28/11 |
+| M11-5 | **Daftar investor dan dana**: modal, pinjaman (jadwal angsuran + imbal tetap, pengingat), dana per proyek; setoran dicatat Aqim dengan bukti; jurnal otomatis | IV-2–IV-4 | Tinggi | Diputuskan 28/11 |
+| M11-6 | **Bagi hasil** per periode, disetujui Aqim, dibayar Bella; **menunggu aturan dari Aqim** (IV-5) | IV-5 | Tinggi (setelah aturan ada) | Diputuskan 28/11 |
+| M11-7 | **Portal investor** (`apps/web-investor`): setoran/saldo, angsuran, bagi hasil, laporan ringkas, hasil proyek yang didanai | IV-6 (T29, T30) | Tinggi | Diputuskan 28/11 |
+
+
 | No | Perubahan | Sumber | Prioritas | Perlu keputusan |
 |---|---|---|---|---|
-| M11-1 | Guard awalan `/finance/investors` (rute induk bukan daun menu): hanya Pemilik (OE1, 27/11) | OE2 | Sedang | Tidak |
-| M11-2 | ADR baru + skema bagi hasil + modul + `web-investor` bila dibangun | OE1 | Sedang | Ditunda (K10, 27/11) |
-| M11-3 | `apps/web-investor` dihapus atau ditandai "belum dimulai"; label en "Investors" vs id "Bonus & Investor"; hak investor di role dibiarkan | OE3, OE4 | Rendah | Ditunda ikut K10 (27/11) |
+| M11-1 | Guard awalan `/finance/investors` (rute induk bukan daun menu): hanya Pemilik (OE1, 27/11) | OE2 | Sedang | Tidak **[Diubah 28/11, IV-1: M11 dibangun lengkap sekarang, `rancangan-investor-m11.md`]** |
+| M11-2 | ADR baru + skema bagi hasil + modul + `web-investor` bila dibangun | OE1 | Sedang | Ditunda (K10, 27/11) **[Diubah 28/11, IV-1: M11 dibangun lengkap sekarang, `rancangan-investor-m11.md`]** |
+| M11-3 | `apps/web-investor` dihapus atau ditandai "belum dimulai"; label en "Investors" vs id "Bonus & Investor"; hak investor di role dibiarkan | OE3, OE4 | Rendah | Ditunda ikut K10 (27/11) **[Diubah 28/11, IV-1: M11 dibangun lengkap sekarang, `rancangan-investor-m11.md`]** |
 
 ### M01 Dasbor
 
@@ -213,7 +224,7 @@ Rincian dan bukti di
 2. **Kerjakan M12-1 (audit dalam transaksi, OA5–OA7) lebih dulu**, baru aturan K1 (X-2); lalu M12-5 (hak: K2b, K2d, Anggota, Admin, RO1), karena hampir semua perbaikan hak bergantung padanya.
 3. **Perbaikan Tinggi:** M09-1..M09-5 (RO1, RO4; M09-3 layar pembayaran pemasok baru), M09-7 (RO5), M09-8 (write-off ke beban), M10-1..M10-3, M06-1..M06-3, M06-6, lalu M12-2 (⚠️ OA2 membuat M12-2 jauh lebih besar; konfirmasi dulu).
 4. **UAT ulang** M12 → M09 → M10 → M06 sesuai urutan di checklist, lalu perbaikan Sedang dan Rendah.
-5. **Lintas modul X-5, X-7** sebelum rilis produksi; **M11** ditunda (K10, 27/11), halaman investor ditutup lewat M11-1; **dokumen** bagian 4 setelah Oki setuju.
+5. **Lintas modul X-5, X-7** sebelum rilis produksi; **M11** ditunda (K10, 27/11), halaman investor ditutup lewat M11-1; **dokumen** bagian 4 setelah Oki setuju. **[Diubah 28/11, IV-1: M11 dibangun lengkap sekarang, `rancangan-investor-m11.md`]**
 
 ## Tambahan keputusan programmer B (27/11, sesudah tanya-jawab kedua)
 

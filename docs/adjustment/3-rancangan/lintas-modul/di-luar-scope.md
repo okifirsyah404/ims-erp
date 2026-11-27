@@ -120,7 +120,7 @@ flowchart TB
 | Perubahan | Sumber | Dampak | Status |
 |---|---|---|---|
 | Pemilik mencatat fitur di luar kontrak (tabel a): diterima sebagai bonus, dibekukan, atau disembunyikan dari UAT | temuan 1, kontrak hal. 4 "Acuan perubahan" | Menentukan cakupan UAT dan serah terima | **diputuskan 27/11 (K9):** semua diterima sebagai tambahan, ikut UAT dan serah terima |
-| Putuskan nasib T13/T29/T30 (investor): tetap dibangun (siapa, ADR schema baru) atau dikeluarkan | tabel b | Modul + schema baru atau revisi kontrak | **diputuskan 27/11 (K10):** ditunda; halaman investor hanya Pemilik |
+| Putuskan nasib T13/T29/T30 (investor): tetap dibangun (siapa, ADR schema baru) atau dikeluarkan | tabel b | Modul + schema baru atau revisi kontrak | **diputuskan 27/11 (K10):** ditunda; halaman investor hanya Pemilik **[Diubah 28/11, IV-1: M11 dibangun lengkap sekarang, `rancangan-investor-m11.md`]** |
 | Catat resmi pertukaran task A/B (tabel kolom) dan dampaknya ke pembayaran | temuan 3 | Administrasi kontrak/Tracker Excel | **diputuskan 27/11 (K8):** kontrak disesuaikan dengan pembagian modul; pertukaran dicatat resmi beserta dampak pembayaran |
 | Tetapkan pemilik `document`, `notification`, `webhook`, `company`, `location`, lapisan `shared/` dan `http/`, deploy/CI | tabel c | Menghindari perubahan tanpa koordinasi | **diputuskan 27/11 (K11):** dipegang bersama; setiap perubahan lewat PR dan diberitahukan ke programmer lain |
 | Sepakati pembagian schema `inventory` (stok vs aset) antar dua programmer | tabel c | Aturan review dan migrasi | usulan |

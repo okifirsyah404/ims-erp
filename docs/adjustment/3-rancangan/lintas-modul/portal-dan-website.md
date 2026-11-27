@@ -114,7 +114,7 @@ flowchart LR
 |---|---|---|---|
 | Pesanan online dari portal dan website dengan cek stok/harga ERP | memori ERP-0070, kontrak T21 | Endpoint baru di `sale`/`customer`, checkout `payment`, layar portal dan website | direncanakan |
 | Route portal untuk SPH, invoice, pembayaran, dokumen, notifikasi | `erp-routes.ts` daftar "no backend route yet", T25 | `customer` portal controller memanggil `sale`, `document`, `notification` lewat kontrak | direncanakan |
-| Portal investor: modul bagi hasil baru (ADR baru, karena schema `investor` dihapus) + `web-investor` | kontrak T13, T29, T30 | Modul + schema baru, role aplikasi `investor` sudah ada | ditunda (K10/OE1, disetujui Pemilik 27/11); halaman investor hanya Pemilik |
+| Portal investor: modul bagi hasil baru (ADR baru, karena schema `investor` dihapus) + `web-investor` | kontrak T13, T29, T30 | Modul + schema baru, role aplikasi `investor` sudah ada | ditunda (K10/OE1, disetujui Pemilik 27/11); halaman investor hanya Pemilik **[Diubah 28/11, IV-1: M11 dibangun lengkap sekarang, `rancangan-investor-m11.md`]** |
 | Halaman admin konten website | `../bahan-keputusan.md` D5 | web-admin + API `product`/konten | ditunda (D5 (b), jawaban programmer B 27/11) |
 | Catat portal karyawan dan absen GPS sebagai tambahan di luar kontrak (atau minta persetujuan Pemilik) | temuan 1 | Administrasi kontrak, bukan kode | usulan |
 | Tambahkan `web-investor` ke compose/CI saat mulai dibangun | temuan 5 | Wilayah deploy (Oki) | usulan |

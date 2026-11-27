@@ -956,7 +956,7 @@ programmer B 27/11 (diperbarui 2026-11-27 sesuai keputusan tanya-jawab).
 | Penghapusan aset | 🟡 Aqim sendiri | 🟡 Aqim sendiri, dengan audit disetujui pembuat | K1 |
 | Peminjaman aset | 🟡 PM menyetujui pinjamannya sendiri, Gudang serah tanpa persetujuan | 🟢 PM lain atau Aqim (dengan audit); serah tanpa persetujuan hanya Aqim | OD1, OD2, C13 |
 | Perubahan role anggota | 🟡 tanpa pemeriksa, tidak diaudit | 🟡 tanpa pemeriksa, diaudit dalam transaksi | OA5, OA6 |
-| Bagi hasil investor | ⚪ belum dibangun | ⚪ ditunda, halaman investor hanya Pemilik | OE1, K10 |
+| Bagi hasil investor | ⚪ belum dibangun | ⚪ ditunda, halaman investor hanya Pemilik | OE1, K10 **[Diubah 28/11, IV-1: M11 dibangun lengkap sekarang, `rancangan-investor-m11.md`]** |
 | Absen lokasi di luar radius | 🟡 tersimpan dengan tanda, tanpa layar tinjau | 🟢 ditolak di server, tidak ada data yang perlu ditinjau | OG1 |
 
 Keterangan: 🔴 macet (aplikasi menolak), 🟡 berjalan tanpa orang kedua,

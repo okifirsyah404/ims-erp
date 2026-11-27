@@ -132,6 +132,16 @@ Sedang/Rendah = langkah 9 dan sesudahnya (lihat README).
 | Integrasi → Log otomasi | Event baru terlihat dan bisa dikirim ulang | B-46 | Tinggi | D |
 | Profil pengguna | Nomor WA staf (penerima pesan) | B-46 | Tinggi | D/O |
 
+## Tambahan biaya perjalanan dan investor (28/11)
+
+| Halaman | Perbaikan | Rencana | Prioritas | Oleh |
+|---|---|---|---|---|
+| Portal: Kasbon, Pertanggungjawaban, Klaim **[baru]** | Nota per baris, peringatan batas + alasan | M09-19 | Tinggi | O |
+| Pengaturan → Perjalanan **[baru]** | Uang makan dalam/luar kota, batas hotel dan kategori | M09-19 | Tinggi | O |
+| Detail proyek → Biaya | Kategori makan, tiket; biaya per orang; uang makan harian | B-48 | Tinggi | D |
+| Investor: Daftar, Dana, Bagi Hasil, Laporan **[baru]** | Menggantikan halaman "Segera hadir" | M11-4–M11-6 | Tinggi | O |
+| Portal investor **[baru]** (`apps/web-investor`) | Setoran, angsuran, bagi hasil, laporan, proyek didanai | M11-7 | Tinggi | O |
+
 **Jumlah:** sekitar 35 halaman, termasuk 5 halaman baru (Pembayaran
 Pemasok, Servis & Kondisi, Kasbon portal, Riwayat absen lokasi, Perlu
 Tindakan). Tambahan dari pemeriksaan kekurangan fitur ada di bagian bawah

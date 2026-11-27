@@ -14,7 +14,7 @@ Disusun 2026-11-28. Kembali ke [catatan penyesuaian](../README.md).
 | `apps/web-employee` | **Portal karyawan** | **Semua karyawan kantor dan lapangan, termasuk teknisi freelance** (absen, check-in lokasi, tugas, bukti, laporan harian, cuti/lembur, kasbon, slip gaji) | Oki (layar), data dari modul masing-masing |
 | `apps/web-customer-portal` | Portal pelanggan | Pelanggan (proyek, tiket, pesanan, faktur, bayar) | Dafrin (M07, B-38) |
 | `apps/web-landing` | Website publik | Calon pelanggan (katalog, RFQ, keranjang) | Dafrin (M04, B-38) |
-| `apps/web-investor` | Portal investor | Ditunda (K10, OE3) | — |
+| `apps/web-investor` | Portal investor | Investor (setoran, angsuran, bagi hasil, laporan, proyek didanai) | Oki (M11-7; dibangun sekarang, IV-1) |
 
 Semua "portal untuk teknisi" di catatan ini berarti **`apps/web-employee`**.
 

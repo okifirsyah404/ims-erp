@@ -62,7 +62,7 @@ bagian dokumen ini yang memuat perubahannya.
 | B3, B4 | Halaman ubah barang ikut hak role (bukan khusus admin aplikasi); Gudang melihat PO dan SO | 2, 4.9 |
 | C1, C2 | Status SO berubah sendiri (Terkirim/Selesai), tanpa tombol; menu Uang Muka terbuka untuk pemegang hak invoice | 4.2 |
 | D4 | Menu Tugas: Teknisi dan Pekerja Lepas hanya melihat tugasnya sendiri | 2, 4.6 |
-| D5, K10, OE3 | Halaman konten website ditunda; Bonus & Investor hanya Pemilik; portal investor belum dimulai | 2, 2.4 |
+| D5, K10, OE3 | Halaman konten website ditunda; Bonus & Investor hanya Pemilik; portal investor belum dimulai | 2, 2.4 **[Diubah 28/11, IV-1: M11 dibangun lengkap sekarang, `rancangan-investor-m11.md`]** |
 | RO1, RO4 | Tutup Periode: **Siapkan periode** oleh Pemilik dan Keuangan; **Buka kembali** hanya Pemilik | 4.7 |
 | RO5, OB13, RO6 | Kasbon: teknisi **mengajukan dan melihat kasbonnya di portal karyawan**; Aqim menyetujui dan mencairkan; pertanggungjawaban cukup satu langkah oleh Aqim | 4.7, 5.1 |
 | OB2 | Semua pilihan akun (buku besar) memakai **pencarian ke server** | 4.7 |
@@ -287,7 +287,7 @@ server, kecuali yang disebut lain.
 | MN2 | *Sebagian sudah tercakup keputusan (OB5).* **Aset tetap** (di bawah Keuangan) tampil untuk Manajer Proyek. Di kode sekarang **tidak tampil untuk Keuangan**; itu sudah diputuskan diperbaiki lewat OB5 (Bella membuka Aset tetap dan Anggaran proyek; sudah tercermin di tabel). Sisa pertanyaannya: apakah Manajer Proyek tetap melihatnya. Catatan: form di halaman itu (kapitalisasi, jalankan penyusutan) butuh hak posting jurnal, yang hanya dimiliki Keuangan dan Pemilik. Hal yang sama berlaku untuk Aset & Peralatan → Penyusutan dan Penghapusan Aset | Aset tetap, Penyusutan, Penghapusan: Pemilik dan Keuangan saja. Manajer Proyek tetap melihat Register Aset, Peminjaman, Catatan Servis, Set Peralatan | Oki (M06, M09) |
 | MN3 | **Pengaturan → Dokumen** tampil untuk semua orang, termasuk Pekerja Lepas. Isinya pengaturan perusahaan (kop dokumen, dsb.) dan hanya bisa diubah Pemilik | Hanya Pemilik dan admin aplikasi | Bersama (K11) |
 | MN4 | **Dokumen → Templat** tampil untuk semua orang, padahal halamannya masih "segera hadir" (ERP-0050) | Sembunyikan sampai halamannya dibuat | Bersama (K11) |
-| MN5 | *Sebagian tercakup K10 (hanya Pemilik).* **Bonus & Investor** hanya tampil untuk Pemilik (K10), tetapi ketiga halamannya masih "segera hadir" | Sembunyikan seluruh grup sampai M11 dibangun | Oki (M11) |
+| MN5 | *Sebagian tercakup K10 (hanya Pemilik).* **Bonus & Investor** hanya tampil untuk Pemilik (K10), tetapi ketiga halamannya masih "segera hadir" | Sembunyikan seluruh grup sampai M11 dibangun | Oki (M11) **[Diubah 28/11, IV-1: M11 dibangun lengkap sekarang, `rancangan-investor-m11.md`]** |
 | MN6 | **Pekerja Lepas** melihat Berkas, Minta tanda tangan, dan Templat | Cukup Tugas dan Tanda tangan saya | Bersama (K11) |
 | MN7 | ***Sudah tercakup keputusan OB13/RO6:** kasbon diajukan dan dilihat di portal karyawan, jadi pilihan (a).* Teknisi, Manajer Proyek, dan Pekerja Lepas punya hak **mengajukan kasbon dan pertanggungjawaban**, tetapi formnya ada di Keuangan → Beban. Menu itu meminta hak baca klaim biaya, yang tidak mereka punya, jadi mereka **tidak bisa membuka form tersebut**. Portal karyawan juga tidak punya form kasbon | (a) Tambah menu "Kasbon saya" di portal karyawan. (b) Buka Keuangan → Beban dengan isi terbatas milik sendiri | Oki (M09) |
 
