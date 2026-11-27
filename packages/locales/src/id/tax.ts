@@ -5,8 +5,6 @@ const tax = {
 	'title': 'Pajak',
 	'subtitle': 'Master tarif, kertas kerja periode, koreksi, pemotongan',
 
-	'period.apply': 'Terapkan',
-
 	'types.title': 'Jenis & Tarif Pajak',
 	'types.description':
 		'Baris tarif dengan tanggal berlaku. Rentang yang tumpang tindih untuk satu kode akan ditolak.',

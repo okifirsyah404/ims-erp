@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getRouteApi, Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -39,8 +39,6 @@ import { getActiveOrganizationId } from '@/lib/organization-store';
 import { usePermission } from '@/lib/use-permission';
 import { ExpenseFormDialog } from './expense-form-dialog';
 
-const routeApi = getRouteApi('/_authed/finance/expenses/');
-
 const PAGE_SIZE = 20;
 const money = (minor: number) => (minor / 100).toLocaleString();
 
@@ -48,9 +46,8 @@ const money = (minor: number) => (minor / 100).toLocaleString();
 export function ExpenseList() {
 	const { t } = useTranslation(['finance', 'common']);
 	const confirm = useConfirm();
-	const navigate = routeApi.useNavigate();
 	const queryClient = useQueryClient();
-	const search = routeApi.useSearch();
+	const navigate = useNavigate();
 	const canCreate = usePermission('expense_claim.create');
 	const canSubmit = usePermission('expense_claim.submit');
 	const canApprove = usePermission('expense_claim.approve');
@@ -58,16 +55,22 @@ export function ExpenseList() {
 	const canCancel = usePermission('expense_claim.cancel');
 
 	const [showForm, setShowForm] = useState(false);
+	const [page, setPage] = useState(1);
+	const [filters, setFilters] = useState<{
+		status?: TExpenseClaimStatus;
+		from?: string;
+		to?: string;
+		search?: string;
+	}>({});
 
-	const page = search.page ?? 1;
 	const { data, isPending, isError, error } = useQuery({
 		...expenseClaimsQueryOptions({
 			page,
 			limit: PAGE_SIZE,
-			status: search.status,
-			from: search.from,
-			to: search.to,
-			search: search.search,
+			status: filters.status,
+			from: filters.from,
+			to: filters.to,
+			search: filters.search,
 		}),
 		placeholderData: (previous) => previous,
 	});
@@ -246,26 +249,18 @@ export function ExpenseList() {
 					<h1 className='text-xl font-semibold'>{t('finance:expenses.title')}</h1>
 					<p className='text-muted-foreground text-sm'>{t('finance:expenses.description')}</p>
 				</div>
-				{canCreate ? (
-					<Button size='sm' onClick={() => setShowForm(true)}>
-						<Plus className='size-4' data-icon='inline-start' />
-						{t('finance:expenses.new')}
-					</Button>
-				) : null}
 			</div>
 
 			<div className='flex flex-wrap items-center gap-2'>
 				<Select
-					value={search.status ?? 'all'}
-					onValueChange={(value: string | null) =>
-						void navigate({
-							search: (prev) => ({
-								...prev,
-								page: undefined,
-								status: value == null || value === 'all' ? undefined : (value as TExpenseClaimStatus),
-							}),
-						})
-					}
+					value={filters.status ?? 'all'}
+					onValueChange={(value: string | null) => {
+						setFilters((prev) => ({
+							...prev,
+							status: value == null || value === 'all' ? undefined : (value as TExpenseClaimStatus),
+						}));
+						setPage(1);
+					}}
 				>
 					<SelectTrigger className='w-40'>
 						<SelectValue placeholder={t('finance:expenses.filterStatus')} />
@@ -281,33 +276,43 @@ export function ExpenseList() {
 				</Select>
 				<DatePicker
 					className='w-40'
-					value={search.from ?? ''}
-					onChange={(value) =>
-						void navigate({ search: (prev) => ({ ...prev, page: undefined, from: value || undefined }) })
-					}
+					value={filters.from ?? ''}
+					onChange={(value) => {
+						setFilters((prev) => ({ ...prev, from: value || undefined }));
+						setPage(1);
+					}}
 				/>
 				<DatePicker
 					className='w-40'
-					value={search.to ?? ''}
-					onChange={(value) =>
-						void navigate({ search: (prev) => ({ ...prev, page: undefined, to: value || undefined }) })
-					}
+					value={filters.to ?? ''}
+					onChange={(value) => {
+						setFilters((prev) => ({ ...prev, to: value || undefined }));
+						setPage(1);
+					}}
 				/>
 				<Input
 					className='w-48'
 					placeholder={t('finance:expenses.search')}
-					defaultValue={search.search ?? ''}
 					onKeyDown={(event) => {
 						if (event.key !== 'Enter') return;
 						const value = event.currentTarget.value.trim();
-						void navigate({
-							search: (prev) => ({ ...prev, page: undefined, search: value || undefined }),
-						});
+						setFilters((prev) => ({ ...prev, search: value || undefined }));
+						setPage(1);
 					}}
 				/>
 			</div>
 
-			<DataTableCard>
+			<DataTableCard
+				title={t('finance:expenses.title')}
+				action={
+					canCreate ? (
+						<Button size='sm' onClick={() => setShowForm(true)}>
+							<Plus className='size-4' data-icon='inline-start' />
+							{t('finance:expenses.new')}
+						</Button>
+					) : null
+				}
+			>
 				{isError ? (
 					<ErrorState error={error} />
 				) : !isPending && (data?.rows.length ?? 0) === 0 ? (
@@ -323,9 +328,7 @@ export function ExpenseList() {
 				<PaginationControls
 					page={page}
 					totalPages={data?.pagination.totalPages ?? 1}
-					onPageChange={(next) =>
-						void navigate({ search: (prev) => ({ ...prev, page: next }) })
-					}
+					onPageChange={setPage}
 				/>
 			</DataTableCard>
 

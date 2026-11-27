@@ -5,8 +5,6 @@ const tax = {
 	'title': 'Tax',
 	'subtitle': 'Rate master, period working papers, corrections, withholding',
 
-	'period.apply': 'Apply',
-
 	'types.title': 'Tax Types & Rates',
 	'types.description':
 		'Effective-dated rate rows. Overlapping windows for one code are rejected.',

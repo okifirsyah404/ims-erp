@@ -3,18 +3,16 @@ import {
 	useQuery,
 	useQueryClient,
 } from '@tanstack/react-query';
-import { getRouteApi } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { DatePicker } from '@ims-erp/ui/components/date-picker';
-import { Input } from '@ims-erp/ui/components/input';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Pause, Play, Plus, Scale, Trash2 } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableCard } from '@/components/data-table/data-table-card';
+import { TaxTypeDialog } from './tax-type-dialog';
 import { RowActions } from '@/components/data-table/row-actions';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
@@ -22,7 +20,6 @@ import { useConfirm } from '@/components/confirm-dialog';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
-	createTaxType,
 	deleteTaxType,
 	taxTypesQueryOptions,
 	updateTaxType,
@@ -31,7 +28,6 @@ import {
 import { usePermission } from '@/lib/use-permission';
 
 /** The route API for `/finance/tax/types` (validated search params). */
-const routeApi = getRouteApi('/_authed/finance/tax/types/');
 
 const PAGE_SIZE = 20;
 
@@ -41,18 +37,13 @@ const PAGE_SIZE = 20;
  */
 export function TaxTypeList() {
 	const { t } = useTranslation(['tax', 'common']);
-	const navigate = routeApi.useNavigate();
 	const queryClient = useQueryClient();
-	const search = routeApi.useSearch();
 	const canUpdate = usePermission('tax.update');
 	const confirm = useConfirm();
 
-	const [code, setCode] = useState('');
-	const [name, setName] = useState('');
-	const [rate, setRate] = useState('');
-	const [effectiveFrom, setEffectiveFrom] = useState('');
+	const [creating, setCreating] = useState(false);
 
-	const page = search.page ?? 1;
+	const [page, setPage] = useState(1);
 	const { data, isPending, isError, error } = useQuery({
 		...taxTypesQueryOptions({ page, limit: PAGE_SIZE }),
 		placeholderData: (previous) => previous,
@@ -60,26 +51,6 @@ export function TaxTypeList() {
 
 	const invalidate = () =>
 		queryClient.invalidateQueries({ queryKey: ['tax-types'] });
-
-	const create = useMutation({
-		mutationFn: () =>
-			createTaxType({
-				code,
-				name,
-				taxType: 'vat',
-				rate,
-				effectiveFrom,
-			}),
-		onSuccess: async () => {
-			toast.success(t('tax:types.created'));
-			setCode('');
-			setName('');
-			setRate('');
-			setEffectiveFrom('');
-			await invalidate();
-		},
-		onError: (mutationError: Error) => toast.error(mutationError.message),
-	});
 
 	const toggleActive = useMutation({
 		mutationFn: (row: { id: string; isActive: boolean }) =>
@@ -190,47 +161,17 @@ export function TaxTypeList() {
 				</p>
 			</div>
 
-			{canUpdate ? (
-				<div className='flex flex-wrap items-center gap-2'>
-					<Input
-						className='w-36'
-						placeholder={t('tax:types.code')}
-						value={code}
-						onChange={(event) => setCode(event.target.value)}
-					/>
-					<Input
-						className='w-56'
-						placeholder={t('tax:types.name')}
-						value={name}
-						onChange={(event) => setName(event.target.value)}
-					/>
-					<Input
-						className='w-28'
-						placeholder={t('tax:types.rate')}
-						value={rate}
-						onChange={(event) => setRate(event.target.value)}
-					/>
-					<DatePicker
-						className='w-40'
-						value={effectiveFrom}
-						onChange={setEffectiveFrom}
-						aria-label={t('tax:types.effectiveFrom')}
-					/>
-					<Button
-						disabled={
-							!code || !name || !rate || !effectiveFrom || create.isPending
-						}
-						onClick={() => void create.mutateAsync()}
-					>
-						<Plus className='size-4' data-icon='inline-start' />
-						{create.isPending
-							? t('tax:types.creating')
-							: t('tax:types.create')}
-					</Button>
-				</div>
-			) : null}
-
-			<DataTableCard>
+			<DataTableCard
+				title={t('tax:types.title')}
+				action={
+					canUpdate ? (
+						<Button size='sm' onClick={() => setCreating(true)}>
+							<Plus className='size-4' data-icon='inline-start' />
+							{t('tax:types.create')}
+						</Button>
+					) : null
+				}
+			>
 				{!isPending && (!data || data.rows.length === 0) ? (
 					<EmptyState
 						icon={Scale}
@@ -249,11 +190,10 @@ export function TaxTypeList() {
 				<PaginationControls
 					page={page}
 					totalPages={data?.pagination.totalPages ?? 1}
-					onPageChange={(next) =>
-						void navigate({ search: (prev) => ({ ...prev, page: next }) })
-					}
+					onPageChange={setPage}
 				/>
 			</DataTableCard>
+			{creating ? <TaxTypeDialog onClose={() => setCreating(false)} /> : null}
 		</div>
 	);
 }

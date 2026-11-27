@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { DatePicker } from '@ims-erp/ui/components/date-picker';
+import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
@@ -25,7 +25,6 @@ import {
 	addReconciliationItems,
 	cashBankAccountsQueryOptions,
 	closeReconciliation,
-	createReconciliation,
 	matchReconciliationItem,
 	cashBankTransactionsQueryOptions,
 	reconcileReconciliation,
@@ -38,9 +37,8 @@ import {
 	toMinor,
 } from '@/lib/finance-api';
 import { usePermission } from '@/lib/use-permission';
+import { ReconciliationDialog } from './reconciliation-dialog';
 import { StatementImportPanel } from './statement-import-panel';
-
-const today = () => new Date().toISOString().slice(0, 10);
 
 const formatMoney = (minor: number) => (minor / 100).toLocaleString();
 
@@ -56,10 +54,7 @@ export function ReconciliationPage() {
 
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 
-	/* create form */
-	const [accountId, setAccountId] = useState('none');
-	const [reconciliationDate, setReconciliationDate] = useState(today());
-	const [statementBalance, setStatementBalance] = useState('');
+	const [creating, setCreating] = useState(false);
 
 	/* item form */
 	const [statementReference, setStatementReference] = useState('');
@@ -162,21 +157,6 @@ export function ReconciliationPage() {
 		void queryClient.invalidateQueries({ queryKey: ['reconciliations'] });
 	};
 
-	const create = useMutation({
-		mutationFn: () =>
-			createReconciliation({
-				cashBankAccountId: accountId,
-				reconciliationDate,
-				statementBalance: toMinor(statementBalance),
-			}),
-		onSuccess: async () => {
-			toast.success(t('finance:reconciliation.created'));
-			setStatementBalance('');
-			invalidate();
-		},
-		onError: (mutationError: Error) => toast.error(mutationError.message),
-	});
-
 	const addItems = useMutation({
 		mutationFn: () =>
 			addReconciliationItems(selectedId ?? '', [
@@ -252,44 +232,18 @@ export function ReconciliationPage() {
 				</p>
 			</div>
 
-			{canReconcile ? (
-				<div className='flex flex-wrap items-center gap-2 rounded-md border p-4'>
-					<Select value={accountId} onValueChange={(value: string | null) => setAccountId(value ?? 'none')}>
-						<SelectTrigger className='w-56'>
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value='none'>{t('finance:reconciliation.cashAccount')}</SelectItem>
-							{accounts?.map((account) => (
-								<SelectItem key={account.id} value={account.id}>
-									{account.code} — {account.name}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-					<DatePicker
-						className='w-40'
-						value={reconciliationDate}
-						onChange={setReconciliationDate}
-					/>
-					<MoneyInput
-						className='w-40'
-						placeholder={t('finance:reconciliation.statementBalance')}
-						value={statementBalance}
-						onValueChange={setStatementBalance}
-					/>
-					<Button
-						size='sm'
-						disabled={create.isPending || accountId === 'none' || !statementBalance}
-						onClick={() => void create.mutateAsync()}
-					>
-						<Plus className='size-4' data-icon='inline-start' />
-						{t('finance:reconciliation.create')}
-					</Button>
-				</div>
-			) : null}
 
-			<DataTableCard>
+			<DataTableCard
+				title={t('finance:reconciliation.title')}
+				action={
+					canReconcile ? (
+						<Button size='sm' onClick={() => setCreating(true)}>
+							<Plus className='size-4' data-icon='inline-start' />
+							{t('finance:reconciliation.create')}
+						</Button>
+					) : null
+				}
+			>
 				{isError ? (
 					<ErrorState error={error} />
 				) : !isPending && (page?.rows.length ?? 0) === 0 ? (
@@ -308,10 +262,13 @@ export function ReconciliationPage() {
 			</DataTableCard>
 
 			{selectedId != null && reconciliation ? (
-				<div className='space-y-3 rounded-md border p-4'>
-					<h2 className='font-semibold'>
-						{t('finance:reconciliation.items')} — {reconciliation.code}
-					</h2>
+				<Card>
+					<CardHeader>
+						<CardTitle>
+							{t('finance:reconciliation.items')} — {reconciliation.code}
+						</CardTitle>
+					</CardHeader>
+					<CardContent className='space-y-3'>
 
 					{canReconcile && (reconciliation.status === 'draft' || reconciliation.status === 'in_progress') ? (
 						<StatementImportPanel
@@ -456,7 +413,11 @@ export function ReconciliationPage() {
 							) : null}
 						</div>
 					) : null}
-				</div>
+					</CardContent>
+				</Card>
+			) : null}
+			{creating ? (
+				<ReconciliationDialog accounts={accounts ?? []} onClose={() => setCreating(false)} />
 			) : null}
 		</div>
 	);

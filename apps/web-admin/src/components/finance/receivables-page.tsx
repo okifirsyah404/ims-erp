@@ -1,4 +1,4 @@
-import { getRouteApi } from '@tanstack/react-router';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { AgingTable } from '@/components/finance/aging-table';
@@ -7,14 +7,10 @@ import { WriteOffRequests } from '@/components/finance/write-off-requests';
 import { arAgingQueryOptions } from '@/lib/finance-api';
 import { usePermission } from '@/lib/use-permission';
 
-/** The route API for `/finance/receivables` (validated search params). */
-const routeApi = getRouteApi('/_authed/finance/receivables/');
-
 /** `/finance/receivables` - AR aging + customer payments (F4). */
 export function ReceivablesPage() {
 	const { t } = useTranslation(['finance', 'common']);
-	const navigate = routeApi.useNavigate();
-	const search = routeApi.useSearch();
+	const [asOf, setAsOf] = useState<string | undefined>(undefined);
 	const canRead = usePermission('payment.read');
 
 	return (
@@ -27,8 +23,8 @@ export function ReceivablesPage() {
 				partyKey='customerId'
 				queryFor={arAgingQueryOptions}
 				enabled={canRead}
-				asOfDate={search.asOf}
-				onAsOfChange={(asOf) => void navigate({ search: { asOf } })}
+				asOfDate={asOf}
+				onAsOfChange={setAsOf}
 			/>
 			<PaymentsTable
 				paymentType='customer_payment'
