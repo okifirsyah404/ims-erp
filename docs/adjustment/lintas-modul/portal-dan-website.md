@@ -114,8 +114,8 @@ flowchart LR
 |---|---|---|---|
 | Pesanan online dari portal dan website dengan cek stok/harga ERP | memori ERP-0070, kontrak T21 | Endpoint baru di `sale`/`customer`, checkout `payment`, layar portal dan website | direncanakan |
 | Route portal untuk SPH, invoice, pembayaran, dokumen, notifikasi | `erp-routes.ts` daftar "no backend route yet", T25 | `customer` portal controller memanggil `sale`, `document`, `notification` lewat kontrak | direncanakan |
-| Portal investor: modul bagi hasil baru (ADR baru, karena schema `investor` dihapus) + `web-investor` | kontrak T13, T29, T30 | Modul + schema baru, role aplikasi `investor` sudah ada | menunggu keputusan (siapa pemilik dan apakah tetap dalam scope) |
-| Halaman admin konten website | `../bahan-keputusan.md` D5 | web-admin + API `product`/konten | menunggu keputusan |
+| Portal investor: modul bagi hasil baru (ADR baru, karena schema `investor` dihapus) + `web-investor` | kontrak T13, T29, T30 | Modul + schema baru, role aplikasi `investor` sudah ada | menunggu keputusan (siapa pemilik dan apakah tetap dalam scope) → ditunda (K10/OE1, jawaban programmer B 27/11); halaman investor hanya Pemilik |
+| Halaman admin konten website | `../bahan-keputusan.md` D5 | web-admin + API `product`/konten | ditunda (D5 (b), jawaban programmer B 27/11) |
 | Catat portal karyawan dan absen GPS sebagai tambahan di luar kontrak (atau minta persetujuan Pemilik) | temuan 1 | Administrasi kontrak, bukan kode | usulan |
 | Tambahkan `web-investor` ke compose/CI saat mulai dibangun | temuan 5 | Wilayah deploy (Oki) | usulan |
-| Portal pelanggan login dengan Google; web-admin tanpa Google | `../lembar-keputusan-rapat.md` K13 (arah baru 2026-11-26) | `web-customer-portal` login, pencocokan email ke kontak, `GOOGLE_*` | menunggu keputusan |
+| Portal pelanggan login dengan Google, satu jenis akun (data perusahaan diisi di profil, OA4); web-admin dan portal karyawan tanpa Google, karyawan diundang dan login dengan kata sandi | `../lembar-keputusan-rapat.md` K13 (arah baru 2026-11-26) | `web-customer-portal` login dan daftar tanpa pilihan tipe akun, pencocokan email ke kontak, `GOOGLE_*`; `web-employee` undangan + kata sandi | diputuskan programmer B 27/11, menunggu konfirmasi Pemilik/Oki (K13, OA4) |

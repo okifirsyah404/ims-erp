@@ -1122,3 +1122,31 @@ README utama menautkan `diagram-alur/`.
   isian yang saling bertentangan (X1–X7: K1a vs kasbon Aqim, verifikator
   RO5, K2d, Anggota, K2b/B1 belum diisi, B2, cara OD1).
 - 2026-11-27: semua catatan sejak 2026-11-26 (gabung role Penjualan, dokumen modul Oki, K12/K13, absensi, diagram alur) ditambahkan ke PR #171. Commit dengan `--no-verify` karena `graphify` belum terpasang; isinya hanya dokumen. Keputusan berikutnya diambil lewat tanya-jawab di chat, lalu file keputusan dan rencana diperbarui.
+
+## 2026-11-27 - Keputusan tanya-jawab programmer B disalin ke semua catatan
+
+Sumber: `lembar-keputusan-rapat.md` bagian 0. Status semua butir **jawaban
+programmer B**; Pemilik dan Oki masih mengonfirmasi saat rapat. Tidak ada kode,
+konfigurasi, atau database yang diubah.
+
+**Keputusan yang disalin:**
+- K1 (b) Pemilik boleh menyetujui dokumennya sendiri, tercatat audit; K1a/X1 kasbon dan pertanggungjawaban ikut K1, jurnal manual tetap orang kedua (Bella ↔ Aqim), Aqim tidak mengajukan kasbon.
+- RO5/X2 pertanggungjawaban satu langkah oleh Aqim; aturan verifikator ≠ penyetuju dihapus (`employee-advance.service.ts`, wilayah Oki).
+- K2 (a); K2a SDM hanya Aqim; K2b Penjualan digabung (Agus MD, Bilal); K2c Pembelian tidak dipakai; K2d/X3 Akuntan digabung ke Keuangan (Bella); X4 Anggota dihapus (Dafrin, Oki hanya Pekerja Lepas); role organisasi Admin dihapus, tanda admin aplikasi Aqim tetap.
+- K6 (a); K7/K7a (a); B1 langkah "Tandai terkirim" dihapus; B2–B4 (b); C1, C2 (a); D2 (a), D4 (b), D5 (b).
+- RO1 periode dibuat Pemilik dan Keuangan (`accounting_period:create`); RO4 buka kembali hanya Pemilik (route memeriksa `reopen`).
+- OA5–OA7 audit wajib ikut transaksi, dikerjakan sebelum K1; K12 bertahap; K13 web-admin dan portal karyawan tanpa Google, karyawan diundang; OA4 pelanggan satu jenis akun.
+- OB7/OB8 diterima tanpa pemeriksa kedua; OD1/X7 daftar unit pinjam khusus, OD2 diperbaiki; K10/OE1 M11 ditunda, halaman investor hanya Pemilik; OG1 absen di luar radius ditolak.
+- K8, K9, K11 dibahas di rapat.
+
+**File yang diubah:**
+- `lembar-keputusan-rapat.md`: kolom Keputusan/Jawaban bagian 1–8b; isian yang bertentangan diberi "→ diganti" (K1a, role Bella dan Dafrin/Oki, Admin).
+- `bahan-keputusan.md` dan `bahan-keputusan-modul-oki.md`: kolom Keputusan; paragraf ringkasan modul Oki diperbarui.
+- `rencana-perubahan.md`: status K1–K13, K2c, K2d; butir baru B-21..B-25 dan O-10..O-13; urutan (L-1 sebelum B-1).
+- `rencana-perubahan-modul-oki.md`: tabel keputusan bagian 1 ditulis ulang; M12-1/4/5, M09-1/4–7/13, M06-1/2, M11-1/2, PK-1/7, PK-8 baru; urutan (M12-1 sebelum K1).
+- `validasi-konsep-saat-ini.md`: 1.1 kolom Keputusan, 3.1, 3.7 (kasbon), 3.8 (role, aturan, alur).
+- `validasi-konsep-modul-oki.md`: 1.1 kolom Keputusan, Bagian 3, 3.1, 3.6, 3.7 (kasbon, pertanggungjawaban, periode, absen lokasi), 3.8.
+- `diagram-alur/sekarang-vs-sesudah.md`: catatan kepala, susunan role, tabel keputusan, bagian 6 (pelanggan satu jenis akun, undangan karyawan), 7, 8 (satu langkah Aqim), 9, 10 (diagram Sesudah baru: di luar radius ditolak), 11, 12.
+- `lintas-modul/autentikasi-dan-hak-akses.md` dan `lintas-modul/portal-dan-website.md`: baris "Perubahan mendatang" K12, K13, OA4, K2b, K2d, Anggota/Admin.
+
+Pemeriksa Mermaid: `sekarang-vs-sesudah.md` 22 blok, 0 error.

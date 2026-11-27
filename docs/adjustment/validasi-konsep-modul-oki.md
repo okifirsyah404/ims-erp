@@ -38,19 +38,21 @@ Pemilik (`owner`) memegang semua hak; Admin aplikasi (tanda `admin` di
 
 | Role | Nama | Dipegang oleh | M01 Dasbor | M06 Aset & Peralatan | M09 Keuangan | M10 Pajak | M11 Investor | M12 Akses | Keputusan (tetap/ubah/hapus) |
 |---|---|---|---|---|---|---|---|---|---|
-| `owner` | Pemilik | Aqim → Aqim | Semua kartu | Semua, termasuk **satu-satunya** yang bisa mengusulkan, menyetujui, dan mengeksekusi penghapusan aset | Semua | Semua | Semua; **satu-satunya** pemegang bagi hasil (`profit_distribution`) dan modal investor | Semua, termasuk gateway pembayaran dan memberi role Pemilik | |
-| `admin` | Admin | Aqim → tidak dipakai | Kartu sesuai hak | Lihat aset; peminjaman penuh (ajukan, setujui, serahkan, kembalikan, hilang) | — | — | — | Anggota dan role (tanpa memberi Pemilik), profil perusahaan, nomor kode, baca audit (server) | |
-| `operations_manager` | Manajer Operasional | Aqim → tidak dipakai | Kartu sesuai hak | Kelola kategori dan register aset (tanpa penghapusan), peminjaman penuh, entri penyusutan manual | Setujui kasbon; verifikasi **dan** setujui pertanggungjawaban; anggaran (`budget`) | — | — | — | |
-| `project_manager` | Manajer Proyek | Agus, Jamil, Hatta | Kartu proyek | Lihat aset, ajukan dan **setujui** peminjaman | Buat dan ajukan pertanggungjawaban; lihat biaya proyek; lihat anggaran proyek | — | — | — | |
-| `technician` | Teknisi | Fahri, Jamil, Agus, Alex, Ade → Fahri, Jamil, Agus, Alex, Ade | (dasbor terbuka, lihat RO20) | Ajukan peminjaman (⚠️ form tidak bisa dipakai, RO7) | Ajukan kasbon dan pertanggungjawaban (⚠️ halamannya tertutup, RO6); lihat anggaran proyek | — | — | — | |
-| `freelancer` | Pekerja Lepas | Dafrin, Oki, Alex, Ade, Hatta → Dafrin, Oki | (dasbor terbuka) | — | Buat dan ajukan pertanggungjawaban (⚠️ halamannya tertutup) | — | — | — | |
-| `warehouse` | Gudang | Agus, Bilal | (dasbor terbuka) | Serahkan, kembalikan, perpanjang, tandai hilang, tutup peminjaman; **meminjamkan tanpa persetujuan**; tidak bisa membuka Register Aset | — | — | — | — | |
-| `finance` | Keuangan | Aqim → tidak dipakai, atau Bella (K2d) | Kartu keuangan | — | Faktur, kuitansi, nota kredit, ajukan penghapusan piutang, pembayaran (buat sampai eksekusi), tagihan pemasok, klaim biaya (buat dan setujui), kas/bank, rekonsiliasi, laporan, bayar gaji, data gaji (`payroll` read/create/update). **Tidak** bisa membaca daftar akun, jurnal, periode | Lihat dan ekspor (XML Coretax, CSV); setor pajak lewat kas/bank | Lihat data investor dan laporan investor | — | |
-| `accountant` | Akuntan | Bella → Bella | Kartu keuangan | — (tidak punya `asset:read`) | Daftar akun, pusat biaya, aturan posting, jurnal (buat sampai balik), saldo awal, tutup/kunci/buka periode, setujui penghapusan piutang dan klaim biaya, tagihan pemasok, rekonsiliasi, laporan; kapitalisasi dan penyusutan, anggaran proyek (server saja, RO3) | Semua: tarif, TER PPh 21, catatan pajak, koreksi, pemotongan, verifikasi, tutup PPN | Lihat investor; buat dan terbitkan laporan investor | — | |
-| `hr` | SDM | belum ditentukan → Aqim (K2a) | Kartu sesuai hak | — | Rekening gaji karyawan; siapkan dan hitung gaji (tanpa menyetujui) | Hitung ulang PPh 21 di gaji; unduh XML BP21 | — | Lihat anggota, undang (tanpa halaman, RO18) | |
-| `auditor` | Auditor | — → dihapus | Kartu baca | Lihat dan ekspor aset/peminjaman | Baca dan ekspor semua | Baca dan ekspor | — | Baca audit, profil perusahaan, nomor kode (server) | |
-| `member` | Anggota | Agus, Jamil, Fahri, Bilal, Dafrin, Oki → Dafrin, Oki (lembar: "Hapus") | Dasbor | — | — | — | — | — | |
-| Lainnya (`sales_manager`/Penjualan, `customer_service`, `marketing`) | | Agus MD, Bilal | Kartu sesuai hak | Ajukan peminjaman (⚠️ form tidak bisa dipakai) | — | — | — | — | |
+| `owner` | Pemilik | Aqim → Aqim | Semua kartu | Semua, termasuk **satu-satunya** yang bisa mengusulkan, menyetujui, dan mengeksekusi penghapusan aset | Semua | Semua | Semua; **satu-satunya** pemegang bagi hasil (`profit_distribution`) dan modal investor | Semua, termasuk gateway pembayaran dan memberi role Pemilik |  (jawaban programmer B 27/11) |
+| `admin` | Admin | Aqim → tidak dipakai | Kartu sesuai hak | Lihat aset; peminjaman penuh (ajukan, setujui, serahkan, kembalikan, hilang) | — | — | — | Anggota dan role (tanpa memberi Pemilik), profil perusahaan, nomor kode, baca audit (server) |  (jawaban programmer B 27/11) |
+| `operations_manager` | Manajer Operasional | Aqim → tidak dipakai | Kartu sesuai hak | Kelola kategori dan register aset (tanpa penghapusan), peminjaman penuh, entri penyusutan manual | Setujui kasbon; verifikasi **dan** setujui pertanggungjawaban; anggaran (`budget`) | — | — | — |  (jawaban programmer B 27/11) |
+| `project_manager` | Manajer Proyek | Agus, Jamil, Hatta | Kartu proyek | Lihat aset, ajukan dan **setujui** peminjaman | Buat dan ajukan pertanggungjawaban; lihat biaya proyek; lihat anggaran proyek | — | — | — |  (jawaban programmer B 27/11) |
+| `technician` | Teknisi | Fahri, Jamil, Agus, Alex, Ade → Fahri, Jamil, Agus, Alex, Ade | (dasbor terbuka, lihat RO20) | Ajukan peminjaman (⚠️ form tidak bisa dipakai, RO7) | Ajukan kasbon dan pertanggungjawaban (⚠️ halamannya tertutup, RO6); lihat anggaran proyek | — | — | — |  (jawaban programmer B 27/11) |
+| `freelancer` | Pekerja Lepas | Dafrin, Oki, Alex, Ade, Hatta → Dafrin, Oki | (dasbor terbuka) | — | Buat dan ajukan pertanggungjawaban (⚠️ halamannya tertutup) | — | — | — |  (jawaban programmer B 27/11) |
+| `warehouse` | Gudang | Agus, Bilal | (dasbor terbuka) | Serahkan, kembalikan, perpanjang, tandai hilang, tutup peminjaman; **meminjamkan tanpa persetujuan**; tidak bisa membuka Register Aset | — | — | — | — |  (jawaban programmer B 27/11) |
+| `finance` | Keuangan | Aqim → tidak dipakai, atau Bella (K2d) | Kartu keuangan | — | Faktur, kuitansi, nota kredit, ajukan penghapusan piutang, pembayaran (buat sampai eksekusi), tagihan pemasok, klaim biaya (buat dan setujui), kas/bank, rekonsiliasi, laporan, bayar gaji, data gaji (`payroll` read/create/update). **Tidak** bisa membaca daftar akun, jurnal, periode | Lihat dan ekspor (XML Coretax, CSV); setor pajak lewat kas/bank | Lihat data investor dan laporan investor | — |  (jawaban programmer B 27/11) |
+| `accountant` | Akuntan | Bella → Bella | Kartu keuangan | — (tidak punya `asset:read`) | Daftar akun, pusat biaya, aturan posting, jurnal (buat sampai balik), saldo awal, tutup/kunci/buka periode, setujui penghapusan piutang dan klaim biaya, tagihan pemasok, rekonsiliasi, laporan; kapitalisasi dan penyusutan, anggaran proyek (server saja, RO3) | Semua: tarif, TER PPh 21, catatan pajak, koreksi, pemotongan, verifikasi, tutup PPN | Lihat investor; buat dan terbitkan laporan investor | — |  (jawaban programmer B 27/11) |
+| `hr` | SDM | belum ditentukan → Aqim (K2a) | Kartu sesuai hak | — | Rekening gaji karyawan; siapkan dan hitung gaji (tanpa menyetujui) | Hitung ulang PPh 21 di gaji; unduh XML BP21 | — | Lihat anggota, undang (tanpa halaman, RO18) |  (jawaban programmer B 27/11) |
+| `auditor` | Auditor | — → dihapus | Kartu baca | Lihat dan ekspor aset/peminjaman | Baca dan ekspor semua | Baca dan ekspor | — | Baca audit, profil perusahaan, nomor kode (server) |  (jawaban programmer B 27/11) |
+| `member` | Anggota | Agus, Jamil, Fahri, Bilal, Dafrin, Oki → Dafrin, Oki (lembar: "Hapus") | Dasbor | — | — | — | — | — |  (jawaban programmer B 27/11) |
+| Lainnya (`sales_manager`/Penjualan, `customer_service`, `marketing`) | | Agus MD, Bilal | Kartu sesuai hak | Ajukan peminjaman (⚠️ form tidak bisa dipakai) | — | — | — | — | Penjualan digabung (K2b, jawaban programmer B 27/11) |
+
+Diperbarui 2026-11-27 sesuai keputusan tanya-jawab: kolom Keputusan diisi dari lembar rapat bagian 0 (menunggu konfirmasi Pemilik dan Oki).
 
 **Portal karyawan (`apps/web-employee`) tidak memakai role.** Syaratnya: punya data
 karyawan hidup di `human_resource.employees` dan **bukan** pemegang role aplikasi
@@ -282,22 +284,26 @@ butuh orang kedua; perlu dikonfirmasi saat rapat karena rekomendasinya berbeda
 untuk kasbon); K2 = (a); K2a = Aqim SDM; K2d belum diisi, rekomendasi (b) Bella
 memegang Akuntan **dan** Keuangan.
 
+Diperbarui 2026-11-27 sesuai keputusan tanya-jawab (lembar rapat bagian 0, menunggu konfirmasi Pemilik dan Oki): K1a diganti, kasbon dan pertanggungjawaban ikut K1 dan Aqim tidak mengajukan kasbon, jurnal tetap orang kedua; RO5 satu langkah oleh Aqim; K2d **(a) gabung** (Bella memegang role Keuangan gabungan); Anggota dihapus (Dafrin dan Oki hanya Pekerja Lepas); role organisasi Admin dihapus; RO1 periode dibuat Pemilik dan Keuangan; RO4 buka kembali hanya Pemilik; OG1 absen di luar radius ditolak; K10 ditunda.
+
 ### 3.1 Tim dan haknya di modul Oki
 
-Asumsi: susunan role usulan K2, ditambah K2d (b) untuk Bella.
+Asumsi: susunan role usulan K2, ditambah K2d (b) untuk Bella. → diganti 27/11: K2d (a), Bella memegang satu role Keuangan gabungan; hak efektifnya sama dengan baris Bella pertama.
 
 | Orang | Role (usulan) | Hak efektif di modul Oki |
 |---|---|---|
 | **Aqim** | Pemilik, SDM, tanda admin aplikasi di akun `admin` | Semua: semua dasbor, aset dan penghapusan, keuangan, pajak, investor, pengguna, audit, nomor kode, gateway, pengaturan penggajian. Tidak bisa masuk portal karyawan dengan akun `admin` |
-| **Bella** | Akuntan, Keuangan (K2d b) | Gabungan: faktur, kuitansi, pembayaran, tagihan, klaim, kas/bank, rekonsiliasi, bayar gaji, data gaji karyawan; daftar akun, jurnal, periode, laporan, semua pajak, laporan investor. **Tidak**: aset (halaman Aset tetap tertutup), anggaran proyek (halaman tertutup), kasbon/pertanggungjawaban, audit |
-| **Bella** (bila K2d tidak diambil) | Akuntan saja | Seperti di atas tanpa faktur, kuitansi, pembayaran, klaim (hanya setujui), kas/bank (hanya rekonsiliasi), gaji |
+| **Bella** | Akuntan, Keuangan (K2d b) → diganti: Keuangan gabungan (K2d a, 27/11) | Gabungan: faktur, kuitansi, pembayaran, tagihan, klaim, kas/bank, rekonsiliasi, bayar gaji, data gaji karyawan; daftar akun, jurnal, periode, laporan, semua pajak, laporan investor. **Tidak**: aset (halaman Aset tetap tertutup), anggaran proyek (halaman tertutup), kasbon/pertanggungjawaban, audit |
+| **Bella** (bila K2d tidak diambil) | Akuntan saja (tidak berlaku setelah K2d gabung, 27/11) | Seperti di atas tanpa faktur, kuitansi, pembayaran, klaim (hanya setujui), kas/bank (hanya rekonsiliasi), gaji |
 | **Agus** | Manajer Proyek, Teknisi, Gudang | Ajukan, **setujui**, serahkan, dan kembalikan peminjaman, termasuk miliknya sendiri; lihat register aset; kasbon dan pertanggungjawaban (lewat API, halamannya tertutup); biaya dan anggaran proyek (lihat) |
 | **Jamil** | Manajer Proyek, Teknisi | Ajukan dan setujui peminjaman; lihat register aset; kasbon dan pertanggungjawaban (halamannya tertutup); biaya dan anggaran proyek (lihat) |
 | **Hatta** | Manajer Proyek | Ajukan dan setujui peminjaman; lihat register aset; pertanggungjawaban (halamannya tertutup); tanpa kasbon |
 | **Fahri, Alex, Ade** | Teknisi | Ajukan peminjaman (form tidak bisa dipakai); kasbon dan pertanggungjawaban (halamannya tertutup); lihat anggaran proyek |
 | **Bilal** | Penjualan, Gudang, Layanan Pelanggan, Pemasaran | Serahkan dan kembalikan peminjaman, meminjamkan tanpa persetujuan; ajukan peminjaman (form tidak bisa dipakai); kartu dasbor penjualan dan stok |
 | **Agus MD** | Penjualan | Kartu dasbor penjualan; tautan Stok di dasbor ditolak (M01); ajukan peminjaman (form tidak bisa dipakai) |
-| **Dafrin, Oki** | Pekerja Lepas, Anggota | Pertanggungjawaban (halamannya tertutup); dasbor; portal karyawan **bila** punya data karyawan |
+| **Dafrin, Oki** | Pekerja Lepas, Anggota → diganti: Pekerja Lepas saja (X4, 27/11) | Pertanggungjawaban (halamannya tertutup); dasbor; portal karyawan **bila** punya data karyawan; tanpa absensi dan slip gaji di aplikasi (27/11) |
+
+Diperbarui 2026-11-27 sesuai keputusan tanya-jawab: Penjualan digabung (Agus MD, Bilal), Keuangan digabung dengan Akuntan (Bella), Anggota dihapus (Dafrin, Oki hanya Pekerja Lepas), role organisasi Admin dihapus.
 
 Semua orang di atas bisa membuka dasbor, karena hak `dashboard:read` tidak dipakai (RO20).
 
@@ -393,42 +399,45 @@ Menu ditulis seperti di aplikasi (`packages/locales/src/id/nav.ts`). "→" berar
 
 ### 3.6 Yang perlu dijawab Pemilik dan Oki
 
-1. **RO1:** periode dibuat Akuntan atau otomatis? (Oki)
-2. **RO4:** buka kembali periode hanya Pemilik? (Pemilik)
-3. **RO5:** pertanggungjawaban satu langkah, Bella memverifikasi, atau K1a diubah untuk pertanggungjawaban? (Pemilik)
+1. **RO1:** periode dibuat Akuntan atau otomatis? (Oki) *(27/11: Pemilik dan Keuangan, hak `accounting_period:create`)*
+2. **RO4:** buka kembali periode hanya Pemilik? (Pemilik) *(27/11: ya, hanya Pemilik)*
+3. **RO5:** pertanggungjawaban satu langkah, Bella memverifikasi, atau K1a diubah untuk pertanggungjawaban? (Pemilik) *(27/11: satu langkah oleh Aqim)*
 4. **RO6:** pengaju kasbon dan pertanggungjawaban memakai web-admin atau portal karyawan? (Oki)
-5. **RO7 / C13:** aturan baru peminjaman, dan Gudang boleh meminjamkan tanpa persetujuan? (Pemilik + Oki)
-6. **RO12:** audit ikut transaksi dan perubahan role diaudit sebelum K1 dijalankan? Bella boleh membaca Log Audit? (Oki + Pemilik)
+5. **RO7 / C13:** aturan baru peminjaman, dan Gudang boleh meminjamkan tanpa persetujuan? (Pemilik + Oki) *(27/11: teknisi mengajukan dari daftar unit khusus, OD1; persetujuan sendiri diperbaiki, OD2)*
+6. **RO12:** audit ikut transaksi dan perubahan role diaudit sebelum K1 dijalankan? Bella boleh membaca Log Audit? (Oki + Pemilik) *(27/11: audit wajib ikut transaksi, sebelum K1)*
 7. **RO16:** semua urusan aset dan kasbon tetap di Aqim, atau Manajer Operasional diberikan ke orang kedua? (Pemilik)
-8. **RO17 / K2d:** Bella memegang Keuangan dan melihat data gaji? (Pemilik)
-9. **RO19:** tombol Google di portal karyawan? (Pemilik + Oki)
-10. **K10:** M11 dibangun atau ditunda? (Pemilik + Oki)
+8. **RO17 / K2d:** Bella memegang Keuangan dan melihat data gaji? (Pemilik) *(27/11: ya, Akuntan digabung ke Keuangan)*
+9. **RO19:** tombol Google di portal karyawan? (Pemilik + Oki) *(27/11: dihapus; karyawan diundang, login dengan kata sandi)*
+10. **K10:** M11 dibangun atau ditunda? (Pemilik + Oki) *(27/11: ditunda, halaman investor hanya Pemilik)*
 
 ### 3.7 Peta bentrok persetujuan
 
-Pembuat dan penyetuju memakai susunan role usulan K2 dan K2d (b). ✋ = kode menolak
+Pembuat dan penyetuju memakai susunan role usulan K2 dan K2d (b). Diperbarui 27/11: K2d (a), Bella memegang role Keuangan gabungan; kolom Status menulis kondisi sesudah keputusan bila berbeda. ✋ = kode menolak
 penyetuju yang sama dengan pembuat, termasuk Pemilik.
 
 | Dokumen | Pembuat | Penyetuju | Status |
 |---|---|---|---|
 | Jurnal manual ✋ (`manual-journal.service.ts:132`) | Bella, Aqim | Bella, Aqim | 🟢 Aman: saling menyetujui. Tertahan bila salah satu tidak ada (RO10) |
 | Penghapusan piutang ✋ (`receivable-adjustment.service.ts:205`) | Bella (Keuangan), Aqim | Bella (Akuntan), Aqim | 🟢 Aman: ajuan Bella disetujui Aqim, dan sebaliknya |
-| Kasbon ✋ (`employee-advance.service.ts:126`) | Teknisi (Fahri, Jamil, Agus, Alex, Ade), Aqim | Aqim | 🟢 Aman bila diajukan teknisi (⚠️ halamannya tertutup, RO6). 🔴 Macet bila diajukan Aqim |
-| Pertanggungjawaban: verifikasi ✋ (`:217`) | Teknisi, PM, Pekerja Lepas | Aqim | 🟢 Aman |
-| Pertanggungjawaban: persetujuan ✋ (`:235`) | (setelah verifikasi Aqim) | Aqim | 🔴 **Selalu macet** (RO5) |
-| Periode akuntansi: siapkan | — | — | 🔴 **Tidak ada pemegang hak** (RO1) |
+| Kasbon ✋ (`employee-advance.service.ts:126`) | Teknisi (Fahri, Jamil, Agus, Alex, Ade); Aqim tidak mengajukan kasbon (27/11) | Aqim | 🟢 Aman: Aqim tidak mengajukan kasbon (K1a/X1, 27/11), jadi tidak ada titik macet. Sebelumnya: 🟢 Aman bila diajukan teknisi (⚠️ halamannya tertutup, RO6). 🔴 Macet bila diajukan Aqim |
+| Pertanggungjawaban: verifikasi ✋ (`:217`) | Teknisi, PM, Pekerja Lepas | Aqim | 🟢 Aman. Sesudah RO5 (27/11) verifikasi dan persetujuan digabung menjadi satu langkah oleh Aqim |
+| Pertanggungjawaban: persetujuan ✋ (`:235`) | (setelah verifikasi Aqim) | Aqim | 🟢 **Sesudah RO5 (27/11): satu langkah oleh Aqim**, aturan verifikator ≠ penyetuju dihapus. Kode sekarang: 🔴 selalu macet sampai diubah Oki |
+| Periode akuntansi: siapkan | Aqim, Bella (sesudah RO1) | — | 🟡 **Sesudah RO1 (27/11): Pemilik dan Keuangan bisa membuat periode** (`accounting_period:create`), tanpa persetujuan kedua. Kode sekarang: 🔴 tidak ada pemegang hak |
 | Periode: tutup, kunci | Bella | — | 🟡 Tanpa pemeriksa (tidak butuh persetujuan) |
-| Periode: buka kembali | Bella, Aqim | — | 🟡 Tanpa pemeriksa; ⚠️ Bella bisa walau rencananya hanya Pemilik (RO4) |
+| Periode: buka kembali | Bella, Aqim | — | 🟡 Tanpa pemeriksa; ⚠️ Bella bisa walau rencananya hanya Pemilik (RO4). Sesudah RO4 (27/11): hanya Aqim, route memeriksa `reopen` |
 | Pembayaran | Bella, Aqim | Bella, Aqim | 🟡 Tanpa pemeriksa (RO9; diterima K7a) |
-| Klaim biaya | Bella, Aqim | Bella, Aqim | 🟡 Tanpa pemeriksa (RO9) |
+| Klaim biaya | Bella, Aqim | Bella, Aqim | 🟡 Tanpa pemeriksa (RO9); diterima (OB8, 27/11) |
 | Tagihan pemasok (rekam) | Bella, Aqim | — | 🟡 Tanpa pemeriksa |
 | Gaji (periode) | Aqim (SDM) | Aqim (Pemilik) | 🟡 Tanpa pemeriksa (RO8; sesuai K1, belum ada catatan audit khusus). Pembayaran oleh Bella |
 | Catatan pajak dan pemotongan (verifikasi) | Bella | Bella | 🟡 Tanpa pemeriksa (RO13) |
 | Penghapusan aset | Aqim | Aqim | 🟡 Tanpa pemeriksa (RO11; sesuai K1) |
-| Peminjaman aset | PM (Agus, Jamil, Hatta), Aqim; teknisi dan Penjualan (⚠️ form) | PM, Aqim | 🟡 Tanpa pemeriksa: PM menyetujui pinjamannya sendiri (`borrowing.controller.ts:38`); Gudang bisa menyerahkan tanpa persetujuan (`borrowing.service.ts:160`) |
+| Peminjaman aset | PM (Agus, Jamil, Hatta), Aqim; teknisi dan Penjualan (⚠️ form) | PM, Aqim | 🟡 Tanpa pemeriksa: PM menyetujui pinjamannya sendiri (`borrowing.controller.ts:38`); Gudang bisa menyerahkan tanpa persetujuan (`borrowing.service.ts:160`). Sesudah OD1/OD2 (27/11): teknisi mengajukan dari daftar unit khusus; pembuat ≠ penyetuju kecuali Pemilik |
 | Entri penyusutan manual, kapitalisasi | Aqim (Bella setelah RO3) | — | 🟡 Tanpa pemeriksa (tidak butuh persetujuan) |
-| Bagi hasil investor | Aqim | Aqim | ⚪ Belum dibangun (K10) |
-| Perubahan role anggota | Aqim | — | 🟡 Tanpa pemeriksa dan **tidak diaudit** (RO12) |
+| Bagi hasil investor | Aqim | Aqim | ⚪ Belum dibangun (K10); ditunda, halaman investor hanya Pemilik (27/11) |
+| Perubahan role anggota | Aqim | — | 🟡 Tanpa pemeriksa dan **tidak diaudit** (RO12). Sesudah OA5–OA7 (27/11): wajib diaudit, sebelum K1 |
+| Absen lokasi (portal karyawan) | Karyawan | — | Sesudah OG1 (27/11): absen di luar radius **ditolak**. Kode sekarang: tersimpan dengan tanda `out_of_range` |
+
+Diperbarui 2026-11-27 sesuai keputusan tanya-jawab: kasbon, pertanggungjawaban, dan siapkan periode tidak lagi 🔴; baris absen lokasi ditambahkan (OG1).
 
 Keterangan:
 
@@ -440,7 +449,7 @@ Keterangan:
 **Yang harus diselesaikan sebelum dipakai:** RO1 (periode) dan RO5 (persetujuan
 pertanggungjawaban), ditambah RO6 bila kasbon memang dipakai teknisi. Berbeda dengan
 modul programmer B, keduanya **tidak** selesai dengan K1 saja: RO1 adalah hak yang
-tidak ada, dan RO5 tetap macet karena K1a tercatat (b).
+tidak ada, dan RO5 tetap macet karena K1a tercatat (b). Diperbarui 27/11: RO1 diputuskan (hak `create` untuk Pemilik dan Keuangan) dan RO5 diputuskan (satu langkah oleh Aqim); keduanya masih harus dikerjakan Oki.
 
 **Yang cukup diterima atau diawasi:** semua 🟡, lewat laporan, rekonsiliasi, dan
 Log Audit, dengan syarat RO12 diperbaiki supaya audit benar-benar lengkap.
@@ -448,43 +457,49 @@ Log Audit, dengan syarat RO12 diperbaiki supaya audit benar-benar lengkap.
 ### 3.8 Rekomendasi susunan role dan aturan persetujuan modul Oki
 
 Mengikuti K1 (b), K2 (a), K2a, K2b, dan rekomendasi K2d (b). Statusnya **usulan**,
-menunggu Oki (pemilik `erp-permissions.ts`, ADR-0006, dan service finance) dan Pemilik.
+menunggu Oki (pemilik `erp-permissions.ts`, ADR-0006, dan service finance) dan Pemilik. Diperbarui 2026-11-27 sesuai keputusan tanya-jawab: K2d (a) gabung, RO5 satu langkah oleh Aqim, OG1 tolak, Anggota dan Admin dihapus.
 
 #### Role per orang di modul Oki
 
 | Orang | Role | Tugas di modul Oki |
 |---|---|---|
 | Aqim | Pemilik, SDM (+ tanda admin aplikasi) | Pengguna dan role, pengaturan, aset dan penghapusan, persetujuan jurnal/penghapusan piutang/kasbon, gaji, buka kembali periode |
-| Bella | Akuntan, Keuangan | Semua transaksi keuangan, jurnal, pajak, tutup buku, kapitalisasi dan penyusutan |
+| Bella | Akuntan, Keuangan → diganti: Keuangan gabungan (K2d a, 27/11) | Semua transaksi keuangan, jurnal, pajak, tutup buku, kapitalisasi dan penyusutan |
 | Agus, Jamil, Hatta | Manajer Proyek (+ Teknisi/Gudang sesuai K2) | Menyetujui peminjaman orang lain, lihat aset |
 | Agus, Bilal | Gudang | Menyerahkan dan menerima unit pinjaman |
 | Fahri, Alex, Ade, Jamil, Agus | Teknisi | Mengajukan peminjaman, kasbon, pertanggungjawaban |
 | Dafrin, Oki | Pekerja Lepas | Pertanggungjawaban; portal karyawan bila punya data karyawan |
 
-Manajer Operasional, Admin, dan Auditor tidak dipakai; role tetap ada di aplikasi.
+Manajer Operasional, Admin, dan Auditor tidak dipakai; role tetap ada di aplikasi. Diperbarui 27/11: role organisasi Admin dan Anggota **dihapus** (tanda admin aplikasi Aqim tetap); Manajer Operasional tidak dipakai.
 
 #### Aturan persetujuan yang direkomendasikan
 
 1. **Pemilik boleh menyetujui dokumennya sendiri** (K1) untuk dokumen modul Oki yang dibuat Aqim: kasbon, penghapusan aset, gaji, peminjaman aset. Setiap kejadian dicatat di audit dengan tanda "disetujui oleh pembuat (Pemilik)".
 2. **Jurnal manual dan penghapusan piutang tetap dua orang** (K1a b): Bella dan Aqim saling menyetujui. Tidak perlu perubahan kode.
-3. **Pertanggungjawaban:** gabungkan verifikasi dan persetujuan menjadi satu langkah oleh Aqim (atau beri Bella hak verifikasi); tanpa ini alurnya tetap 🔴.
+3. **Pertanggungjawaban:** verifikasi dan persetujuan digabung menjadi **satu langkah oleh Aqim** (RO5, diputuskan programmer B 27/11; opsi Bella memverifikasi tidak dipakai). Aqim tidak mengajukan kasbon.
 4. **Peminjaman aset:** pembuat tidak boleh menyetujui, kecuali Pemilik (sama dengan penyesuaian stok di 3.8 dokumen programmer B). Menyerahkan tanpa persetujuan hanya untuk Pemilik.
 5. **Buka kembali periode hanya Pemilik**, ditegakkan di kode (RO4).
 6. Pembayaran, klaim biaya, tagihan, verifikasi pajak, tutup periode: **tanpa persetujuan kedua**, diawasi Aqim lewat laporan bulanan (K7a).
 7. Audit ikut transaksi bisnis, dan perubahan role ikut diaudit, **sebelum** aturan 1 dijalankan (L-1).
+8. **Absen lokasi di luar radius ditolak** (OG1, diputuskan programmer B 27/11; berbeda dari rekomendasi simpan dan tandai).
 
 #### Yang perlu dikerjakan bila disetujui
 
 | Pekerjaan | Siapa | Perkiraan kasar |
 |---|---|---|
-| Hak siapkan periode (atau periode otomatis), test | Oki | kecil |
+| Hak siapkan periode untuk Pemilik dan Keuangan (RO1, 27/11), test | Oki | kecil |
 | `chart_of_account:read` untuk Keuangan; `asset:read` dan `project:read` untuk Akuntan; jalankan `bun docs/gen-role-permission.ts` | Oki | kecil |
 | Buka kembali periode hanya Pemilik (ganti opsi `ownership` dengan `policy` atau cabut `reopen` dari Akuntan) | Oki | kecil |
-| Pertanggungjawaban satu langkah atau hak verifikasi untuk Bella | Oki | kecil sampai sedang |
+| Pertanggungjawaban satu langkah oleh Aqim; hapus aturan verifikator ≠ penyetuju (RO5, 27/11) | Oki | kecil |
 | Halaman kasbon dan pertanggungjawaban untuk pengaju (web-admin atau portal karyawan) | Oki | sedang |
 | Aturan peminjaman (pembuat ≠ penyetuju kecuali Pemilik; serah tanpa persetujuan hanya Pemilik); form pengajuan tanpa `asset:read` | Oki | sedang |
 | Audit ikut transaksi; audit perubahan role dan pengeluaran anggota; catatan "disetujui pembuat" | Oki (bersama programmer B untuk service miliknya) | sedang |
-| Atur role Bella (Akuntan + Keuangan) di Administrasi → Organisasi → anggota | Aqim | 5 menit |
+| Atur role Bella (Keuangan gabungan, K2d) di Administrasi → Organisasi → anggota | Aqim | 5 menit |
+| Gabung Akuntan ke Keuangan di `erp-permissions.ts`; hapus role Anggota dan role organisasi Admin (tanda admin aplikasi tetap) | Oki | kecil sampai sedang |
+| Tolak absen lokasi di luar radius (OG1) | Oki | kecil |
+| Tutup `/finance/investors` untuk selain Pemilik (OE1) | Oki | kecil |
+
+Diperbarui 2026-11-27 sesuai keputusan tanya-jawab.
 
 ***
 

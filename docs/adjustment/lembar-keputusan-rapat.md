@@ -17,6 +17,41 @@ Pemilik dan Oki. Isinya gabungan semua keputusan dari\
 
 * Setelah rapat, hasilnya disalin ke tiga file sumber di atas dan ke `catatan-progres.md`, supaya semua catatan sama.
 
+## 0. Keputusan programmer B lewat tanya-jawab (2026-11-27)
+
+Jawaban programmer B di chat. Statusnya **jawaban programmer B**; Pemilik
+dan Oki tinggal mengonfirmasi saat rapat. File keputusan, rencana, validasi,
+dan diagram sudah disesuaikan dengan daftar ini.
+
+| No | Keputusan | Catatan |
+|---|---|---|
+| K1 | (b) Pemilik boleh menyetujui dokumennya sendiri, tercatat di audit | Isian sebelumnya |
+| K1a / X1 | Kasbon dan pertanggungjawaban **ikut K1**; jurnal manual **tetap** butuh orang kedua (Bella ↔ Aqim) | Aqim (Pemilik) **tidak mengajukan kasbon** |
+| RO5 / X2 | Pertanggungjawaban kasbon teknisi **cukup satu langkah oleh Aqim** (aturan verifikator ≠ penyetuju dihapus) | Perlu ubah `employee-advance.service.ts` (wilayah Oki) |
+| K2 | (a) Susunan role per orang disetujui | |
+| K2a | SDM hanya Aqim | Aqim tidak cuti lewat aplikasi (A3a) |
+| K2b | **Manajer Penjualan + Penjualan digabung** menjadi satu role "Penjualan" | Agus MD dan Bilal saling menyetujui SPH |
+| K2d / X3 | **Akuntan dan Keuangan digabung** menjadi satu role (dipegang Bella) | Ubah `erp-permissions.ts` (wilayah Oki). Bella akan melihat gaji dan rekening karyawan |
+| X4 | **Role Anggota dihapus**; Dafrin dan Oki hanya Pekerja Lepas, tanpa absensi/slip gaji di aplikasi | |
+| Admin | Role organisasi Admin dihapus; tanda admin aplikasi di akun Aqim tetap | |
+| K6 | (a) Kode pemasok otomatis dipersingkat | Lewat Administrasi → Nomor Kode + perbaikan pratinjau |
+| K7 / K7a | (a) Bilal boleh mengirim SO-nya sendiri; gaji, pembayaran, klaim garansi tanpa pemeriksa kedua diterima | |
+| B1 | **Langkah "Tandai terkirim" dihapus**; PO yang disetujui langsung bisa diterima gudang | |
+| B2, B3, B4 | (b) | B2 berlaku bila nanti ada staf pembelian |
+| C1, C2 | (a) SO otomatis Terkirim/Selesai; menu Uang Muka dibuka | |
+| D2, D4, D5 | (a) beberapa role per orang; (b) tugas hanya milik sendiri; (b) halaman konten website ditunda | |
+| RO1 | Periode akuntansi dibuat oleh **Pemilik dan Keuangan** | Tambah hak `accounting_period:create` |
+| RO4 | Membuka kembali periode **hanya Pemilik** | Route pembuka periode harus memeriksa hak `reopen` |
+| OA5–OA7 | **Audit wajib ikut transaksi**, dan perubahan role, hapus anggota, serta persetujuan sendiri wajib tercatat. **Dikerjakan sebelum K1** | |
+| K12 | Organisasi dihapus **bertahap** (1: sembunyikan pemilih organisasi; 2: role ke tingkat pengguna; 3: hapus `organization_id`, ADR baru) | |
+| K13 | Web-admin **dan portal karyawan**: username/email + kata sandi, tanpa Google. Karyawan **diundang**, lalu mengganti kata sandi dan login. Portal pelanggan: login Google | |
+| OA4 | **Pelanggan satu jenis akun** (tanpa tipe perorangan/perusahaan saat login); data perusahaan diisi belakangan di profil | |
+| OB7 / OB8 | Pembayaran dan klaim biaya tanpa pemeriksa kedua **diterima**, diawasi lewat laporan dan audit | |
+| OD1 / X7 | Peminjaman aset memakai **daftar unit khusus** untuk diajukan teknisi | OD2 (persetujuan sendiri selalu lolos) diperbaiki |
+| K10 / OE1 | M11 **ditunda**; halaman investor ditutup (hanya Pemilik) | |
+| OG1 | Absen lokasi di luar radius **ditolak** | Berbeda dari rekomendasi (simpan dan tandai) |
+| K8, K9, K11 | **Dibahas di rapat** | Kontrak A/B, fitur di luar kontrak, pemilik bagian bersama |
+
 **Rapat**
 
 | Tanggal | Tempat | Hadir                       | Notulis |
@@ -30,14 +65,14 @@ Pemilik dan Oki. Isinya gabungan semua keputusan dari\
 | No     | Pertanyaan                                                                                                                                                                           | Pilihan                                                                                                                                                                                 | Rekomendasi                                                                                                                         | Keputusan | Oleh |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------- | ---- |
 | **K1** | Bolehkah Pemilik (Aqim) menyetujui dokumennya sendiri? Sekarang PO, PR, dan retur pembelian buatan Aqim tidak bisa disetujui siapa pun, karena Aqim satu-satunya Manajer Operasional | (a) Tidak boleh, sesuai ADR-0006. (b) **Pemilik saja** boleh, tercatat di audit, untuk semua dokumen. (c) Ada Manajer Operasional kedua. (d) PO dibuat orang lain, Aqim yang menyetujui | **(b)**; *jawaban sementara programmer B: (b)*. Butuh perubahan ADR-0006 oleh Oki. Sumber: A1, R2, 3.8, pertanyaan 1.3 no. 1 dan 10 | B         |      |
-| K1a    | Bila K1 = (b), apakah juga berlaku untuk jurnal manual, kasbon, dan pertanggungjawaban di keuangan (sekarang dilarang menyetujui sendiri)?                                           | (a) Ya. (b) Tidak, tetap butuh orang kedua                                                                                                                                              | (b) untuk jurnal (Bella dan Aqim saling memeriksa); (a) untuk kasbon dan pertanggungjawaban                                         | B         |      |
+| K1a    | Bila K1 = (b), apakah juga berlaku untuk jurnal manual, kasbon, dan pertanggungjawaban di keuangan (sekarang dilarang menyetujui sendiri)?                                           | (a) Ya. (b) Tidak, tetap butuh orang kedua                                                                                                                                              | (b) untuk jurnal (Bella dan Aqim saling memeriksa); (a) untuk kasbon dan pertanggungjawaban                                         | B → diganti: (b) untuk jurnal; (a) untuk kasbon dan pertanggungjawaban, Aqim tidak mengajukan kasbon (X1, jawaban programmer B 27/11) |      |
 | **K2** | Susunan role per orang (tabel di bawah). Role yang dipakai turun dari 16 menjadi 11 (dengan K2b)                                                                                                  | (a) Setuju. (b) Setuju dengan perubahan. (c) Tetap seperti sekarang                                                                                                                     | **(a)**; *jawaban sementara programmer B: (a)*. Sumber: 3.8, D1, R7                                                                 | A         |      |
 | K2a    | Role SDM hanya untuk Aqim; yang lain cukup layanan mandiri (absen, cuti, slip gaji sendiri)?                                                                                         | (a) Ya. (b) Tambah satu orang SDM                                                                                                                                                       | **(a)**; *jawaban sementara programmer B: ya, cukup Aqim*. Sumber: R1                                                               | A         |      |
-| **K2b** | Gabungkan role **Manajer Penjualan** dan **Penjualan** menjadi satu role **Penjualan**, dengan hak Manajer Penjualan sekarang (termasuk menyetujui SPH dan retur penjualan orang lain, membatalkan SO, mengarsipkan pelanggan, akun portal, lisensi penuh, katalog). Aturan "tidak boleh menyetujui dokumen sendiri" tetap, jadi SPH Bilal disetujui Agus MD dan sebaliknya | (a) Gabung. (b) Tetap dua role | **(a)**; *permintaan programmer B 2026-11-26*. Di kode: role `sales` tidak ditawarkan lagi, `sales_manager` diberi label "Penjualan" (wilayah Oki, `erp-permissions.ts`) | | |
-| K2c | Role **Pembelian** dipakai sekarang? Bila dipakai, PO dibuat orang itu dan Aqim yang menyetujui, jadi persetujuan PO tidak bergantung pada K1 | (a) Tidak dipakai; Aqim membeli sendiri sebagai Pemilik. (b) Diberikan ke satu orang (misal Agus atau Bilal) | **(a)** selama pembelian dikerjakan Aqim; pilih (b) bila ingin pemisahan tugas atau K1 ditolak | | |
+| **K2b** | Gabungkan role **Manajer Penjualan** dan **Penjualan** menjadi satu role **Penjualan**, dengan hak Manajer Penjualan sekarang (termasuk menyetujui SPH dan retur penjualan orang lain, membatalkan SO, mengarsipkan pelanggan, akun portal, lisensi penuh, katalog). Aturan "tidak boleh menyetujui dokumen sendiri" tetap, jadi SPH Bilal disetujui Agus MD dan sebaliknya | (a) Gabung. (b) Tetap dua role | **(a)**; *permintaan programmer B 2026-11-26*. Di kode: role `sales` tidak ditawarkan lagi, `sales_manager` diberi label "Penjualan" (wilayah Oki, `erp-permissions.ts`) | (a) gabung; Agus MD dan Bilal saling menyetujui SPH (jawaban programmer B 27/11) | |
+| K2c | Role **Pembelian** dipakai sekarang? Bila dipakai, PO dibuat orang itu dan Aqim yang menyetujui, jadi persetujuan PO tidak bergantung pada K1 | (a) Tidak dipakai; Aqim membeli sendiri sebagai Pemilik. (b) Diberikan ke satu orang (misal Agus atau Bilal) | **(a)** selama pembelian dikerjakan Aqim; pilih (b) bila ingin pemisahan tugas atau K1 ditolak | (a) tidak dipakai (jawaban programmer B 27/11) | |
 | **K6** | Format nomor PO. Sekarang PO ke pemasok berkode otomatis (misal `DEV-ENTRAGATE-SUP-00001`) tidak bisa disetujui karena nomornya lebih dari 32 karakter                               | (a) Kode pemasok otomatis dipersingkat (misal `SUP-00001`). (b) Kolom nomor diperlebar. (c) Kode pemasok singkat wajib diisi manual                                                     | **(a)**, bisa lewat Administrasi → Nomor Kode tanpa ubah kode; ditambah perbaikan pratinjau                                         | A         |      |
-| **K12** | **Lapisan organisasi dihapus** (arah baru programmer B 2026-11-26): ERP hanya untuk satu perusahaan, tanpa pilihan organisasi. Role tidak lagi disimpan per organisasi | (a) Hapus sekarang. (b) Hapus bertahap. (c) Biarkan, sembunyikan dari tampilan | **(b)**: perubahannya besar (role di `auth.members`, kolom `organization_id` di 18 file skema, header `x-organization-id`, ganti organisasi di sidebar, ADR-0006 dan ERP-0031 (tautan gudang–organisasi)). Butuh ADR baru, `docs.dbml`, dan migrasi; wilayah Oki (M12). Rincian `lintas-modul/autentikasi-dan-hak-akses.md` | | |
-| **K13** | **Login** (arah baru programmer B 2026-11-26): web-admin hanya email/username + kata sandi (**tombol Google dihapus**); portal pelanggan memakai **Google** | (a) Setuju. (b) Ubah | **(a)**. Perlu diputuskan juga: akun Google pelanggan dicocokkan ke kontak lewat email; pelanggan perusahaan tetap diundang dulu; perlu `GOOGLE_*` di server (sekarang belum diisi, dan tombol Google di portal masih "segera hadir") | | |
+| **K12** | **Lapisan organisasi dihapus** (arah baru programmer B 2026-11-26): ERP hanya untuk satu perusahaan, tanpa pilihan organisasi. Role tidak lagi disimpan per organisasi | (a) Hapus sekarang. (b) Hapus bertahap. (c) Biarkan, sembunyikan dari tampilan | **(b)**: perubahannya besar (role di `auth.members`, kolom `organization_id` di 18 file skema, header `x-organization-id`, ganti organisasi di sidebar, ADR-0006 dan ERP-0031 (tautan gudang–organisasi)). Butuh ADR baru, `docs.dbml`, dan migrasi; wilayah Oki (M12). Rincian `lintas-modul/autentikasi-dan-hak-akses.md` | (b) bertahap: 1 sembunyikan pemilih organisasi, 2 role ke tingkat pengguna, 3 hapus `organization_id` dengan ADR baru (jawaban programmer B 27/11) | |
+| **K13** | **Login** (arah baru programmer B 2026-11-26): web-admin hanya email/username + kata sandi (**tombol Google dihapus**); portal pelanggan memakai **Google** | (a) Setuju. (b) Ubah | **(a)**. Perlu diputuskan juga: akun Google pelanggan dicocokkan ke kontak lewat email; pelanggan perusahaan tetap diundang dulu; perlu `GOOGLE_*` di server (sekarang belum diisi, dan tombol Google di portal masih "segera hadir") | (a) + portal karyawan tanpa Google, karyawan diundang lalu mengganti kata sandi; pelanggan satu jenis akun dengan Google (OA4) (jawaban programmer B 27/11) | |
 
 **Usulan role per orang (untuk K2):**
 
@@ -51,8 +86,8 @@ Pemilik dan Oki. Isinya gabungan semua keputusan dari\
 | Hatta       | Manajer Proyek                                          | Pekerja Lepas                                   | Ya      |
 | Fahri       | Teknisi                                                 | Anggota                                         | Ya      |
 | Alex, Ade   | Teknisi                                                 | Pekerja Lepas                                   | Ya      |
-| Bella       | Akuntan                                                 | —                                               | Ya      |
-| Dafrin, Oki | Pekerja Lepas, Anggota                                  | —                                               | Ya      |
+| Bella       | Akuntan → diganti: Keuangan (gabungan Akuntan + Keuangan, K2d, 27/11) | —                                 | Ya      |
+| Dafrin, Oki | Pekerja Lepas, Anggota → diganti: Pekerja Lepas saja, Anggota dihapus (X4, 27/11) | —                     | Ya      |
 
 ## 2. Persetujuan lainnya
 
@@ -95,17 +130,17 @@ Pemilik dan Oki. Isinya gabungan semua keputusan dari\
 | Role                | Dipakai (usulan K2)    | Keputusan                |
 | ------------------- | ---------------------- | ------------------------ |
 | Pemilik             | ya                     | Tetap                    |
-| Admin               | tidak dipakai sekarang | tidak dipakai            |
+| Admin               | tidak dipakai sekarang | tidak dipakai → diganti: role organisasi Admin dihapus; tanda admin aplikasi di akun Aqim tetap (27/11) |
 | Anggota             | ya (Dafrin, Oki)       | Hapus                    |
 | Manajer Operasional | tidak dipakai sekarang | Tetap                    |
 | Penjualan (gabungan Manajer Penjualan + Penjualan, K2b) | ya (Agus MD, Bilal) | Merging dengan penjualan; Tetap (satu role "Penjualan") |
 | Manajer Proyek      | ya                     | Tetap                    |
 | Teknisi             | ya                     | Tetap                    |
 | Pekerja Lepas       | ya (Dafrin, Oki)       | Tetap                    |
-| Pembelian           | tidak dipakai sekarang |                          |
+| Pembelian           | tidak dipakai sekarang | Tidak dipakai, tetap ada di aplikasi (K2c (a), jawaban programmer B 27/11) |
 | Gudang              | ya                     | Tetap                    |
 | Keuangan            | tidak dipakai sekarang | Tetap                    |
-| Akuntan             | ya                     | Merging ke keuangan      |
+| Akuntan             | ya                     | Merging ke keuangan (K2d (a) gabung di kode, jawaban programmer B 27/11) |
 | SDM                 | ya (Aqim)              | Tetap                    |
 | Layanan Pelanggan   | ya                     | Tetap                    |
 | Pemasaran           | ya                     | Tetap                    |
@@ -129,7 +164,7 @@ diberikan lagi bila ada orang baru.
 
 | No | Pertanyaan | Pilihan | Rekomendasi | Keputusan | Oleh |
 |---|---|---|---|---|---|
-| K2d | Gabungkan role **Akuntan** ke **Keuangan** (satu role untuk Bella)? | (a) Gabung. (b) Tetap terpisah; Bella cukup diberi dua role | **(b)**: satu orang memang boleh memegang dua role, jadi tidak perlu mengubah kode. Hasilnya sama, dan bila nanti ada staf keuangan terpisah, rolenya masih bisa dipisah | | |
+| K2d | Gabungkan role **Akuntan** ke **Keuangan** (satu role untuk Bella)? | (a) Gabung. (b) Tetap terpisah; Bella cukup diberi dua role | **(b)**: satu orang memang boleh memegang dua role, jadi tidak perlu mengubah kode. Hasilnya sama, dan bila nanti ada staf keuangan terpisah, rolenya masih bisa dipisah | (a) gabung di kode, dipegang Bella; Bella melihat gaji dan rekening karyawan (jawaban programmer B 27/11) | |
 
 **Tugas role Pemasaran** (dari hak di kode, dicek 2026-11-26):
 
@@ -156,10 +191,10 @@ nyatakan setuju atau tidak per matriks.
 
 | No  | Pertanyaan                                                                                                                                | Pilihan                                                                                   | Rekomendasi                                             | Keputusan | Oleh |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------- | --------- | ---- |
-| K8  | Kolom A/B kontrak tidak sama dengan pembagian modul (T19/T20/T23/T24/T27/T28 dikerjakan programmer B; T02/T12/T13/T29/T30 dikerjakan Oki) | (a) Kontrak disesuaikan dengan pembagian modul. (b) Pekerjaan dikembalikan sesuai kontrak | Dibicarakan; rincian di `lintas-modul/di-luar-scope.md` |           |      |
-| K9  | Fitur di kode yang di luar kontrak (portal karyawan, absen GPS, dua gateway pembayaran, PPh 21/Coretax, keuangan lanjutan)                | (a) Diterima sebagai tambahan. (b) Dibekukan                                              | Dibicarakan per fitur                                   |           |      |
-| K10 | M11 Bonus & Investor belum dibangun (schema `investor` sudah dihapus)                                                                     | (a) Dibangun dengan ADR baru. (b) Ditunda                                                 | Diputuskan Pemilik dan Oki                              |           |      |
-| K11 | Pemilik bagian yang belum jelas: modul dokumen, notifikasi, webhook, profil perusahaan, lokasi, penomoran/audit bersama, deploy/CI        | Dibagi ke Dafrin / Oki / bersama                                                          | Dibagi per bagian                                       |           |      |
+| K8  | Kolom A/B kontrak tidak sama dengan pembagian modul (T19/T20/T23/T24/T27/T28 dikerjakan programmer B; T02/T12/T13/T29/T30 dikerjakan Oki) | (a) Kontrak disesuaikan dengan pembagian modul. (b) Pekerjaan dikembalikan sesuai kontrak | Dibicarakan; rincian di `lintas-modul/di-luar-scope.md` | Dibahas di rapat (27/11) |      |
+| K9  | Fitur di kode yang di luar kontrak (portal karyawan, absen GPS, dua gateway pembayaran, PPh 21/Coretax, keuangan lanjutan)                | (a) Diterima sebagai tambahan. (b) Dibekukan                                              | Dibicarakan per fitur                                   | Dibahas di rapat (27/11) |      |
+| K10 | M11 Bonus & Investor belum dibangun (schema `investor` sudah dihapus)                                                                     | (a) Dibangun dengan ADR baru. (b) Ditunda                                                 | Diputuskan Pemilik dan Oki                              | (b) ditunda; halaman investor ditutup, hanya Pemilik (jawaban programmer B 27/11) |      |
+| K11 | Pemilik bagian yang belum jelas: modul dokumen, notifikasi, webhook, profil perusahaan, lokasi, penomoran/audit bersama, deploy/CI        | Dibagi ke Dafrin / Oki / bersama                                                          | Dibagi per bagian                                       | Dibahas di rapat (27/11) |      |
 
 ## 8. Untuk Oki
 
@@ -177,17 +212,17 @@ Di sini hanya yang memblokir alur atau perlu diputuskan bersama.
 
 | No | Pertanyaan | Kondisi sekarang | Pilihan | Rekomendasi | Keputusan | Oleh |
 |---|---|---|---|---|---|---|
-| **RO1 / OB4** | Siapa boleh **membuat periode akuntansi**? | Tidak ada role yang bisa, termasuk Pemilik: hak `accounting_period:create` diminta route tetapi tidak ada di daftar hak (dicek 2026-11-27). Tanpa periode, posting jurnal gagal | (a) Tambah hak `create` untuk Pemilik dan Akuntan. (b) Periode dibuat otomatis | (a) | | |
-| **RO5** | **Pertanggungjawaban kasbon** wajib diverifikasi dan disetujui dua orang berbeda, padahal keduanya hanya Aqim | Macet (`employee-advance.service.ts:217`, `:235`, dicek) | (a) Bella (Akuntan/Keuangan) diberi hak verifikasi. (b) Pemilik boleh dua-duanya (ikut K1a). (c) Manajer Operasional kedua | (a) | | |
-| **OA1 / OA2** | **K12** hapus organisasi: caranya | Role per organisasi; `organization_id` di 18 file skema | (a) Sekaligus. (b) Bertahap: sembunyikan pemilih organisasi dulu, lalu pindahkan role ke pengguna dan hapus kolom (ADR baru) | (b) | | |
-| **OA3 / OA4** | **K13** login: web-admin tanpa Google; portal pelanggan dengan Google. Portal **karyawan** juga punya tombol Google: ikut dihapus? | Google aktif bila kunci diisi | (a) Web-admin dan portal karyawan tanpa Google; portal pelanggan dengan Google (akun dicocokkan lewat email). (b) Ubah | (a) | | |
-| **OA5–OA7** | **Audit log** ditulis dalam transaksi yang sama; perubahan role, hapus anggota, dan persetujuan sendiri wajib tercatat | Audit "fire-and-forget" (bisa hilang); perubahan role tidak diaudit | (a) Wajib, sebelum K1 dikerjakan. (b) Cukup seperti sekarang | (a): syarat K1 | | |
-| **OA10 / K2d** | Akuntan digabung ke Keuangan, atau Bella diberi dua role? Bila Bella memegang Keuangan, ia melihat gaji dan rekening semua karyawan | Isian lembar: "merging ke Keuangan" | (a) Gabung di kode. (b) Bella dua role | (b) | | |
-| **OB7 / OB8** | Pembayaran dan klaim biaya tanpa pemeriksa kedua | Tidak ada cek pembuat ≠ penyetuju | (a) Tambah maker-checker. (b) Diterima, diawasi lewat laporan | (b) untuk tim kecil | | |
-| **OD1 / OD2** | Peminjaman aset: teknisi belum bisa mengajukan; persetujuan sendiri selalu lolos | Bug di hak dan pengecekan | (a) Perbaiki keduanya | (a) | | |
-| **OE1 / K10** | M11 Bonus & Investor | Belum dibangun; `/finance/investors` terbuka untuk semua pengguna internal | (a) Bangun dengan ADR baru. (b) Tunda, tutup halamannya | (b) sampai Pemilik memberi skema bagi hasil | | |
-| **OG1** | Absen lokasi di luar radius | Tetap tersimpan, hanya ditandai | (a) Tolak. (b) Simpan dan tandai, SDM memeriksa | (b) | | |
-| RO4 | Siapa boleh **membuka kembali periode** yang sudah ditutup/dikunci? | Route pembuka periode hanya meminta hak `close`, jadi siapa pun yang boleh menutup juga bisa membuka kembali, termasuk periode terkunci (ditemukan saat menyusun diagram, 2026-11-27) | (a) Hanya Pemilik. (b) Pemilik dan Akuntan | (a), sesuai rencana M09 | | |
+| **RO1 / OB4** | Siapa boleh **membuat periode akuntansi**? | Tidak ada role yang bisa, termasuk Pemilik: hak `accounting_period:create` diminta route tetapi tidak ada di daftar hak (dicek 2026-11-27). Tanpa periode, posting jurnal gagal | (a) Tambah hak `create` untuk Pemilik dan Akuntan. (b) Periode dibuat otomatis | (a) | (a) Pemilik dan Keuangan (gabungan Akuntan), tambah hak `accounting_period:create` (jawaban programmer B 27/11) | |
+| **RO5** | **Pertanggungjawaban kasbon** wajib diverifikasi dan disetujui dua orang berbeda, padahal keduanya hanya Aqim | Macet (`employee-advance.service.ts:217`, `:235`, dicek) | (a) Bella (Akuntan/Keuangan) diberi hak verifikasi. (b) Pemilik boleh dua-duanya (ikut K1a). (c) Manajer Operasional kedua | (a) | (b) cukup satu langkah oleh Aqim; aturan verifikator ≠ penyetuju dihapus (X2, jawaban programmer B 27/11) | |
+| **OA1 / OA2** | **K12** hapus organisasi: caranya | Role per organisasi; `organization_id` di 18 file skema | (a) Sekaligus. (b) Bertahap: sembunyikan pemilih organisasi dulu, lalu pindahkan role ke pengguna dan hapus kolom (ADR baru) | (b) | (b) bertahap (jawaban programmer B 27/11) | |
+| **OA3 / OA4** | **K13** login: web-admin tanpa Google; portal pelanggan dengan Google. Portal **karyawan** juga punya tombol Google: ikut dihapus? | Google aktif bila kunci diisi | (a) Web-admin dan portal karyawan tanpa Google; portal pelanggan dengan Google (akun dicocokkan lewat email). (b) Ubah | (a) | (a); karyawan diundang, lalu mengganti kata sandi dan login; pelanggan satu jenis akun, data perusahaan diisi di profil (OA4) (jawaban programmer B 27/11) | |
+| **OA5–OA7** | **Audit log** ditulis dalam transaksi yang sama; perubahan role, hapus anggota, dan persetujuan sendiri wajib tercatat | Audit "fire-and-forget" (bisa hilang); perubahan role tidak diaudit | (a) Wajib, sebelum K1 dikerjakan. (b) Cukup seperti sekarang | (a): syarat K1 | (a) wajib, dikerjakan sebelum K1 (jawaban programmer B 27/11) | |
+| **OA10 / K2d** | Akuntan digabung ke Keuangan, atau Bella diberi dua role? Bila Bella memegang Keuangan, ia melihat gaji dan rekening semua karyawan | Isian lembar: "merging ke Keuangan" | (a) Gabung di kode. (b) Bella dua role | (b) | (a) gabung di kode (X3, jawaban programmer B 27/11) | |
+| **OB7 / OB8** | Pembayaran dan klaim biaya tanpa pemeriksa kedua | Tidak ada cek pembuat ≠ penyetuju | (a) Tambah maker-checker. (b) Diterima, diawasi lewat laporan | (b) untuk tim kecil | (b) diterima, diawasi lewat laporan dan audit (jawaban programmer B 27/11) | |
+| **OD1 / OD2** | Peminjaman aset: teknisi belum bisa mengajukan; persetujuan sendiri selalu lolos | Bug di hak dan pengecekan | (a) Perbaiki keduanya | (a) | (a) perbaiki keduanya; teknisi mengajukan dari daftar unit pinjam khusus (X7, jawaban programmer B 27/11) | |
+| **OE1 / K10** | M11 Bonus & Investor | Belum dibangun; `/finance/investors` terbuka untuk semua pengguna internal | (a) Bangun dengan ADR baru. (b) Tunda, tutup halamannya | (b) sampai Pemilik memberi skema bagi hasil | (b) ditunda; `/finance/investors` hanya Pemilik (jawaban programmer B 27/11) | |
+| **OG1** | Absen lokasi di luar radius | Tetap tersimpan, hanya ditandai | (a) Tolak. (b) Simpan dan tandai, SDM memeriksa | (b) | (a) tolak, berbeda dari rekomendasi (jawaban programmer B 27/11) | |
+| RO4 | Siapa boleh **membuka kembali periode** yang sudah ditutup/dikunci? | Route pembuka periode hanya meminta hak `close`, jadi siapa pun yang boleh menutup juga bisa membuka kembali, termasuk periode terkunci (ditemukan saat menyusun diagram, 2026-11-27) | (a) Hanya Pemilik. (b) Pemilik dan Akuntan | (a), sesuai rencana M09 | (a) hanya Pemilik; route pembuka periode memeriksa hak `reopen` (jawaban programmer B 27/11) | |
 
 ### 8b. Isian yang saling bertentangan (perlu satu jawaban)
 
@@ -196,13 +231,13 @@ Ditemukan saat menyusun diagram sekarang vs sesudah (2026-11-27). Diagram
 
 | No | Bertentangan | Pilihan | Rekomendasi | Jawaban |
 |---|---|---|---|---|
-| X1 | **K1a = (b)** (Pemilik tidak boleh menyetujui sendiri jurnal, kasbon, pertanggungjawaban), padahal kasbon Aqim sendiri lalu butuh penyetuju lain yang belum punya hak | (a) Kasbon/pertanggungjawaban ikut K1 (Pemilik boleh). (b) Tetap (b), dan Bella diberi hak menyetujui kasbon | (a) untuk kasbon; jurnal tetap butuh orang kedua (Bella ↔ Aqim) | |
-| X2 | **RO5**: verifikator pertanggungjawaban. Lembar 8a merekomendasikan Bella; dokumen validasi modul Oki juga menawarkan "satu langkah oleh Aqim" | (a) Bella memverifikasi, Aqim menyetujui. (b) Aqim cukup satu langkah | (a) | |
-| X3 | **K2d**: tabel role berisi "Akuntan: merging ke Keuangan", kolom keputusan K2d masih kosong | (a) Gabung di kode. (b) Bella dua role | (b) | |
-| X4 | **Anggota**: ditandai "Hapus", tetapi tabel usulan K2 masih memberi Dafrin dan Oki role Anggota | (a) Hapus; Dafrin dan Oki hanya Pekerja Lepas, tanpa absensi. (b) Tetap untuk Dafrin dan Oki | Ikuti apakah Dafrin dan Oki perlu absen dan slip gaji di aplikasi | |
-| X5 | **K2b** (gabung Penjualan) dan **B1** (hapus "Tandai terkirim"): sudah dipakai di dokumen lain, tetapi kolom keputusannya belum diisi | Konfirmasi | (a) untuk K2b, (b) untuk B1 | |
-| X6 | **B2** (Pembelian dan Manajer Operasional boleh membatalkan PO): kedua role itu tidak dipakai, jadi pembatal tetap Aqim | (a) Biarkan, berlaku bila nanti ada staf pembelian. (b) Hapus butir ini | (a) | |
-| X7 | **OD1**: cara agar teknisi bisa mengajukan peminjaman. Lembar: "perbaiki"; bahan modul Oki: daftar unit pinjam khusus | (a) Daftar unit khusus untuk peminjaman. (b) Beri teknisi hak lihat aset | (a): teknisi tidak perlu melihat seluruh register aset | |
+| X1 | **K1a = (b)** (Pemilik tidak boleh menyetujui sendiri jurnal, kasbon, pertanggungjawaban), padahal kasbon Aqim sendiri lalu butuh penyetuju lain yang belum punya hak | (a) Kasbon/pertanggungjawaban ikut K1 (Pemilik boleh). (b) Tetap (b), dan Bella diberi hak menyetujui kasbon | (a) untuk kasbon; jurnal tetap butuh orang kedua (Bella ↔ Aqim) | (a) kasbon dan pertanggungjawaban ikut K1; jurnal tetap butuh orang kedua; Aqim tidak mengajukan kasbon (jawaban programmer B 27/11) |
+| X2 | **RO5**: verifikator pertanggungjawaban. Lembar 8a merekomendasikan Bella; dokumen validasi modul Oki juga menawarkan "satu langkah oleh Aqim" | (a) Bella memverifikasi, Aqim menyetujui. (b) Aqim cukup satu langkah | (a) | (b) Aqim cukup satu langkah (jawaban programmer B 27/11) |
+| X3 | **K2d**: tabel role berisi "Akuntan: merging ke Keuangan", kolom keputusan K2d masih kosong | (a) Gabung di kode. (b) Bella dua role | (b) | (a) gabung di kode (jawaban programmer B 27/11) |
+| X4 | **Anggota**: ditandai "Hapus", tetapi tabel usulan K2 masih memberi Dafrin dan Oki role Anggota | (a) Hapus; Dafrin dan Oki hanya Pekerja Lepas, tanpa absensi. (b) Tetap untuk Dafrin dan Oki | Ikuti apakah Dafrin dan Oki perlu absen dan slip gaji di aplikasi | (a) hapus; Dafrin dan Oki hanya Pekerja Lepas, tanpa absensi dan slip gaji (jawaban programmer B 27/11) |
+| X5 | **K2b** (gabung Penjualan) dan **B1** (hapus "Tandai terkirim"): sudah dipakai di dokumen lain, tetapi kolom keputusannya belum diisi | Konfirmasi | (a) untuk K2b, (b) untuk B1 | Dikonfirmasi: K2b (a), B1 (b) (jawaban programmer B 27/11) |
+| X6 | **B2** (Pembelian dan Manajer Operasional boleh membatalkan PO): kedua role itu tidak dipakai, jadi pembatal tetap Aqim | (a) Biarkan, berlaku bila nanti ada staf pembelian. (b) Hapus butir ini | (a) | (a) biarkan, berlaku bila nanti ada staf pembelian (jawaban programmer B 27/11) |
+| X7 | **OD1**: cara agar teknisi bisa mengajukan peminjaman. Lembar: "perbaiki"; bahan modul Oki: daftar unit pinjam khusus | (a) Daftar unit khusus untuk peminjaman. (b) Beri teknisi hak lihat aset | (a): teknisi tidak perlu melihat seluruh register aset | (a) daftar unit khusus (jawaban programmer B 27/11) |
 
 ## 9. Kesimpulan
 

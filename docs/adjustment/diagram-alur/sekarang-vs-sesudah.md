@@ -7,9 +7,10 @@ Mermaid berurutan:
 
 - **Sekarang**: perilaku kode hari ini, dengan titik macet atau bermasalah
   ditandai di `Note`.
-- **Sesudah (usulan)**: alur bila rekomendasi dan jawaban sementara
-  programmer B di [`../lembar-keputusan-rapat.md`](../lembar-keputusan-rapat.md)
-  diterima.
+- **Sesudah (usulan)**: alur menurut **jawaban programmer B 27/11**
+  (bagian 0 [`../lembar-keputusan-rapat.md`](../lembar-keputusan-rapat.md)),
+  menunggu konfirmasi Pemilik dan Oki. Butir yang belum dijawab memakai
+  rekomendasi lembar rapat.
 
 Di bawah setiap pasangan ada daftar singkat **yang perlu diubah di kode**
 (wilayah dan pemiliknya, tanpa kode). File ini satu set dengan diagram
@@ -17,11 +18,11 @@ kondisi sekarang di [`../uat-modul/diagram-alur-per-role.md`](../uat-modul/diagr
 (modul programmer B) dan [`sekarang-modul-oki.md`](sekarang-modul-oki.md)
 (modul Oki). Gaya aktornya sama: `Role - nama orang`.
 
-> **Peringatan.** Semua diagram **Sesudah** adalah **usulan**, bukan keputusan.
-> Sebagian besar butir masih "menunggu keputusan" Pemilik dan Oki; isian yang
-> sudah ada di lembar rapat adalah **jawaban sementara programmer B**. Diagram
-> Sesudah akan dibetulkan setelah rapat dengan Pemilik dan Oki. Tidak ada kode
-> yang diubah untuk file ini.
+> **Peringatan.** Semua diagram **Sesudah** adalah **usulan**, bukan keputusan final.
+> Diperbarui 2026-11-27: diagram Sesudah mengikuti **jawaban programmer B lewat
+> tanya-jawab 27/11** (lembar rapat bagian 0); Pemilik dan Oki masih
+> mengonfirmasi saat rapat. K8, K9, K11 dibahas di rapat. Diagram Sesudah akan
+> dibetulkan bila rapat mengubah jawaban. Tidak ada kode yang diubah untuk file ini.
 
 **Sumber:** `../lembar-keputusan-rapat.md`, `../bahan-keputusan.md`,
 `../bahan-keputusan-modul-oki.md`, `../rencana-perubahan.md`,
@@ -43,16 +44,17 @@ penerimaan barang hanya untuk PO `sent`/`partially_received`
 | Label | Arti |
 |---|---|
 | **usulan** | Rekomendasi di catatan, belum ada isian di lembar rapat |
-| **jawaban sementara programmer B** | Kolom Keputusan lembar rapat sudah diisi programmer B, menunggu konfirmasi Pemilik/Oki |
+| **jawaban programmer B 27/11** | Dijawab programmer B lewat tanya-jawab 2026-11-27 (lembar rapat bagian 0), menunggu konfirmasi Pemilik/Oki |
 | **menunggu keputusan** | Ada beberapa pilihan, belum ada isian, atau isiannya bertentangan dengan rekomendasi |
 
-**Susunan role yang dipakai di diagram Sesudah** (K2 = (a), K2a, K2b, K2c (a),
-K2d (b)): Aqim = Pemilik + SDM (+ tanda admin aplikasi); Agus MD dan Bilal =
-Penjualan (gabungan); Bilal juga Gudang, Layanan Pelanggan, Pemasaran; Agus =
-Manajer Proyek, Teknisi, Gudang; Jamil = Manajer Proyek, Teknisi; Hatta =
-Manajer Proyek; Fahri, Alex, Ade = Teknisi; Bella = Akuntan (+ Keuangan bila
-K2d (b)); Dafrin, Oki = Pekerja Lepas. Manajer Operasional, Pembelian,
-Keuangan (untuk Aqim), Admin, dan Auditor tidak diberikan ke siapa pun.
+**Susunan role yang dipakai di diagram Sesudah** (K2 = (a), K2a, K2b (a), K2c (a),
+K2d (a), X4; diperbarui 2026-11-27): Aqim = Pemilik + SDM (+ tanda admin
+aplikasi); Agus MD dan Bilal = Penjualan (gabungan); Bilal juga Gudang, Layanan
+Pelanggan, Pemasaran; Agus = Manajer Proyek, Teknisi, Gudang; Jamil = Manajer
+Proyek, Teknisi; Hatta = Manajer Proyek; Fahri, Alex, Ade = Teknisi; Bella =
+Keuangan (gabungan Akuntan + Keuangan, K2d); Dafrin, Oki = Pekerja Lepas saja.
+Role Anggota dan role organisasi Admin dihapus; Manajer Operasional, Pembelian,
+dan Auditor tidak diberikan ke siapa pun.
 
 ## Daftar isi
 
@@ -83,10 +85,10 @@ Aqim membeli sebagai Pemilik.
 
 | Keputusan | Isi | Status |
 |---|---|---|
-| K1 | Pemilik boleh menyetujui dokumennya sendiri, tercatat di audit | jawaban sementara programmer B: (b) |
-| K2 | Susunan role per orang | jawaban sementara programmer B: (a) |
-| K2c | Role Pembelian tidak dipakai | menunggu keputusan (rekomendasi (a)) |
-| OA5–OA7 | Audit ikut transaksi, daftar peristiwa wajib, tanda `meta.self_approved` | menunggu keputusan (rekomendasi: syarat K1) |
+| K1 | Pemilik boleh menyetujui dokumennya sendiri, tercatat di audit | jawaban programmer B 27/11: (b) |
+| K2 | Susunan role per orang | jawaban programmer B 27/11: (a) |
+| K2c | Role Pembelian tidak dipakai | jawaban programmer B 27/11: (a) |
+| OA5–OA7 | Audit ikut transaksi, daftar peristiwa wajib, tanda `meta.self_approved` | jawaban programmer B 27/11: wajib, dikerjakan sebelum K1 |
 
 ### Sekarang
 
@@ -169,11 +171,11 @@ untuk admin aplikasi (B3).
 
 | Keputusan | Isi | Status |
 |---|---|---|
-| K6 | Kode pemasok otomatis dipersingkat (misal `SUP-00001`) | jawaban sementara programmer B: (a) |
-| B1 | PO yang disetujui langsung bisa diterima, tanpa "Tandai terkirim" | jawaban sementara programmer B: (b) |
-| B2 | Batal PO: Pembelian (draf miliknya) dan Manajer Operasional | jawaban sementara programmer B: (b) |
-| B3 | Halaman barang dan gudang mengikuti hak role | jawaban sementara programmer B: (b) |
-| B4 | Gudang diberi hak baca PO dan SO | jawaban sementara programmer B: (b) |
+| K6 | Kode pemasok otomatis dipersingkat (misal `SUP-00001`) | jawaban programmer B 27/11: (a) |
+| B1 | PO yang disetujui langsung bisa diterima, tanpa "Tandai terkirim" | jawaban programmer B 27/11: (b) |
+| B2 | Batal PO: Pembelian (draf miliknya) dan Manajer Operasional | jawaban programmer B 27/11: (b) |
+| B3 | Halaman barang dan gudang mengikuti hak role | jawaban programmer B 27/11: (b) |
+| B4 | Gudang diberi hak baca PO dan SO | jawaban programmer B 27/11: (b) |
 
 ### Sekarang
 
@@ -235,8 +237,8 @@ sequenceDiagram
   pratinjau Nomor Kode memakai kode pemasok sungguhan (Bersama, L-2/X-3;
   `src/shared/numbering` belum punya pemilik, K11).
 - Penerimaan Barang menerima PO berstatus Disetujui (`goods-receipt.service.ts`
-  dan daftar PO terbuka; status Terkirim dipensiunkan atau dijadikan opsional;
-  diagram status PO ikut berubah). Programmer B.
+  dan daftar PO terbuka; langkah "Tandai terkirim" dihapus (B1, jawaban
+  programmer B 27/11); diagram status PO ikut berubah). Programmer B.
 - Hak `purchase_order:cancel` untuk Pembelian (draf milik sendiri) dan Manajer
   Operasional; hak baca PO dan SO untuk Gudang (`erp-permissions.ts`, Oki, lalu
   `bun docs/gen-role-permission.ts`).
@@ -255,11 +257,11 @@ pun (C2). Bilal boleh mengirim SO-nya sendiri, diawasi lewat laporan (K7).
 
 | Keputusan | Isi | Status |
 |---|---|---|
-| K2b | Satu role Penjualan (label `sales_manager` = "Penjualan", `sales` tidak ditawarkan) | menunggu keputusan (permintaan programmer B, isian belum ada) |
-| C1 | SO otomatis Terkirim saat semua barang terkirim, Selesai saat lunas | jawaban sementara programmer B: (a) |
-| K7 | Bilal boleh membuat SO lalu mengirim barangnya sendiri | jawaban sementara programmer B: (a) |
-| C2 | Menu Uang Muka dibuka untuk pemegang hak baca invoice | jawaban sementara programmer B: (a) |
-| K1 | Pemilik boleh menyetujui SPH buatannya sendiri | jawaban sementara programmer B: (b) |
+| K2b | Satu role Penjualan (label `sales_manager` = "Penjualan", `sales` tidak ditawarkan) | jawaban programmer B 27/11: (a) gabung |
+| C1 | SO otomatis Terkirim saat semua barang terkirim, Selesai saat lunas | jawaban programmer B 27/11: (a) |
+| K7 | Bilal boleh membuat SO lalu mengirim barangnya sendiri | jawaban programmer B 27/11: (a) |
+| C2 | Menu Uang Muka dibuka untuk pemegang hak baca invoice | jawaban programmer B 27/11: (a) |
+| K1 | Pemilik boleh menyetujui SPH buatannya sendiri | jawaban programmer B 27/11: (b) |
 
 ### Sekarang
 
@@ -350,8 +352,8 @@ Usulannya: pengecualian ini diganti aturan K1 (hanya Pemilik, tercatat audit).
 
 | Keputusan | Isi | Status |
 |---|---|---|
-| K1 | Aturan bersama menggantikan pengecualian penyesuaian stok | jawaban sementara programmer B: (b) |
-| OA5–OA7 | Persetujuan sendiri tercatat dalam transaksi | menunggu keputusan |
+| K1 | Aturan bersama menggantikan pengecualian penyesuaian stok | jawaban programmer B 27/11: (b) |
+| OA5–OA7 | Persetujuan sendiri tercatat dalam transaksi | jawaban programmer B 27/11: wajib, sebelum K1 |
 
 ### Sekarang
 
@@ -413,10 +415,10 @@ penyetuju untuk cuti Aqim.
 
 | Keputusan | Isi | Status |
 |---|---|---|
-| K2a | Role SDM hanya untuk Aqim | jawaban sementara programmer B: (a) |
-| A3 | Cuti yang dicatat SDM: mengikuti K1 karena SDM juga Pemilik | jawaban sementara programmer B: (b) dengan catatan |
-| A3a | Cuti Aqim: tidak ada, jadi tidak perlu penyetuju | jawaban sementara programmer B |
-| K1 | Pemilik boleh menyetujui catatannya sendiri, tercatat audit | jawaban sementara programmer B: (b) |
+| K2a | Role SDM hanya untuk Aqim | jawaban programmer B 27/11: (a) |
+| A3 | Cuti yang dicatat SDM: mengikuti K1 karena SDM juga Pemilik | jawaban programmer B 27/11: (b) dengan catatan |
+| A3a | Cuti Aqim: tidak ada, jadi tidak perlu penyetuju | jawaban programmer B 27/11 |
+| K1 | Pemilik boleh menyetujui catatannya sendiri, tercatat audit | jawaban programmer B 27/11: (b) |
 
 ### Sekarang
 
@@ -462,8 +464,9 @@ sequenceDiagram
 
 - `leave.service.ts` (cuti dan lembur) memakai aturan bersama dari bagian 1
   (programmer B, M08).
-- Atur role: Aqim diberi SDM; role Admin tidak diberikan, jadi pencatatan
-  absensi hanya oleh SDM (Aqim, Administrasi → Pengguna). Tanpa kode.
+- Atur role: Aqim diberi SDM; role organisasi Admin dihapus (27/11), jadi
+  pencatatan absensi hanya oleh SDM (Aqim, Administrasi → Pengguna). Penghapusan
+  role Admin dan Anggota dari daftar role ada di bagian 6 (Oki).
 - Tolak/batal cuti diberi alasan dan konfirmasi (B-17, tidak bergantung
   keputusan).
 
@@ -476,17 +479,21 @@ per organisasi (`auth.members.role`), web-admin mengirim header
 `x-organization-id`, ada pemilih organisasi di sidebar, dan `organization_id` ada
 di 18 file skema. Usulannya dihapus **bertahap** (K12). Login web-admin cukup
 email/username + kata sandi tanpa Google; portal pelanggan memakai Google (K13).
-Portal karyawan juga punya tombol Google, belum diputuskan. Label role ikut
-K2b/K2d, dan perubahan role wajib diaudit (sekarang tidak).
+Portal karyawan juga tanpa Google: karyawan diundang, mengganti kata sandi,
+lalu login (K13, 27/11). Pelanggan memakai satu jenis akun tanpa pilihan
+perorangan/perusahaan saat login; data perusahaan diisi belakangan di profil
+(OA4, 27/11). Akuntan digabung ke Keuangan (K2d), role Anggota dan role
+organisasi Admin dihapus, dan perubahan role wajib diaudit (sekarang tidak).
 
 | Keputusan | Isi | Status |
 |---|---|---|
-| K12 / OA1 / OA2 | Hapus organisasi bertahap: tahap 1 sembunyikan pemilih, tahap 2 role ke pengguna, tahap 3 buang `organization_id`. Selama peralihan kolom tetap diisi organisasi tunggal | menunggu keputusan (rekomendasi (b)); butuh ADR baru |
-| K13 / OA3 | Web-admin tanpa Google | menunggu keputusan (rekomendasi (a)) |
-| K13 / OA4 | Portal pelanggan dengan Google, dicocokkan ke kontak lewat email, pelanggan perusahaan tetap diundang dulu | menunggu keputusan (rekomendasi (a)) |
-| OA3 / RO19 | Portal karyawan tanpa Google | menunggu keputusan (rekomendasi (a)) |
-| K2b / K2d / OA9–OA11 | Label "Penjualan"; Bella dua role (Akuntan + Keuangan); role tidak dipakai tetap di kode | menunggu keputusan (K2d bertentangan dengan isian lembar, lihat bagian 12) |
-| OA5–OA6 | Perubahan role dan pengeluaran anggota diaudit dalam transaksi | menunggu keputusan |
+| K12 / OA1 / OA2 | Hapus organisasi bertahap: tahap 1 sembunyikan pemilih, tahap 2 role ke pengguna, tahap 3 buang `organization_id`. Selama peralihan kolom tetap diisi organisasi tunggal | jawaban programmer B 27/11: (b) bertahap; butuh ADR baru (OA2 mengikuti rekomendasi) |
+| K13 / OA3 | Web-admin tanpa Google | jawaban programmer B 27/11: (a) |
+| K13 / OA4 | Portal pelanggan dengan Google, dicocokkan ke kontak lewat email; **satu jenis akun**, data perusahaan diisi di profil | jawaban programmer B 27/11 (mengganti "pelanggan perusahaan diundang dulu") |
+| OA3 / RO19 | Portal karyawan tanpa Google; karyawan diundang, mengganti kata sandi, lalu login | jawaban programmer B 27/11 |
+| K2b / K2d / OA9–OA11 | Label "Penjualan"; Akuntan digabung ke Keuangan (Bella); role Anggota dan role organisasi Admin dihapus, tanda admin aplikasi Aqim tetap | jawaban programmer B 27/11: K2b (a), K2d (a), X4 |
+| OA5–OA6 | Perubahan role dan pengeluaran anggota diaudit dalam transaksi | jawaban programmer B 27/11: wajib, sebelum K1 |
+
 
 ### Sekarang
 
@@ -538,10 +545,11 @@ sequenceDiagram
         AUTH->>AUTH: role disimpan di tingkat pengguna
         AUTH->>AUTH: header x-organization-id dan kolom organization_id dibuang per modul
     end
-    W->>WA: ubah role pengguna (label Penjualan, Akuntan, Keuangan)
+    W->>WA: ubah role pengguna (label Penjualan, Keuangan gabungan)
     WA->>AUTH: simpan role
     AUTH->>AU: catat perubahan role (transaksi yang sama, OA6)
-    Note over W,AU: Bella memegang Akuntan dan Keuangan bila K2d (b)
+    Note over W,AU: Bella memegang satu role Keuangan gabungan (K2d a)
+    Note over W,AUTH: role Anggota dan role organisasi Admin tidak ada lagi, tanda admin aplikasi Aqim tetap
 ```
 
 ### Sesudah (usulan) - portal pelanggan dan portal karyawan
@@ -550,23 +558,29 @@ sequenceDiagram
 sequenceDiagram
     actor C as Pelanggan (kontak)
     actor S as Penjualan / Layanan Pelanggan - Agus MD, Bilal
+    actor W as Pemilik + SDM - Aqim
     actor K as Karyawan - semua
     participant CP as Portal pelanggan
     participant EP as Portal karyawan
     participant AUTH as Better Auth
 
-    S->>AUTH: undang kontak pelanggan perusahaan (akun portal)
+    opt kontak sudah dikenal
+        S->>AUTH: undang kontak pelanggan (akun portal)
+    end
     C->>CP: Masuk dengan Google
     CP->>AUTH: cocokkan email Google ke kontak pelanggan (OA4)
-    alt email cocok dengan kontak yang diundang
+    alt email cocok dengan kontak yang ada
         AUTH-->>C: masuk sebagai kontak itu
-    else pelanggan perorangan baru
-        AUTH-->>C: boleh daftar dengan Google
-    else email kontak perusahaan belum diundang
-        AUTH-->>C: ditolak, minta undangan dulu
+    else email belum dikenal
+        AUTH-->>C: akun pelanggan baru, satu jenis akun
     end
-    K->>EP: login email/username + kata sandi
-    Note over K,EP: tombol Google di portal karyawan dihapus (OA3, menunggu keputusan)
+    Note over C,CP: tanpa pilihan perorangan atau perusahaan saat login (OA4)
+    C->>CP: Profil: isi data perusahaan belakangan, bila perlu
+    W->>AUTH: undang karyawan (email, data karyawan)
+    AUTH-->>K: email undangan
+    K->>AUTH: klaim undangan, ganti kata sandi
+    K->>EP: login username/email + kata sandi
+    Note over K,EP: tombol Google di portal karyawan dihapus (K13, 27/11)
 ```
 
 **Yang perlu diubah di kode:**
@@ -578,11 +592,16 @@ sequenceDiagram
   (`docs.dbml`, migrasi append-only, seed, test; Oki bersama programmer B: M12-3).
   Portal karyawan mengenali karyawan tanpa keanggotaan organisasi.
 - Hapus tombol Google di `apps/web-admin/src/components/form/login-form.tsx`
-  dan (bila diputuskan) di `apps/web-employee`; isi `GOOGLE_*` di server dan
+  dan di `apps/web-employee` (K13, 27/11); isi `GOOGLE_*` di server dan
   aktifkan tombol Google di `apps/web-customer-portal` (Oki: konfigurasi
   Better Auth; programmer B: portal M07).
-- Label dan daftar role yang bisa diberikan (`erp-permissions.ts`, locale,
-  Oki: M12-5); form tambah pengguna mendukung beberapa role (M12-8).
+- Portal karyawan: undangan karyawan, klaim lalu ganti kata sandi (Oki).
+- Portal pelanggan: satu jenis akun, tanpa pilihan perorangan/perusahaan saat
+  login atau daftar; data perusahaan diisi di profil (OA4, programmer B: M07).
+- Label dan daftar role yang bisa diberikan: Penjualan gabungan, Keuangan
+  mendapat hak Akuntan, role Anggota dan role organisasi Admin dihapus, tanda
+  admin aplikasi tetap (`erp-permissions.ts`, locale, Oki: M12-5); form tambah
+  pengguna mendukung beberapa role (M12-8).
 - Audit perubahan role, pengeluaran anggota, aktif/nonaktif akun
   (`organization.service.ts`, `user-admin.service.ts`; Oki: M12-1).
 
@@ -600,10 +619,10 @@ Pemilik (RO4).
 
 | Keputusan | Isi | Status |
 |---|---|---|
-| RO1 / OB4 | Tambah hak `create` periode untuk Pemilik dan Akuntan | menunggu keputusan (rekomendasi (a)) |
-| K1a / OB9 | Jurnal manual tetap butuh orang kedua (Bella dan Aqim saling memeriksa) | jawaban sementara programmer B: (b) |
-| RO4 / OB6 | Buka kembali periode hanya Pemilik, dengan alasan dan audit | menunggu keputusan (rekomendasi (a)) |
-| K2d | Bella memegang Akuntan + Keuangan | menunggu keputusan |
+| RO1 / OB4 | Tambah hak `create` periode untuk Pemilik dan Keuangan (gabungan Akuntan) | jawaban programmer B 27/11: (a) |
+| K1a / OB9 | Jurnal manual tetap butuh orang kedua (Bella dan Aqim saling memeriksa) | jawaban programmer B 27/11: (b) |
+| RO4 / OB6 | Buka kembali periode hanya Pemilik, dengan alasan dan audit; route memeriksa hak `reopen` | jawaban programmer B 27/11: (a) |
+| K2d | Akuntan digabung ke Keuangan, dipegang Bella | jawaban programmer B 27/11: (a) gabung |
 
 ### Sekarang
 
@@ -635,7 +654,7 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    actor B as Akuntan + Keuangan - Bella
+    actor B as Keuangan (gabungan Akuntan) - Bella
     actor W as Pemilik - Aqim
     participant FN as Server (finance)
     participant AU as Log Audit
@@ -658,14 +677,15 @@ sequenceDiagram
 
 **Yang perlu diubah di kode:**
 
-- Tambah aksi `create` di `accounting_period` dan berikan ke Pemilik dan Akuntan
+- Tambah aksi `create` di `accounting_period` dan berikan ke Pemilik dan Keuangan gabungan
   (`erp-permissions.ts`, `ledger.controller.ts`; Oki: M09). Alternatif yang
   ditolak rekomendasi: periode dibuat otomatis saat posting pertama.
-- Buka kembali hanya Pemilik: opsi `ownership` di route diganti `policy`, atau
-  `reopen` dicabut dari Akuntan (Oki, OB6).
+- Buka kembali hanya Pemilik: route pembuka periode memeriksa hak `reopen`
+  (sekarang hanya `close`), dan `reopen` tidak ikut ke role Keuangan gabungan
+  (Oki, OB6).
 - Jurnal manual: tidak ada perubahan kode (cek `manual-journal.service.ts:132`
-  tetap). Bila K2d (a), hak Keuangan digabung ke Akuntan di
-  `erpRoleGrants` (Oki, OA10).
+  tetap). K2d (a) diputuskan programmer B 27/11: role `finance` mendapat hak
+  `accountant` di `erpRoleGrants` (Oki, OA10).
 - Teks daftar periksa tutup bulan diterjemahkan (OB15, tanpa keputusan).
 
 ---
@@ -677,14 +697,18 @@ verifikator ≠ pengaju, penyetuju ≠ verifikator (`employee-advance.service.ts
 `:235`). Hak verifikasi dan setuju hanya Pemilik dan Manajer Operasional, keduanya
 Aqim, jadi persetujuan **selalu macet** (RO5). Halaman kasbon ada di Keuangan →
 Beban yang tertutup bagi teknisi, PM, dan Pekerja Lepas (RO6). Keuangan dan
-Akuntan tidak punya hak `advance`/`settlement` (OB13).
+Akuntan tidak punya hak `advance`/`settlement` (OB13). Jawaban programmer B
+27/11: pertanggungjawaban cukup **satu langkah oleh Aqim** (aturan verifikator ≠
+penyetuju dihapus), kasbon dan pertanggungjawaban ikut K1, dan Aqim **tidak
+mengajukan kasbon**, jadi titik macet kasbon buatan Aqim tidak ada lagi.
 
 | Keputusan | Isi | Status |
 |---|---|---|
-| RO5 | Bella diberi hak verifikasi pertanggungjawaban, Aqim menyetujui | menunggu keputusan (lembar: (a); validasi-oki 3.8 juga menawarkan satu langkah oleh Aqim) |
+| RO5 / X2 | Pertanggungjawaban satu langkah oleh Aqim; aturan verifikator ≠ penyetuju dihapus | jawaban programmer B 27/11: satu langkah oleh Aqim (mengganti rekomendasi lembar: Bella memverifikasi) |
 | RO6 | Halaman kasbon dan pertanggungjawaban untuk pengaju, usul di portal karyawan | menunggu keputusan |
-| OB13 | Keuangan/Akuntan diberi hak `advance` + `settlement`, pengaju memilih dirinya sendiri | menunggu keputusan (rekomendasi (a)) |
-| K1a / OB9 | Kasbon dan pertanggungjawaban tidak ikut K1 | jawaban sementara programmer B: (b), bertentangan dengan rekomendasi untuk kasbon |
+| OB13 | Keuangan (Bella) diberi hak `advance` untuk mencairkan, pengaju memilih dirinya sendiri | menunggu keputusan (rekomendasi (a)) |
+| K1a / OB9 / X1 | Kasbon dan pertanggungjawaban ikut K1; jurnal manual tetap butuh orang kedua; Aqim tidak mengajukan kasbon | jawaban programmer B 27/11 (mengganti isian "B") |
+
 
 ### Sekarang
 
@@ -714,30 +738,30 @@ sequenceDiagram
 sequenceDiagram
     actor T as Teknisi - Fahri, Jamil, Agus, Alex, Ade
     actor W as Pemilik - Aqim
-    actor B as Akuntan + Keuangan - Bella
+    actor B as Keuangan (gabungan Akuntan) - Bella
     participant EP as Portal karyawan
     participant FN as Server (finance)
+    participant AU as Log Audit
 
     T->>EP: Kasbon: ajukan untuk diri sendiri (RO6)
     EP->>FN: simpan kasbon
     W->>FN: setujui kasbon (bukan pengaju)
-    B->>FN: cairkan lewat pembayaran (hak advance, OB13)
+    B->>FN: cairkan lewat pembayaran (hak advance, OB13 menunggu keputusan)
     T->>EP: Pertanggungjawaban: ajukan dengan bukti
-    B->>FN: verifikasi (RO5 a, bukan pengaju)
-    W->>FN: setujui (bukan verifikator)
+    W->>FN: periksa dan setujui dalam satu langkah (RO5)
+    FN->>AU: tercatat
     FN-->>T: kasbon selesai
-    opt kasbon buatan Aqim
-        W->>FN: ajukan kasbon
-        B->>FN: setujui, Aqim tidak boleh menyetujui sendiri (K1a b)
-        Note over W,B: Bella butuh hak setuju kasbon, belum diusulkan di catatan mana pun
-    end
+    Note over W,FN: aturan verifikator harus berbeda dari penyetuju dihapus (RO5, 27/11)
+    Note over T,W: Aqim tidak mengajukan kasbon (X1), jadi tidak ada kasbon yang disetujui pembuatnya
 ```
 
 **Yang perlu diubah di kode:**
 
-- Hak verifikasi pertanggungjawaban (dan pencairan kasbon) untuk Akuntan atau
-  Keuangan (`erp-permissions.ts`, Oki). Bila pilihan "satu langkah" yang
-  diambil, ubah `employee-advance.service.ts:217`, `:235` (Oki).
+- Pertanggungjawaban satu langkah oleh Aqim: ubah `employee-advance.service.ts:217`,
+  `:235` (verifikasi dan persetujuan digabung, cek verifikator ≠ penyetuju
+  dihapus) (Oki, RO5).
+- Hak pencairan kasbon untuk Keuangan gabungan bila OB13 diterima
+  (`erp-permissions.ts`, Oki).
 - Halaman kasbon dan pertanggungjawaban untuk pengaju: portal karyawan
   (`apps/web-employee`) atau menu sendiri di web-admin dengan hak
   `advance.read`/`settlement.read` (Oki).
@@ -757,8 +781,8 @@ belum disetujui (M06 C13).
 
 | Keputusan | Isi | Status |
 |---|---|---|
-| OD1 | Endpoint pilihan unit tersedia yang dijaga `asset_borrowing:create` | menunggu keputusan (lembar: perbaiki; bahan-oki: pilihan (b)) |
-| OD2 / K7a | Pembuat tidak boleh menyetujui, kecuali Pemilik dengan audit | jawaban sementara programmer B: K7a (a) "perbaiki peminjaman aset" |
+| OD1 / X7 | Daftar unit pinjam khusus (endpoint pilihan unit tersedia yang dijaga `asset_borrowing:create`) | jawaban programmer B 27/11: (a) daftar unit khusus |
+| OD2 / K7a | Pembuat tidak boleh menyetujui, kecuali Pemilik dengan audit | jawaban programmer B 27/11: OD2 diperbaiki |
 | C13 | Serah tanpa persetujuan hanya untuk Pemilik | menunggu keputusan |
 
 ### Sekarang
@@ -792,7 +816,7 @@ sequenceDiagram
     participant SV as Server (inventory)
     participant AU as Log Audit
 
-    T->>SV: form peminjaman memuat unit tersedia (dijaga hak ajukan, OD1)
+    T->>SV: form peminjaman memuat daftar unit pinjam khusus (dijaga hak ajukan, OD1)
     T->>SV: ajukan pinjaman
     PM->>SV: PM lain menyetujui (bukan pengaju, OD2)
     PM->>SV: pengaju menyetujui pinjamannya sendiri
@@ -821,44 +845,74 @@ sequenceDiagram
 
 ## 10. Absensi lokasi portal karyawan
 
-**Tidak berubah** untuk penyimpanannya. Rekomendasi OG1 = (b): absen di luar
-radius tetap disimpan dan ditandai `out_of_range`, lalu ditinjau. Yang
-ditambahkan hanya pendukungnya: layar tinjau untuk Aqim/PM, petunjuk radius
-dari pengaturan (bukan teks mati "100 m"), dan cek radius saat check-out
-(PK-1). Pekerja non-PIC juga diusulkan bisa melihat kunjungannya sendiri
-(OG2). Status: **menunggu keputusan** (OG1 belum diisi; seluruh portal karyawan
-juga menunggu K9).
+**Yang berubah dan mengapa.** Sekarang absen di luar radius tetap disimpan,
+hanya ditandai `out_of_range`, petunjuk "Radius 100 m" tertulis mati, dan tidak
+ada cek radius saat check-out. Jawaban programmer B 27/11: absen di luar radius
+**ditolak** (OG1 (a)), berbeda dari rekomendasi lama (simpan dan tandai, lalu
+ditinjau). Karena data di luar radius tidak pernah tersimpan, layar tinjau
+tidak dibutuhkan. Pekerja non-PIC diusulkan bisa melihat kunjungannya sendiri
+(OG2). Seluruh portal karyawan tetap menunggu K9 (dibahas di rapat).
 
-Satu diagram (perilaku sekarang, dengan tambahan usulan ditandai):
+| Keputusan | Isi | Status |
+|---|---|---|
+| OG1 | Absen lokasi di luar radius ditolak | jawaban programmer B 27/11: (a) tolak |
+| PK-1 | Radius dari pengaturan; cek radius yang sama saat check-out | usulan |
+| OG2 | Non-PIC melihat kunjungannya sendiri | usulan |
+| K9 | Portal karyawan diterima sebagai tambahan kontrak | dibahas di rapat |
+
+### Sekarang
 
 ```mermaid
 sequenceDiagram
     actor K as Teknisi / Manajer Proyek - Fahri, Jamil, Agus, Alex, Ade, Hatta
-    actor W as SDM + Pemilik - Aqim
     participant EP as Portal karyawan
     participant SV as Server (project, PostGIS)
 
     K->>EP: proyek, Kunjungan lokasi saya
-    EP-->>K: non-PIC tidak melihat kunjungannya sendiri (OG2, usul diperbaiki)
+    EP-->>K: non-PIC tidak melihat kunjungannya sendiri (OG2)
     K->>EP: izinkan lokasi, ambil selfie, Check-in
     EP->>SV: simpan titik dan foto
     SV->>SV: hitung jarak dari titik proyek
     alt di dalam radius
         SV-->>K: tersimpan
     else di luar radius
-        SV-->>K: tetap tersimpan, ditandai di luar radius (tidak berubah, OG1 b)
+        SV-->>K: tetap tersimpan, ditandai out_of_range
     end
     K->>EP: Check-out
-    Note over EP,SV: sekarang tanpa cek radius saat check-out. Usulan PK-1 menambah cek ini
-    W->>SV: tinjau absen di luar radius
-    Note over W,SV: layar tinjau belum ada. Usulan PK-1, menunggu keputusan
+    Note over EP,SV: tanpa cek radius saat check-out. Petunjuk radius 100 m tertulis mati
+    Note over K,SV: tidak ada layar tinjau untuk absen di luar radius
 ```
 
-**Yang perlu diubah di kode** (hanya bila OG1 (b) dan PK-1 diterima):
+### Sesudah (usulan)
 
-- Layar tinjau absen di luar radius untuk Aqim/PM; radius dari pengaturan;
-  cek radius saat check-out (`site-attendance.service.ts`, `apps/web-employee`,
-  Oki).
+```mermaid
+sequenceDiagram
+    actor K as Teknisi / Manajer Proyek - Fahri, Jamil, Agus, Alex, Ade, Hatta
+    participant EP as Portal karyawan
+    participant SV as Server (project, PostGIS)
+
+    K->>EP: proyek, Kunjungan lokasi saya
+    EP-->>K: non-PIC melihat kunjungannya sendiri (OG2, usulan)
+    K->>EP: izinkan lokasi, ambil selfie, Check-in
+    EP->>SV: kirim titik dan foto
+    SV->>SV: hitung jarak dari titik proyek, radius dari pengaturan (PK-1)
+    alt di dalam radius
+        SV-->>K: tersimpan
+    else di luar radius
+        SV-->>K: ditolak, tidak tersimpan, tampil jarak ke lokasi (OG1 a)
+    end
+    K->>EP: Check-out
+    SV->>SV: cek radius yang sama saat check-out (PK-1, usulan)
+    Note over K,SV: layar tinjau tidak perlu, karena absen di luar radius tidak pernah tersimpan
+```
+
+**Yang perlu diubah di kode:**
+
+- `site-attendance.service.ts`: tolak check-in di luar radius (OG1, Oki);
+  pesan galat en + id di `apps/web-employee`.
+- Radius dari pengaturan, bukan teks mati "100 m"; cek radius saat check-out
+  (PK-1, Oki, usulan).
+- Data lama bertanda `out_of_range` dibiarkan sebagai riwayat (usulan).
 - Rute "kunjungan saya" untuk non-PIC (`portal-project.controller.ts`, Oki,
   OG2).
 
@@ -868,7 +922,8 @@ sequenceDiagram
 
 Semua titik persetujuan dari `validasi-konsep-saat-ini.md` 3.7 dan
 `validasi-konsep-modul-oki.md` 3.7, dengan status sekarang dan status bila
-usulan di file ini diterima. Susunan role mengikuti K2 dan K2d (b).
+usulan di file ini diterima. Susunan role mengikuti K2 dan K2d (a), jawaban
+programmer B 27/11 (diperbarui 2026-11-27 sesuai keputusan tanya-jawab).
 
 | Dokumen | Sekarang | Sesudah (usulan) | Keputusan yang mengubah |
 |---|---|---|---|
@@ -884,31 +939,33 @@ usulan di file ini diterima. Susunan role mengikuti K2 dan K2d (b).
 | Cuti dicatat Aqim atas nama karyawan | 🔴 macet | 🟢 disetujui sendiri dengan audit | A3, K1 |
 | Cuti Aqim sendiri | 🔴 macet (3.7) | tidak berlaku: Aqim tidak cuti | A3a |
 | Klaim garansi | 🟡 Bilal membuat dan menyetujui | 🟡 diterima | K7a |
-| Gaji | 🟡 Aqim menyiapkan, menyetujui, membayar | 🟡 Aqim menyiapkan dan menyetujui dengan audit, 🟢 dibayar Bella (K2d b) | K1, K7a, K2d |
+| Gaji | 🟡 Aqim menyiapkan, menyetujui, membayar | 🟡 Aqim menyiapkan dan menyetujui dengan audit, 🟢 dibayar Bella (K2d a) | K1, K7a, K2d |
 | Pembayaran | 🟡 tanpa pemeriksa | 🟡 diterima, diawasi lewat audit dan rekonsiliasi | K7a, OB7 |
-| Klaim biaya | 🟡 tanpa pemeriksa | 🟢 cek pengaju ≠ penyetuju seperti jurnal (OB8 a) | OB8 |
+| Klaim biaya | 🟡 tanpa pemeriksa | 🟡 diterima, diawasi lewat laporan dan audit (OB8, 27/11) | OB8 |
 | Tagihan pemasok | 🟡 tanpa pemeriksa | 🟡 diterima | K7a |
 | Jurnal manual | 🟢 Bella dan Aqim saling menyetujui | 🟢 tidak berubah (tertahan bila salah satu tidak ada) | K1a |
 | Penghapusan piutang | 🟢 | 🟢 tidak berubah | K1a |
-| Periode akuntansi: siapkan | 🔴 tidak ada pemegang hak | 🟢 Bella atau Aqim | RO1 |
+| Periode akuntansi: siapkan | 🔴 tidak ada pemegang hak | 🟢 Bella (Keuangan gabungan) atau Aqim, tidak macet lagi | RO1 |
 | Periode: tutup, kunci | 🟡 Bella tanpa pemeriksa | 🟡 diterima | K7a |
-| Periode: buka kembali | 🟡 Bella juga bisa | 🟡 hanya Aqim, dengan alasan dan audit | RO4 |
+| Periode: buka kembali | 🟡 Bella juga bisa | 🟡 hanya Aqim, route memeriksa `reopen`, dengan alasan dan audit | RO4 |
 | Kasbon diajukan teknisi | 🟢 disetujui Aqim (halaman tertutup) | 🟢 dari portal karyawan | RO6 |
-| Kasbon diajukan Aqim | 🔴 macet | 🟢 bila Bella diberi hak setuju kasbon, 🔴 bila tidak | K1a, OB13 |
-| Pertanggungjawaban: verifikasi | 🟢 Aqim | 🟢 Bella | RO5 |
-| Pertanggungjawaban: persetujuan | 🔴 selalu macet | 🟢 Aqim (verifikator Bella) | RO5 |
+| Kasbon diajukan Aqim | 🔴 macet | tidak berlaku: Aqim tidak mengajukan kasbon; bila suatu saat mengajukan, ikut K1 (disetujui sendiri dengan audit) | K1a, X1 |
+| Pertanggungjawaban: verifikasi | 🟢 Aqim | digabung ke persetujuan (satu langkah) | RO5, X2 |
+| Pertanggungjawaban: persetujuan | 🔴 selalu macet | 🟢 satu langkah oleh Aqim (pengaju teknisi, bukan Aqim) | RO5, X2 |
 | Catatan pajak dan pemotongan | 🟡 Bella membuat dan memverifikasi | 🟡 diterima, Aqim memeriksa rekap | RO13 |
 | Penghapusan aset | 🟡 Aqim sendiri | 🟡 Aqim sendiri, dengan audit disetujui pembuat | K1 |
-| Peminjaman aset | 🟡 PM menyetujui pinjamannya sendiri, Gudang serah tanpa persetujuan | 🟢 PM lain atau Aqim (dengan audit); serah tanpa persetujuan hanya Aqim | OD2, C13 |
+| Peminjaman aset | 🟡 PM menyetujui pinjamannya sendiri, Gudang serah tanpa persetujuan | 🟢 PM lain atau Aqim (dengan audit); serah tanpa persetujuan hanya Aqim | OD1, OD2, C13 |
 | Perubahan role anggota | 🟡 tanpa pemeriksa, tidak diaudit | 🟡 tanpa pemeriksa, diaudit dalam transaksi | OA5, OA6 |
-| Bagi hasil investor | ⚪ belum dibangun | ⚪ ditunda | OE1, K10 |
+| Bagi hasil investor | ⚪ belum dibangun | ⚪ ditunda, halaman investor hanya Pemilik | OE1, K10 |
+| Absen lokasi di luar radius | 🟡 tersimpan dengan tanda, tanpa layar tinjau | 🟢 ditolak di server, tidak ada data yang perlu ditinjau | OG1 |
 
 Keterangan: 🔴 macet (aplikasi menolak), 🟡 berjalan tanpa orang kedua,
 🟢 ada orang kedua atau persetujuan Pemilik dengan audit, ⚪ belum ada.
 
-**Ringkasan sesudah:** semua 🔴 menjadi 🟢 **dengan syarat** K1, RO1, RO5 diputuskan
-dan audit ikut transaksi (OA5) dikerjakan lebih dulu. Satu sisa 🔴 mungkin:
-kasbon buatan Aqim, bila K1a tetap (b) dan Bella tidak diberi hak setuju kasbon.
+**Ringkasan sesudah:** semua 🔴 menjadi 🟢 **dengan syarat** K1, RO1, RO5 (sudah
+dijawab programmer B 27/11, menunggu konfirmasi) dan audit ikut transaksi
+(OA5–OA7) dikerjakan lebih dulu. Sisa 🔴 kasbon buatan Aqim hilang karena Aqim
+tidak mengajukan kasbon dan kasbon ikut K1 (X1).
 
 ---
 
@@ -916,6 +973,10 @@ kasbon buatan Aqim, bila K1a tetap (b) dan Bella tidak diberi hak setuju kasbon.
 
 Ditemukan saat menyusun file ini (2026-11-27). Belum dibetulkan di file
 sumbernya; dicatat supaya dibereskan saat menyalin hasil rapat.
+
+Diperbarui 2026-11-27 sesuai keputusan tanya-jawab: butir 2–9 sudah dijawab
+programmer B (lembar rapat bagian 0 dan 8b, X1–X7) dan disalin ke file
+sumbernya; tinggal dikonfirmasi Pemilik dan Oki. Butir 10 masih terbuka.
 
 1. **Cuti Aqim.** `validasi-konsep-saat-ini.md` 3.7 masih menulis "Cuti Aqim
    sendiri macet" dan 3.8 "Cuti Aqim disetujui sendiri", sedangkan isian A3a di
@@ -925,31 +986,31 @@ sumbernya; dicatat supaya dibereskan saat menyalin hasil rapat.
    (b) untuk jurnal, (a) untuk kasbon dan pertanggungjawaban.
    `validasi-konsep-modul-oki.md` 3.8 aturan 1 malah memasukkan kasbon ke daftar
    yang boleh disetujui sendiri oleh Pemilik. Akibat K1a (b): kasbon buatan Aqim
-   butuh penyetuju kedua yang belum punya hak (OB9, OB13).
+   butuh penyetuju kedua yang belum punya hak (OB9, OB13). → Dijawab 27/11 (X1): kasbon dan pertanggungjawaban ikut K1, jurnal tetap orang kedua, Aqim tidak mengajukan kasbon.
 3. **RO5.** Lembar rapat merekomendasikan (a) Bella memverifikasi;
    `validasi-konsep-modul-oki.md` 3.3 dan 3.8 menyebut "satu langkah oleh Aqim"
-   sebagai pilihan pertama. Diagram bagian 8 memakai pilihan lembar.
+   sebagai pilihan pertama. Diagram bagian 8 memakai pilihan lembar. → Dijawab 27/11 (X2): satu langkah oleh Aqim; diagram bagian 8 sudah diganti.
 4. **K2d.** Tabel daftar role di lembar rapat berisi "Akuntan: Merging ke
    keuangan", sedangkan rekomendasi K2d dan OA10 adalah (b) dua role tanpa ubah
    kode, dan kolom Keputusan K2d masih kosong. `rencana-perubahan-modul-oki.md`
-   sudah mencatat bentrok ini.
+   sudah mencatat bentrok ini. → Dijawab 27/11 (X3): (a) gabung di kode.
 5. **Anggota.** Lembar rapat: Anggota "Hapus"; tetapi tabel usulan K2 di lembar
    yang sama dan `validasi-konsep-saat-ini.md` 3.8 masih memberi Dafrin dan Oki
-   "Pekerja Lepas, Anggota".
+   "Pekerja Lepas, Anggota". → Dijawab 27/11 (X4): Anggota dihapus, Dafrin dan Oki hanya Pekerja Lepas.
 6. **K2b belum diisi.** Banyak dokumen (dan diagram Sesudah di sini) sudah
    memakai satu role Penjualan, tetapi kolom Keputusan K2b di lembar rapat
    masih kosong. Di tabel daftar role, baris Penjualan sudah berisi "Merging
-   dengan penjualan".
+   dengan penjualan". → Dijawab 27/11 (X5): K2b (a).
 7. **B1.** `bahan-keputusan.md` merekomendasikan (a) atau (b) bergantung cara
    PO dikirim; lembar rapat merekomendasikan (b) dan sudah terisi "B". Kolom
-   Keputusan di `bahan-keputusan.md` masih kosong untuk semua butir.
+   Keputusan di `bahan-keputusan.md` masih kosong untuk semua butir. → Dijawab 27/11 (X5): B1 (b), langkah dihapus; kolom Keputusan `bahan-keputusan.md` sudah diisi.
 8. **B2 tanpa efek nyata.** Pilihan (b) memberi hak batal PO ke Pembelian dan
    Manajer Operasional, padahal keduanya tidak dipakai (K2, K2c). Dalam praktik
-   pembatal tetap Aqim.
+   pembatal tetap Aqim. → Dijawab 27/11 (X6): (a) biarkan, berlaku bila nanti ada staf pembelian.
 9. **OD1.** Lembar rapat 8a merekomendasikan "(a) perbaiki keduanya", sedangkan
    `bahan-keputusan-modul-oki.md` OD1 merekomendasikan pilihan (b) (endpoint
    unit pinjam, bukan memberi `asset:read`). Tidak bertentangan, tetapi cara
-   perbaikannya perlu satu jawaban.
+   perbaikannya perlu satu jawaban. → Dijawab 27/11 (X7): daftar unit khusus.
 10. **Pemegang SDM sekarang.** `uat-modul/diagram-alur-per-role.md` bagian 0
     menulis SDM "usulan Aqim", dan daftar role Aqim sekarang (Pemilik, Admin,
     Manajer Operasional, Pembelian, Keuangan) tidak memuat SDM. Diagram M08 di

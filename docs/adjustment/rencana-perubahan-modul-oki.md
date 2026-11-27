@@ -23,16 +23,23 @@ Sumber menyebut nomornya) dan di checklist
 
 | No | Keputusan | Sumber | Oleh | Status |
 |---|---|---|---|---|
-| K1 / K1a | Pemilik boleh menyetujui sendiri, tercatat audit; tidak berlaku untuk jurnal, kasbon, pertanggungjawaban | OA6, OA7, OB9, OD2; lembar rapat K1/K1a | Pemilik + Oki (ADR-0006) | Isian lembar: K1 (b), K1a (b); menunggu rapat |
-| K2 / K2b / K2d | Susunan role; Admin tidak dipakai, Anggota dan Auditor "hapus", Penjualan digabung, Akuntan "merging ke Keuangan" | OA9, OA10, OA11, OA8 | Pemilik + Oki | Isian lembar K2 (a); K2d bertentangan dengan rekomendasi (dua role); perlu dikonfirmasi |
-| K12 | Hapus lapisan organisasi (cara dan tahap) | OA1, OA2 | Pemilik + Oki (+ Dafrin untuk modulnya) | Arah baru 2026-11-26, usulan bertahap |
-| K13 | Login web-admin tanpa Google; portal pelanggan dengan Google | OA3, OA4 | Pemilik + Oki + Dafrin (portal M07) | Arah baru 2026-11-26 |
-| OA5 | Audit wajib ikut transaksi | OA5, L-1 | Oki | Menunggu |
-| K7a | Pembayaran/gaji tanpa pemeriksa kedua diterima; peminjaman aset diperbaiki | OB7, OD2 | Pemilik | Isian lembar (a) |
-| K10 | M11 dibangun (ADR baru) atau ditunda | OE1 | Pemilik + Oki | Menunggu; rekomendasi tunda |
-| K9 | Portal karyawan, absen GPS, PPh 21/Coretax, keuangan ADR-0030 diterima sebagai tambahan | bagian G, `lintas-modul/di-luar-scope.md` | Pemilik | Perlu dibicarakan |
-| K11 | Pemilik `document`, `notification`, `webhook`, `company`, `location`, `src/shared`, `src/http`, deploy/CI | bagian 3 di bawah | Kedua programmer | Perlu dibicarakan |
+| K1 / K1a | Pemilik boleh menyetujui sendiri, tercatat audit. K1a diganti 27/11: kasbon dan pertanggungjawaban **ikut K1** (Aqim tidak mengajukan kasbon); jurnal manual tetap butuh orang kedua (Bella ↔ Aqim) | OA6, OA7, OB9, OD2; lembar rapat K1/K1a, X1 | Pemilik + Oki (ADR-0006) | Diputuskan programmer B 27/11, menunggu konfirmasi Pemilik/Oki. Dikerjakan setelah OA5–OA7 |
+| RO5 | Pertanggungjawaban kasbon teknisi cukup **satu langkah oleh Aqim**; aturan verifikator ≠ penyetuju dihapus | OB9, OB13; lembar X2 | Pemilik + Oki | Diputuskan programmer B 27/11, menunggu konfirmasi Pemilik/Oki |
+| K2 / K2b / K2d | Susunan role per orang; Penjualan digabung (K2b); Akuntan **digabung** ke Keuangan di kode (K2d, Bella); Anggota dihapus (Dafrin, Oki hanya Pekerja Lepas); role organisasi Admin dihapus, tanda admin aplikasi Aqim tetap; Auditor "hapus" | OA9, OA10, OA11, OA8 | Pemilik + Oki | Diputuskan programmer B 27/11, menunggu konfirmasi Pemilik/Oki |
+| RO1 / RO4 | Periode akuntansi dibuat Pemilik dan Keuangan (`accounting_period:create`); buka kembali periode hanya Pemilik (route memeriksa `reopen`) | OB4, OB6 | Pemilik + Oki | Diputuskan programmer B 27/11, menunggu konfirmasi Pemilik/Oki |
+| K12 | Hapus lapisan organisasi **bertahap**: 1 sembunyikan pemilih organisasi, 2 role ke tingkat pengguna, 3 hapus `organization_id` (ADR baru) | OA1, OA2 | Pemilik + Oki (+ Dafrin untuk modulnya) | Diputuskan programmer B 27/11, menunggu konfirmasi Pemilik/Oki |
+| K13 / OA4 | Web-admin dan portal karyawan: username/email + kata sandi, tanpa Google; karyawan diundang lalu mengganti kata sandi. Portal pelanggan: Google, **satu jenis akun**, data perusahaan diisi di profil | OA3, OA4 | Pemilik + Oki + Dafrin (portal M07) | Diputuskan programmer B 27/11, menunggu konfirmasi Pemilik/Oki |
+| OA5–OA7 | Audit wajib ikut transaksi; perubahan role, hapus anggota, persetujuan sendiri wajib tercatat; **sebelum K1** | OA5, OA6, OA7, L-1 | Oki | Diputuskan programmer B 27/11, menunggu konfirmasi Oki |
+| K7a / OB7 / OB8 | Pembayaran, gaji, klaim biaya tanpa pemeriksa kedua diterima, diawasi lewat laporan dan audit | OB7, OB8 | Pemilik | Diputuskan programmer B 27/11, menunggu konfirmasi Pemilik |
+| OD1 / OD2 | Teknisi mengajukan peminjaman dari daftar unit khusus; persetujuan sendiri yang selalu lolos diperbaiki | OD1, OD2; lembar X7 | Pemilik + Oki | Diputuskan programmer B 27/11, menunggu konfirmasi Pemilik/Oki |
+| K10 / OE1 | M11 **ditunda**; halaman investor ditutup, hanya Pemilik | OE1, OE2 | Pemilik + Oki | Diputuskan programmer B 27/11, menunggu konfirmasi Pemilik/Oki |
+| OG1 | Absen lokasi di luar radius **ditolak** (berbeda dari rekomendasi) | OG1 | Pemilik + Oki | Diputuskan programmer B 27/11, menunggu konfirmasi Pemilik/Oki |
+| K9 | Portal karyawan, absen GPS, PPh 21/Coretax, keuangan ADR-0030 diterima sebagai tambahan | bagian G, `lintas-modul/di-luar-scope.md` | Pemilik | Dibahas di rapat |
+| K11 | Pemilik `document`, `notification`, `webhook`, `company`, `location`, `src/shared`, `src/http`, deploy/CI | bagian 3 di bawah | Kedua programmer | Dibahas di rapat |
 | OD8 | Pembagian schema `inventory`: stok (Dafrin) vs aset/peminjaman (Oki) | OD8 | Kedua programmer | Usulan |
+
+Status tabel ini diperbarui 2026-11-27 sesuai keputusan tanya-jawab
+(`lembar-keputusan-rapat.md` bagian 0).
 
 ## 2. Perubahan per modul Oki
 
@@ -40,11 +47,11 @@ Sumber menyebut nomornya) dan di checklist
 
 | No | Perubahan | Sumber | Prioritas | Perlu keputusan |
 |---|---|---|---|---|
-| M12-1 | Audit ditulis di transaksi bisnis untuk peristiwa wajib; tambah audit perubahan role, pengeluaran anggota, ekspor, persetujuan sendiri (`meta.self_approved`) | OA5–OA7; `skema-database/audit.md` | Tinggi | Ya (OA5, OA6) |
+| M12-1 | Audit ditulis di transaksi bisnis untuk peristiwa wajib; tambah audit perubahan role, pengeluaran anggota, ekspor, persetujuan sendiri (`meta.self_approved`) (OA5–OA7 diputuskan 27/11; **sebelum** K1) | OA5–OA7; `skema-database/audit.md` | Tinggi | Diputuskan programmer B 27/11 |
 | M12-2 | K12 tahap 1: sembunyikan pemilih dan halaman Organisasi, sesi selalu ke organisasi tunggal; ADR baru | OA1, OA2 | Tinggi | Ya (K12) |
 | M12-3 | K12 tahap 2–3: role ke tingkat pengguna, buang `organization_id` per modul (`docs.dbml`, migrasi append-only, seed, test) | OA1 | Sedang | Ya (K12) |
-| M12-4 | K13: hapus tombol Google di `login-form.tsx`; konfigurasi Google untuk portal pelanggan | OA3, OA4 | Sedang | Ya (K13) |
-| M12-5 | `erp-permissions.ts`: label Penjualan (K2b), role tidak ditawarkan (Admin, Anggota, Auditor, `sales`), hak baru dari OB1, OB4, OB5, OB13, OD1, OF1; lalu `bun docs/gen-role-permission.ts` | OA9–OA12 | Tinggi | Ya (K2) |
+| M12-4 | K13: hapus tombol Google di `login-form.tsx`; konfigurasi Google untuk portal pelanggan → 27/11: tombol Google juga dihapus di portal karyawan; karyawan diundang lalu mengganti kata sandi; pelanggan satu jenis akun (OA4) | OA3, OA4 | Sedang | Diputuskan programmer B 27/11 (K13) |
+| M12-5 | `erp-permissions.ts`: label Penjualan (K2b), role tidak ditawarkan (Admin, Anggota, Auditor, `sales`), hak baru dari OB1, OB4, OB5, OB13, OD1, OF1; lalu `bun docs/gen-role-permission.ts` → 27/11: Akuntan digabung ke Keuangan (`finance` mendapat hak `accountant`, K2d); role Anggota dihapus; role organisasi Admin dihapus, tanda admin aplikasi Aqim tetap; `accounting_period:create` untuk Pemilik + Keuangan (RO1) | OA9–OA12 | Tinggi | Diputuskan programmer B 27/11 (K2) |
 | M12-6 | Label anggota multi-role tampil sebagai kode mentah (`organization-member-card.tsx:68`, `admin/users/index.tsx:526`) | UAT M12 | Sedang | Tidak |
 | M12-7 | Halaman Ubah anggota: centang hilang setelah F5, hanya mencari 20 anggota pertama (`$organizationId.members.$memberId.edit.tsx:59-67`) | UAT M12 | Sedang | Tidak (gugur bila K12 tahap 2) |
 | M12-8 | Form tambah pengguna mendukung beberapa role | `bahan-keputusan.md` D2 | Sedang | Tidak |
@@ -58,19 +65,19 @@ Sumber menyebut nomornya) dan di checklist
 
 | No | Perubahan | Sumber | Prioritas | Perlu keputusan |
 |---|---|---|---|---|
-| M09-1 | Keuangan diberi `chart_of_account:read` (dan `journal:read`) | OB1 | Tinggi | Ya (K2d) |
+| M09-1 | Keuangan diberi `chart_of_account:read` (dan `journal:read`) (tercakup bila K2d gabung) | OB1 | Tinggi | Diputuskan programmer B 27/11 (K2d) |
 | M09-2 | Daftar akun: endpoint pilihan atau batas server dinaikkan; empat layar 200/300 | OB2 | Tinggi | Ya (cara) |
 | M09-3 | Layar pembayaran pemasok dari halaman Utang (alokasi tagihan, potongan PPh) | OB3 | Tinggi | Ya |
-| M09-4 | Aksi `accounting_period:create` untuk "Siapkan periode" | OB4 | Tinggi | Tidak |
-| M09-5 | Akuntan diberi `asset:read`, `project:read`; `reopen` hanya Pemilik | OB5, OB6 | Sedang | Ya |
-| M09-6 | Klaim biaya: pengaju ≠ penyetuju; pembayaran tetap tanpa cek tetapi diaudit | OB7, OB8 | Sedang | Ya (K1a, K7a) |
-| M09-7 | Kasbon/pertanggungjawaban: hak `advance`/`settlement` untuk Keuangan/Akuntan supaya Aqim punya pemeriksa | OB9, OB13 | Sedang | Ya (K1a) |
+| M09-4 | Aksi `accounting_period:create` untuk "Siapkan periode" untuk Pemilik dan Keuangan (RO1, 27/11) | OB4 | Tinggi | Tidak |
+| M09-5 | Akuntan diberi `asset:read`, `project:read`; `reopen` hanya Pemilik → 27/11: hak Akuntan pindah ke role Keuangan gabungan (K2d); route pembuka periode memeriksa `reopen`, hanya Pemilik (RO4) | OB5, OB6 | Sedang | Diputuskan programmer B 27/11 |
+| M09-6 | Klaim biaya: pengaju ≠ penyetuju; pembayaran tetap tanpa cek tetapi diaudit → diganti 27/11: klaim biaya juga tanpa pemeriksa kedua (OB8 diterima), cukup diaudit | OB7, OB8 | Sedang | Diputuskan programmer B 27/11 |
+| M09-7 | Kasbon/pertanggungjawaban: hak `advance`/`settlement` untuk Keuangan/Akuntan supaya Aqim punya pemeriksa → diganti 27/11: Aqim tidak mengajukan kasbon; pertanggungjawaban satu langkah oleh Aqim, aturan verifikator ≠ penyetuju dihapus di `employee-advance.service.ts` (RO5) | OB9, OB13 | Tinggi (macet sekarang) | Diputuskan programmer B 27/11 |
 | M09-8 | Write-off: beban kerugian piutang bila cadangan kurang | OB10 | Tinggi (angka laba salah) | Ya |
 | M09-9 | Arus kas tidak langsung: abaikan transaksi nonkas | OB11 | Sedang | Tidak |
 | M09-10 | Ekspor CSV ke `/finance/reports/*.csv`, tampilkan galat, label tombol berbeda | OB12 | Sedang | Tidak |
 | M09-11 | Tagihan pemasok manual: pilihan akun beban | OB14 | Rendah | Ya |
 | M09-12 | Teks: checklist tutup bulan en + id, peran posting di web disamakan dengan backend, status periode di paket manajemen, label tanggal laporan, pesan anggaran berformat ribuan | OB15; UAT M09 | Rendah | Tidak |
-| M09-13 | Rute laba periode tertutup (`ExportedProfitService`) hanya bila M11 dibangun | UAT M09 laporan; OE1 | Rendah | Ya (K10) |
+| M09-13 | Rute laba periode tertutup (`ExportedProfitService`) hanya bila M11 dibangun (M11 ditunda, 27/11) | UAT M09 laporan; OE1 | Rendah | Ya (K10) |
 | M09-14 | Tutup buku akhir tahun ke laba ditahan (ERP-0131), tes audit buka ulang (ERP-0017) | `skema-database/finance.md` | Sedang | Tidak |
 
 ### M10 Pajak
@@ -91,8 +98,8 @@ Sumber menyebut nomornya) dan di checklist
 
 | No | Perubahan | Sumber | Prioritas | Perlu keputusan |
 |---|---|---|---|---|
-| M06-1 | Endpoint unit yang bisa dipinjam untuk Teknisi/PM/Gudang (tanpa `asset:read`) | OD1 | Tinggi | Ya (cara) |
-| M06-2 | Persetujuan sendiri peminjaman ikut K1 (hanya Pemilik, audit); perbaiki pesan pembatalan | OD2 | Tinggi | Ya (K1) |
+| M06-1 | Endpoint unit yang bisa dipinjam untuk Teknisi/PM/Gudang (tanpa `asset:read`) (daftar unit khusus, OD1/X7, 27/11) | OD1 | Tinggi | Diputuskan programmer B 27/11 |
+| M06-2 | Persetujuan sendiri peminjaman ikut K1 (hanya Pemilik, audit); perbaiki pesan pembatalan | OD2 | Tinggi | Diputuskan programmer B 27/11 (OD2) |
 | M06-3 | Satu aturan rupiah-sen di form, tampilan, disposal, penyusutan, dan seeder aset | OD3 | Tinggi | Tidak (ADR-0002) |
 | M06-4 | Nama, bukan id, untuk peminjam, nomor seri, gudang, penanggung jawab | OD4 | Sedang | Tidak |
 | M06-5 | Sembunyikan catatan servis dan set peralatan sampai diminta | OD5 | Sedang | Ya (K9) |
@@ -108,8 +115,8 @@ Sumber menyebut nomornya) dan di checklist
 
 | No | Perubahan | Sumber | Prioritas | Perlu keputusan |
 |---|---|---|---|---|
-| M11-1 | Guard awalan `/finance/investors` (rute induk bukan daun menu) | OE2 | Sedang | Tidak |
-| M11-2 | ADR baru + skema bagi hasil + modul + `web-investor` bila dibangun | OE1 | Sedang | Ya (K10) |
+| M11-1 | Guard awalan `/finance/investors` (rute induk bukan daun menu): hanya Pemilik (OE1, 27/11) | OE2 | Sedang | Tidak |
+| M11-2 | ADR baru + skema bagi hasil + modul + `web-investor` bila dibangun | OE1 | Sedang | Ditunda (K10, 27/11) |
 | M11-3 | `apps/web-investor` dihapus atau ditandai "belum dimulai"; label en "Investors" vs id "Bonus & Investor" | OE3 | Rendah | Ya |
 
 ### M01 Dasbor
@@ -125,13 +132,14 @@ Sumber menyebut nomornya) dan di checklist
 
 | No | Perubahan | Sumber | Prioritas | Perlu keputusan |
 |---|---|---|---|---|
-| PK-1 | Di luar radius: simpan bertanda + layar tinjau admin; petunjuk radius dari setting; cek saat check-out | OG1 | Sedang | Ya |
+| PK-1 | Di luar radius: simpan bertanda + layar tinjau admin; petunjuk radius dari setting; cek saat check-out → diganti 27/11: absen di luar radius **ditolak** (OG1), tanpa layar tinjau; petunjuk radius dari setting tetap | OG1 | Sedang | Diputuskan programmer B 27/11 |
 | PK-2 | Non-PIC melihat kunjungan sendiri; perbaiki cek "tugas saya" (`_authed.projects.$projectId.tsx:193`) | OG2 | Sedang | Tidak |
 | PK-3 | Tautan lupa kata sandi dihapus atau halaman reset dibuat | OG3 | Sedang | Ya |
 | PK-4 | Data karyawan untuk semua staf yang absen (data oleh Aqim; seeder HR milik Dafrin) | OG4 | Sedang | Ya |
 | PK-5 | Konfirmasi tanda tangan; pesan `portal-denied` tidak ganda; teks Inggris, bahasa awal Indonesia; `type="tel"` di profil | OG6; UAT portal 5–7 | Rendah | Tidak |
 | PK-6 | Seeder demo portal deterministik (`ORDER BY`), lembur seed tidak disetujui pemohon sendiri | UAT portal 9 | Rendah | Tidak |
-| PK-7 | Hak `self_service` diperiksa di guard portal atau dihapus (kaitan: Anggota "hapus") | UAT portal 12; OA9 | Rendah | Ya |
+| PK-7 | Hak `self_service` diperiksa di guard portal atau dihapus (kaitan: Anggota "hapus") → Anggota dihapus (27/11) | UAT portal 12; OA9 | Rendah | Ya |
+| PK-8 | Login portal karyawan tanpa Google: karyawan diundang, mengganti kata sandi, lalu login dengan username/email + kata sandi | K13 | Sedang | Diputuskan programmer B 27/11 |
 
 ## 3. Lintas modul yang dipegang atau ikut dipegang Oki
 
@@ -169,8 +177,8 @@ Rincian dan bukti di
 
 ## Urutan yang disarankan
 
-1. **Putuskan K1/K1a, K2, K12 tahap 1, K13, OA5** di rapat.
-2. **Kerjakan M12-1 (audit) dan M12-5 (hak)**, karena K1 dan hampir semua perbaikan hak bergantung padanya.
-3. **Perbaikan Tinggi:** M09-1..M09-4, M09-8, M10-1..M10-3, M06-1..M06-3, M06-6, lalu M12-2.
+1. **Konfirmasi di rapat** keputusan programmer B 27/11 (K1/K1a, RO5, K2/K2b/K2d, RO1/RO4, K12, K13/OA4, OA5–OA7, OG1); bahas K8, K9, K11.
+2. **Kerjakan M12-1 (audit dalam transaksi, OA5–OA7) lebih dulu**, baru aturan K1 (X-2); lalu M12-5 (hak: K2b, K2d, Anggota, Admin, RO1), karena hampir semua perbaikan hak bergantung padanya.
+3. **Perbaikan Tinggi:** M09-1..M09-5 (RO1, RO4), M09-7 (RO5), M09-8, M10-1..M10-3, M06-1..M06-3, M06-6, lalu M12-2.
 4. **UAT ulang** M12 → M09 → M10 → M06 sesuai urutan di checklist, lalu perbaikan Sedang dan Rendah.
-5. **Lintas modul X-5, X-7** sebelum rilis produksi; **M11** setelah K10; **dokumen** bagian 4 setelah Oki setuju.
+5. **Lintas modul X-5, X-7** sebelum rilis produksi; **M11** ditunda (K10, 27/11), halaman investor ditutup lewat M11-1; **dokumen** bagian 4 setelah Oki setuju.
