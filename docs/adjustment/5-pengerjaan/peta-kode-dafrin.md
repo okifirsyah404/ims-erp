@@ -42,44 +42,54 @@ migrasi, test, dan cek UAT. Sumber tugas:
 
 ## Indeks
 
-| ID | Judul | Prioritas | Paket / urutan |
-|---|---|---|---|
-| [P7-5](#p7-5-penomoran-tanpa-celah-dan-kode-pemasok-pendek-tinggi-t-1-k6-l-2-b-27) | Penomoran tanpa celah + kode pemasok pendek (mencakup L-2, B-27, halaman Nomor Dokumen) | Tinggi | Langkah 7, mulai langsung |
-| [P7-6](#p7-6-dasar-form-tinggi-rf-a-tf-a-tf-1tf-3-rf-27-l-7) | Dasar form: error per isian, pembaca error, komponen form (mencakup L-7) | Tinggi | Langkah 7, mulai langsung |
-| [P7-3](#p7-3--b-1-aturan-persetujuan-k1-tinggi-k1-a1-b-1-x-2) | Aturan persetujuan K1 (= B-1) | Tinggi | Langkah 7, setelah P7-1 + P7-2 (Oki) |
-| [B-21](#b-21-hapus-tandai-terkirim-pada-po-tinggi-k3--b1) | Hapus "Tandai terkirim" PO | Tinggi | Langkah 8, awal |
-| [PH-PO](#ph-po-halaman-pesanan-pembelian-harga-beli-terakhir-dan-konfirmasi-tinggi-fu6-k6) | Halaman PO: harga beli terakhir, konfirmasi | Tinggi | Langkah 8, setelah B-21 |
-| [B-32](#b-32-tutup-po-kurang-kirim-tinggi-kf-b1) | Tutup PO kurang kirim | Tinggi | Langkah 8, setelah B-21 |
-| [PH-ADJ](#ph-adj-halaman-penyesuaian-stok-tinggi-fu8-k1-tf-9) | Halaman Penyesuaian Stok | Tinggi | Langkah 8, setelah P7-3 |
-| [B-29](#b-29-layar-terimakeluarkan-stok-manual-tinggi-kf-g1-kf-1) | Layar terima/keluarkan stok manual | Tinggi | Langkah 8 |
-| [B-13](#b-13-retur-penjualan-rusak-tidak-menambah-stok-jual-tinggi-m02-e5) | Retur penjualan "Rusak" tidak menambah stok jual | Tinggi | Langkah 8, awal |
-| [PH-SPH](#ph-sph-halaman-penawaran-sph-tinggi-fu3-oc4-k1) | Halaman Penawaran (SPH) | Tinggi | Langkah 8 (urutan alur uang, FU-B) |
-| [B-33](#b-33-pph-23-dipotong-pelanggan-di-kuitansi-tinggi-kf-k3-kf-t3-bersama-oki-m09-17) | PPh 23 dipotong pelanggan di kuitansi | Tinggi | Langkah 8, bersama Oki (M09-17) |
-| [B-37](#b-37-halaman-cetak-so-kuitansi-bpb-retur-tinggi-alur-lengkap-6-nm-11) | Cetak SO, kuitansi, BPB, retur | Tinggi (kuitansi dulu) | Langkah 8 |
-| [B-40](#b-40-riwayat-dan-saldo-pelanggan-tinggi-kf-s1) | Riwayat dan saldo pelanggan | Tinggi | Langkah 8 |
-| [B-41](#b-41-kirim-sphfaktur-tanpa-n8n-tinggi-kf-s2) | Kirim SPH/faktur tanpa n8n | Tinggi | Langkah 8 |
-| [B-42](#b-42-faktur-tanpa-so-tinggi-kf-s6) | Faktur tanpa SO | Tinggi | Langkah 8, bersama B-31 |
-| [B-30](#b-30-cek-garansi-barang-tanpa-proyek-tinggi-kf-p2) | Cek garansi barang tanpa proyek | Tinggi | Langkah 8 |
-| [B-31](#b-31-tiket-berbayar-bisa-ditagih-tinggi-kf-p1) | Tiket berbayar bisa ditagih | Tinggi | Langkah 8, setelah B-42 |
-| [B-35](#b-35-notifikasi-tugas-proyek-ke-teknisi-tinggi-alur-lengkap-7) | Notifikasi tugas proyek | Tinggi | Langkah 8 |
-| [B-36](#b-36-tombol-konfirmasi-tiket-di-portal-pelanggan-tinggi-alur-lengkap-10) | Konfirmasi tiket di portal pelanggan | Tinggi | Langkah 8 |
-| [B-38](#b-38-portal-pelanggan-dan-website-pesanan-online-tinggi-pp-1pp-8-t21-t25) | Portal pelanggan + website: pesanan online | Tinggi (rancang dulu) | Langkah 8; P2+P7 → P3 → P5 → P4 |
-| [B-45](#b-45-penempatan-kantorlapangan-freelance-dan-tarif-tinggi-kl-1kl-12) | Penempatan, Freelance, tarif freelance | Tinggi | Langkah 8, sebelum B-39 dan B-48 |
-| [B-39](#b-39-gaji-memakai-absensi-dan-pengaturan-potongan-tinggi-kf-h1-kf-h2-pg-1pg-6) | Gaji memakai absensi + pengaturan potongan | Tinggi | Langkah 8, setelah B-45 |
-| [B-44](#b-44-laporan-kerja-karyawan-tinggi-lk-1lk-7) | Laporan kerja karyawan | Tinggi | Langkah 8, bersama Oki (layar portal) |
-| [B-48](#b-48-biaya-perjalanan-di-proyek-tinggi-bp-1bp-6) | Biaya perjalanan di proyek | Tinggi | Langkah 8, bersama Oki (M09-19) |
-| [B-46](#b-46-n8n-dan-whatsapp-dijalankan-sungguhan-tinggi-n8-1n8-10) | n8n dan WhatsApp sungguhan | Tinggi | Langkah 8, uji langkah 9 |
-| [M12-14-D](#m12-14-d-form-ubah-karyawan-tidak-menimpa-role-tinggi-kf-r2-bagian-dafrin) | Form ubah karyawan tidak menimpa role (bagian Dafrin) | Tinggi | Langkah 8, bersama Oki |
-| [M12-16-D](#m12-16-d-ekspor-daftar-utama-modul-dafrin-tinggi-kf-r5-bagian-pemilik-modul) | Ekspor daftar utama modul Dafrin | Tinggi | Langkah 8, setelah pola Oki |
-| [L-12-D](#l-12-d-templat-impor-data-awal-modul-dafrin-tinggi-nm-1-nm-2) | Templat impor data awal modul Dafrin | Tinggi | Langkah 8–9 |
-| [B-14](#b-14-masa-perpanjangan-lisensi-dan-kode-aplikasi-sedang-t-2-t-3) | Perpanjangan lisensi + kode aplikasi | **Sedang** (diminta masuk peta) | Langkah 9 |
-| [L-18](#l-18-dokumentasi-api-request-body-dan-response-body-per-endpoint-tinggi-untuk-endpoint-eksternal-bersama-nm-8-t32) | Dokumentasi API request/response | Tinggi (eksternal) | Setelah P7-6 |
+**Cara memakai:** kerjakan dari **nomor terkecil** yang semua isi kolom
+"Mulai setelah" sudah masuk `main`. Kalau masih menunggu orang lain, lompat
+ke nomor berikutnya yang sudah bisa, lalu kembali. Jangan membuka tugas di
+luar daftar ini. Urutan disusun 2026-11-28 dari baris "Bergantung pada"
+setiap entri: tugas yang ditunggu banyak tugas lain ada di atas. Tugas
+yang menunggu Oki, Aqim, atau Bella ditulis dengan nama orangnya.
+
+| No | Tugas | Judul | Prioritas | Mulai setelah |
+|---|---|---|---|---|
+| 1 | [P7-6](#p7-6-dasar-form-tinggi-rf-a-tf-a-tf-1tf-3-rf-27-l-7) | Dasar form: error per isian, pembaca error, komponen form (mencakup L-7) | Tinggi | — (mulai sekarang) |
+| 2 | [P7-5](#p7-5-penomoran-tanpa-celah-dan-kode-pemasok-pendek-tinggi-t-1-k6-l-2-b-27) | Penomoran tanpa celah + kode pemasok pendek (mencakup L-2, B-27, halaman Nomor Dokumen) | Tinggi | — |
+| 3 | [B-21](#b-21-hapus-tandai-terkirim-pada-po-tinggi-k3--b1) | Hapus "Tandai terkirim" PO | Tinggi | — |
+| 4 | [B-32](#b-32-tutup-po-kurang-kirim-tinggi-kf-b1) | Tutup PO kurang kirim | Tinggi | B-21 |
+| 5 | [B-30](#b-30-cek-garansi-barang-tanpa-proyek-tinggi-kf-p2) | Cek garansi barang tanpa proyek | Tinggi | — |
+| 6 | [B-42](#b-42-faktur-tanpa-so-tinggi-kf-s6) | Faktur tanpa SO | Tinggi | P7-6 |
+| 7 | [B-31](#b-31-tiket-berbayar-bisa-ditagih-tinggi-kf-p1) | Tiket berbayar bisa ditagih | Tinggi | B-42, B-30 |
+| 8 | [B-29](#b-29-layar-terimakeluarkan-stok-manual-tinggi-kf-g1-kf-1) | Layar terima/keluarkan stok manual | Tinggi | P7-6 |
+| 9 | [B-13](#b-13-retur-penjualan-rusak-tidak-menambah-stok-jual-tinggi-m02-e5) | Retur penjualan "Rusak" tidak menambah stok jual | Tinggi | — |
+| 10 | [B-40](#b-40-riwayat-dan-saldo-pelanggan-tinggi-kf-s1) | Riwayat dan saldo pelanggan | Tinggi | — |
+| 11 | [B-36](#b-36-tombol-konfirmasi-tiket-di-portal-pelanggan-tinggi-alur-lengkap-10) | Konfirmasi tiket di portal pelanggan | Tinggi | — |
+| 12 | [L-18](#l-18-dokumentasi-api-request-body-dan-response-body-per-endpoint-tinggi-untuk-endpoint-eksternal-bersama-nm-8-t32) | Dokumentasi API request/response | Tinggi (eksternal) | P7-6 |
+| 13 | [P7-3](#p7-3--b-1-aturan-persetujuan-k1-tinggi-k1-a1-b-1-x-2) | Aturan persetujuan K1 (= B-1) | Tinggi | Oki: P7-1, P7-2 |
+| 14 | [PH-ADJ](#ph-adj-halaman-penyesuaian-stok-tinggi-fu8-k1-tf-9) | Halaman Penyesuaian Stok | Tinggi | P7-3, P7-6 |
+| 15 | [PH-SPH](#ph-sph-halaman-penawaran-sph-tinggi-fu3-oc4-k1) | Halaman Penawaran (SPH) | Tinggi | P7-3, P7-6; Oki: tarif PPN (OC4) |
+| 16 | [PH-PO](#ph-po-halaman-pesanan-pembelian-harga-beli-terakhir-dan-konfirmasi-tinggi-fu6-k6) | Halaman PO: harga beli terakhir, konfirmasi | Tinggi | B-21, P7-3, P7-6 |
+| 17 | [B-33](#b-33-pph-23-dipotong-pelanggan-di-kuitansi-tinggi-kf-k3-kf-t3-bersama-oki-m09-17) | PPh 23 dipotong pelanggan di kuitansi | Tinggi | P7-6; dikerjakan bersama Oki M09-17 |
+| 18 | [B-45](#b-45-penempatan-kantorlapangan-freelance-dan-tarif-tinggi-kl-1kl-12) | Penempatan, Freelance, tarif freelance | Tinggi | Oki: P7-4. Bagian data dulu; layar Oki (M09-18, PK-10) menyusul |
+| 19 | [B-44](#b-44-laporan-kerja-karyawan-tinggi-lk-1lk-7) | Laporan kerja karyawan | Tinggi | B-45; Oki: layar `web-employee`, P7-7 |
+| 20 | [B-39](#b-39-gaji-memakai-absensi-dan-pengaturan-potongan-tinggi-kf-h1-kf-h2-pg-1pg-6) | Gaji memakai absensi + pengaturan potongan | Tinggi | B-45 |
+| 21 | [B-48](#b-48-biaya-perjalanan-di-proyek-tinggi-bp-1bp-6) | Biaya perjalanan di proyek | Tinggi | B-45; dikerjakan bersama Oki M09-19 |
+| 22 | [M12-14-D](#m12-14-d-form-ubah-karyawan-tidak-menimpa-role-tinggi-kf-r2-bagian-dafrin) | Form ubah karyawan tidak menimpa role (bagian Dafrin) | Tinggi | Oki: M12-14 |
+| 23 | [M12-16-D](#m12-16-d-ekspor-daftar-utama-modul-dafrin-tinggi-kf-r5-bagian-pemilik-modul) | Ekspor daftar utama modul Dafrin | Tinggi | Oki: pola ekspor M12-16 |
+| 24 | [B-41](#b-41-kirim-sphfaktur-tanpa-n8n-tinggi-kf-s2) | Kirim SPH/faktur tanpa n8n | Tinggi | Oki: P7-7 (Chromium) |
+| 25 | [B-35](#b-35-notifikasi-tugas-proyek-ke-teknisi-tinggi-alur-lengkap-7) | Notifikasi tugas proyek | Tinggi | Oki: P7-7 (scheduler) |
+| 26 | [B-37](#b-37-halaman-cetak-so-kuitansi-bpb-retur-tinggi-alur-lengkap-6-nm-11) | Cetak SO, kuitansi, BPB, retur | Tinggi (kuitansi dulu) | Aqim: contoh surat (NM-11) |
+| 27 | [L-12-D](#l-12-d-templat-impor-data-awal-modul-dafrin-tinggi-nm-1-nm-2) | Templat impor data awal modul Dafrin | Tinggi | P7-6, PH-ADJ |
+| 28 | [B-38](#b-38-portal-pelanggan-dan-website-pesanan-online-tinggi-pp-1pp-8-t21-t25) | Portal pelanggan + website: pesanan online | Tinggi (rancang dulu) | B-37, B-24, B-22; dirancang bersama B-46; Oki: payment |
+| 29 | [B-46](#b-46-n8n-dan-whatsapp-dijalankan-sungguhan-tinggi-n8-1n8-10) | n8n dan WhatsApp sungguhan | Tinggi | P7-3, B-38, B-44; Oki: X-14; Aqim: nomor WA, penyedia AI |
+| 30 | [B-14](#b-14-masa-perpanjangan-lisensi-dan-kode-aplikasi-sedang-t-2-t-3) | Perpanjangan lisensi + kode aplikasi | **Sedang** (diminta masuk peta) | — (Sedang, langkah 9) |
+
+
 
 **Tidak dipetakan di sini (bukan pekerjaan Dafrin):** L-1 (= P7-1), P7-2,
 P7-4, L-4/L-10 (= P7-7), L-11, L-13, L-14 (Oki atau bersama tanpa kode
 modul Dafrin); PK-10 dan semua layar `apps/web-employee` (Oki; Dafrin hanya
 menyiapkan data/backend di B-44, B-45, B-48). L-7 masuk P7-6; L-2 dan B-27
 masuk P7-5; B-1 = P7-3.
+
 
 ---
 

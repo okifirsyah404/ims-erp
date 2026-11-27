@@ -2287,3 +2287,44 @@ diperbarui. Cek tautan: 357 tautan, 0 rusak. Log lama (`progress.md`,
 `backlog.md`, catatan ini) tidak diubah.
 
 Tidak ada perubahan kode aplikasi.
+
+## 2026-11-28 — Urutan prioritas tugas Dafrin
+
+`5-pengerjaan/peta-kode-dafrin.md` mendapat bagian "Urutan prioritas" yang
+disusun dari baris "Bergantung pada". Isinya delapan gelombang:
+
+1. P7-6 lalu P7-5.
+2. Tugas bebas.
+3. Tugas setelah P7-6.
+4. P7-3.
+5. Halaman inti.
+6. SDM dan biaya lapangan.
+7. Tugas yang menunggu Oki atau Aqim.
+8. B-38 dan B-46.
+
+P7-6 didahulukan karena ditunggu 8 tugas. P7-5 tidak ditunggu tugas lain.
+
+Ditemukan dua pasangan yang saling bergantung: B-44 dengan B-45, dan B-38
+dengan B-46. Masing-masing dirancang bersama.
+
+Branch `feat/p7-6-dasar-form` dibuat dari `main` setelah PR #175 di-merge.
+
+## 2026-11-28 — Urutan tugas dijadikan daftar bernomor
+
+Atas permintaan programmer B, delapan gelombang di entri sebelumnya diganti
+dengan **satu daftar bernomor** di bagian "Indeks" kedua peta kode. Tujuannya
+agar AI langsung menuju tugas yang benar tanpa menafsirkan gelombang.
+
+| Peta kode | Isi daftar |
+|---|---|
+| `peta-kode-dafrin.md` | 30 tugas, nomor 1 = P7-6 |
+| `peta-kode-oki.md` | 46 tugas, nomor 1 = P7-1 |
+
+Setiap baris punya kolom "Mulai setelah". Tugas yang masih menunggu orang
+lain ditulis dengan nama orangnya.
+
+Aturan pakainya: ambil nomor terkecil yang syaratnya sudah masuk `main`.
+Aturan ini juga ditulis di langkah 1 `5-pengerjaan/README.md`.
+
+Di peta kode Oki ada delapan entri yang sama dengan tugas lain (misalnya
+M12-1 = P7-1). Entri itu tidak diberi nomor sendiri.
