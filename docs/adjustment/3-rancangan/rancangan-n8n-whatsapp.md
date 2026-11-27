@@ -43,6 +43,7 @@ pesan pelanggan, dan penerima di workflow masih memakai role lama
 | N8-5 | **Pesan ke pelanggan: semua jenis** (SPH terkirim + PDF, faktur terbit, pembayaran diterima, tiket diperbarui, lisensi akan habis, retur, SO terkirim/selesai), masing-masing punya **sakelar on/off** di pengaturan; semua **mati** sampai Aqim menyetujui teksnya |
 | N8-6 | **Event baru:** dokumen menunggu persetujuan (ke penyetuju, X-6), pesanan online masuk (B-38), SO terkirim/selesai (C1), pengingat laporan harian (B-44) |
 | N8-7 | **Asisten AI aktif saat go-live**; penyedia dan anggaran token **dipilih Aqim**; menjawab hanya dari FAQ yang disetujui, selebihnya diserahkan ke admin (Bilal) |
+| N8-9 | **Teks pesan dikelola dan disetujui langsung di n8n** (node "3. Compose messages"): teks awal dari [`teks-pesan-wa-pelanggan.md`](teks-pesan-wa-pelanggan.md) dimasukkan ke workflow, Pak Aqim melihat hasilnya saat uji dengan nomor tim, perubahan langsung di n8n. **Sakelar on/off tetap di ERP** (N8-5) |
 | N8-8 | **Prioritas Tinggi, sebelum rilis:** disiapkan di langkah 8, diuji di langkah 9 memakai nomor tim dulu, lalu checklist go-live panduan n8n |
 
 ## 3. Penerima staf (role baru)
@@ -137,5 +138,5 @@ sequenceDiagram
 | Nomor WhatsApp khusus perusahaan untuk WAHA | Aqim |
 | Akses server untuk n8n dan alamat HTTPS | Aqim / Oki (deploy) |
 | Penyedia AI dan anggaran token | Aqim |
-| Persetujuan teks pesan pelanggan dan pemasok (usulan di [`teks-pesan-wa-pelanggan.md`](teks-pesan-wa-pelanggan.md)) | Aqim |
+| Melihat dan menyetujui teks pesan **saat uji di n8n** (N8-9; teks awal di [`teks-pesan-wa-pelanggan.md`](teks-pesan-wa-pelanggan.md)) | Aqim |
 | Nomor WA tiap staf di profil pengguna ERP | Setiap staf / Aqim |

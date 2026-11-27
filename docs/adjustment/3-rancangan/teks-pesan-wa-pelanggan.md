@@ -2,7 +2,7 @@
 
 Disusun 2026-11-28. Kembali ke [catatan penyesuaian](../README.md).
 
-**Status: usulan, menunggu persetujuan Pak Aqim.** Setiap pesan baru
+**Status: teks awal untuk dimasukkan ke n8n (keputusan programmer B 28/11, N8-9).** Teks final **diatur dan disetujui langsung di n8n** (node "3. Compose messages") saat uji dengan nomor tim; Pak Aqim melihat hasil pesannya di WA uji dan meminta perubahan bila perlu. Dokumen ini hanya acuan awal, bukan lembar persetujuan. Setiap pesan baru
 dikirim bila **sakelarnya dihidupkan** di Pengaturan → Notifikasi WhatsApp
 (N8-5); semua sakelar mati sampai teks disetujui. Teks tetap disimpan di
 workflow n8n (ADR-0020), jadi bisa diubah tanpa mengubah kode ERP.
@@ -163,6 +163,4 @@ Mohon konfirmasi penerimaan dan jadwal penggantian. Terima kasih.
 | Meta Cloud API | Saat pindah ke Meta (B-47), teks yang disetujui menjadi **template** yang diajukan ke Meta (`docs/integrations/n8n/meta-templates.json`) |
 | Pesan staf | Tidak perlu persetujuan Aqim; daftar penerima di `rancangan-n8n-whatsapp.md` bagian 3 |
 
-| Disetujui oleh | Tanggal | Catatan |
-|---|---|---|
-| Pak Aqim | | |
+Persetujuan dilakukan saat uji di n8n (N8-9), tidak lewat dokumen ini.

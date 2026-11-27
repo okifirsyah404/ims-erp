@@ -1967,3 +1967,20 @@ Tidak ada perubahan kode.
   - Ditautkan dari `README.md` dan `rancangan-n8n-whatsapp.md`.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - Teks pesan WA diatur langsung di n8n (N8-9)
+
+Arahan programmer B: permintaan persetujuan teks pesan cukup dilakukan
+langsung di n8n.
+
+- **N8-9:** teks pesan dikelola dan disetujui di n8n (node "3. Compose
+  messages").
+  - Teks awal diambil dari `teks-pesan-wa-pelanggan.md`.
+  - Pak Aqim melihat hasilnya saat uji dengan nomor tim, dan perubahan
+    dilakukan langsung di n8n.
+  - Sakelar on/off tetap di ERP (N8-5).
+- Diperbarui: `teks-pesan-wa-pelanggan.md` (status jadi acuan awal, lembar
+  tanda tangan dihapus), `rancangan-n8n-whatsapp.md`,
+  `lembar-keputusan-rapat.md` bagian 8h, `README.md`.
+
+Tidak ada perubahan kode.
