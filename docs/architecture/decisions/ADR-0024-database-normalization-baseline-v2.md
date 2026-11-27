@@ -2,6 +2,7 @@
 
 Status: **proposed** (2026-11-19). Plan: `docs/plan/database-refactor/`
 (ERP-0070..ERP-0089).
+**Status update 2026-11-28 (T-6, recorded by programmer B, reviewed by Oki):** **accepted** (executed: 20 schemas, per-schema migration baseline).
 
 ## Context
 

@@ -5,6 +5,7 @@
   ADR-0018 / ADR-0019 in parallel (PR #101) and the customer portal record
   became ADR-0020; numbers are now checked against main, every remote branch
   and open PRs.
+- **Status update 2026-11-28 (T-6, recorded by programmer B, reviewed by Oki):** **accepted** (Xendit/SingaPay gateway implemented; features beyond the contract accepted, K9).
 - **Context:** The owner wants online payment of invoices, with **Xendit or
   SingaPay** chosen later ("dinamis"). No sandbox account exists yet
   (2026-11-14). Customers pay **after staff confirmation**, so what is paid is

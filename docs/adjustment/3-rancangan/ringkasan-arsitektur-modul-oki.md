@@ -19,7 +19,7 @@ Ini ringkasan, bukan pengganti: bila ragu, dokumen aslinya yang berlaku.
 | ADR-0024 Normalisasi database v2 | **proposed** 2026-11-19, tapi sudah dijalankan |
 | ADR-0029 Login hanya lewat undangan | **proposed** 2026-11-21, tapi sudah dijalankan |
 | ADR-0030 Keuangan kelas ERP | accepted, 2026-11-25 (Pemilik menyetujui perluasan lingkup) |
-| `docs/architecture/security-and-access.md`, `docs/architecture/modules/finance.md` | aturan umum |
+| `docs/architecture/security-and-access.md`, `docs/architecture/modules/finance.md` (dihapus 2026-11-28, ada di riwayat git) | aturan umum |
 
 ---
 
@@ -49,7 +49,7 @@ Ini ringkasan, bukan pengganti: bila ragu, dokumen aslinya yang berlaku.
 - ADR-0030 butir 7: setiap transisi status dokumen keuangan, posting rule, perubahan bagan akun, dan transisi periode **wajib** ke `audit.audit_logs`.
 - Kenyataan: `AuditWriter` fire-and-forget (tidak ikut transaksi); pembayaran dan klaim biaya belum maker-checker; peminjaman aset bypass. Lihat OA5, OB7, OB8, OD2.
 
-## 4. Keuangan (ADR-0030, `modules/finance.md`)
+## 4. Keuangan (ADR-0030, `modules/finance.md` (dihapus 2026-11-28, ada di riwayat git))
 
 - **Buku besar satu-satunya sumber kebenaran.** Hanya modul `finance` menulis tabel finance.
 - Modul sumber memanggil `PostingService.postBusinessEvent(tx, …)` **di dalam transaksinya sendiri** (aturan D9); peran akun diselesaikan lewat `finance.posting_rules`. Aturan hilang = posting gagal = dokumen sumber gagal.

@@ -75,5 +75,5 @@ stale state. `build` stays out of the hook (too slow).
 ## Recording results
 
 Test outcomes belong in `progress.md` with exact commands. Pre-existing
-failures must be listed in `project-audit.md` before new test failure
+failures must be listed in `docs/plan/progress.md` before new test failure
 reporting can be trusted.

@@ -4,7 +4,7 @@ Buku besar (GL) sebagai sumber kebenaran keuangan: bagan akun, periode, jurnal, 
 
 - **Modul/pemilik:** Oki (M09 Keuangan). Menyerap modul lama `accounting` (ADR-0024 Q19); cakupan ERP-grade diterima di ADR-0030 (2026-11-25). Gaji tetap di `human_resource` (Q39).
 - **Path backend:** `apps/backend/src/app/finance/` (35 file service, a.l. `posting.service.ts`, `period.service.ts`, `manual-journal.service.ts`, `supplier-bill.service.ts`, `ledger-settlement.port.service.ts`, `bank-reconciliation.service.ts`, `employee-advance.service.ts`, `fixed-asset.service.ts`, `project-budget.service.ts`). URL `/finance/*` dan `/reports/*`.
-- **Drizzle:** `apps/backend/drizzle/schemas/finance.schema.ts`. Rincian desain: `docs/architecture/modules/finance.md`.
+- **Drizzle:** `apps/backend/drizzle/schemas/finance.schema.ts`. Rincian desain: `docs/architecture/modules/finance.md` (dihapus 2026-11-28, ada di riwayat git).
 
 Semua uang `bigint` rupiah sen dengan `currency_code = 'IDR'` (CHECK, ERP-0132). Semua tabel bisnis punya `organization_id` (referensi logis) dan `deleted_at`, kecuali yang disebut.
 
@@ -190,7 +190,7 @@ Kode `chart_of_accounts`, `cost_centers`, `payment_terms`, `cash_bank_accounts` 
 | Tes khusus jejak audit buka ulang periode | ERP-0017 | none | direncanakan |
 | Laporan dan rekap pajak: gerbang keuangan D12/D14/D18 | ERP-0016 | none | diputuskan 27/11 (T-5): Bella mengisi tarif di master pajak (tanggal berlaku) saat UAT; pembulatan ke rupiah penuh per dokumen; Aqim mengonfirmasi |
 | `journal_templates` dibangun (jurnal berulang) | dbml target | tabel | usulan |
-| Belum dibangun: alokasi nota kredit ke invoice lain dan refund, nota kredit pemasok (GR/IR), impor laporan settlement gateway, kapitalisasi dari penerimaan barang, peringatan GR/IR > 30 hari, blokir anggaran per akun/bulan | `docs/architecture/modules/finance.md` "Not built" | kolom/tabel (sebagian) | usulan |
+| Belum dibangun: alokasi nota kredit ke invoice lain dan refund, nota kredit pemasok (GR/IR), impor laporan settlement gateway, kapitalisasi dari penerimaan barang, peringatan GR/IR > 30 hari, blokir anggaran per akun/bulan | `docs/architecture/modules/finance.md` (dihapus 2026-11-28, ada di riwayat git) "Not built" | kolom/tabel (sebagian) | usulan |
 | Kontrak laba periode terkunci untuk M11 bagi hasil/investor (`ExportedProfitService`) sudah ada; modul M11 belum | ERP-0153, ERP-0023 | none di finance | ditunda (K10, disetujui 27/11) **[Diubah 28/11, IV-1: M11 dibangun lengkap sekarang, `rancangan-investor-m11.md`]** |
 | Rapikan catatan dbml `code_type`, `finance.settings`, komentar Drizzle, angka di `module-ownership.md` | temuan | none (dokumen) | usulan |
 | Write-off piutang langsung ke beban kerugian piutang, tanpa cadangan (akun cadangan 1-1390 tidak lagi didebit oleh write-off) | OB10 (jawaban programmer B 27/11) | aturan (`receivable-adjustment.service.ts`, `posting_rules` role untuk write-off) | disetujui Pemilik 27/11 |

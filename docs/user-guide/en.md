@@ -329,7 +329,7 @@ Menu **Projects**. Diagram:
 8. **Own application (license API)**: under **API Keys** create a key for
    the application (copy it at once — it is shown only once) and give it to
    the application's developer with the integration note
-   (`docs/architecture/modules/licensing-subscription.md`). The application
+   (`docs/architecture/modules/licensing-subscription.md` (removed 2026-11-28, see git history)). The application
    activates each installation (a seat), validates on start-up, and keeps
    working for **7 days after the end date** with a warning, then stops.
    Seats and every call appear on the contract and under **Validation &

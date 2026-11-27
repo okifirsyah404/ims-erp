@@ -328,7 +328,7 @@ Menu **Proyek**. Diagram:
 8. **Aplikasi sendiri (API lisensi)**: di **Kunci API** buat kunci untuk
    aplikasinya (langsung salin — hanya ditampilkan sekali) dan berikan ke
    developer aplikasi bersama catatan integrasi
-   (`docs/architecture/modules/licensing-subscription.md`). Aplikasi
+   (`docs/architecture/modules/licensing-subscription.md` (removed 2026-11-28, see git history)). Aplikasi
    mengaktivasi setiap instalasi (satu kursi), memvalidasi saat dibuka, dan
    tetap berjalan **7 hari setelah tanggal berakhir** dengan peringatan, lalu
    berhenti. Kursi dan setiap panggilan tampil di kontrak dan di **Validasi

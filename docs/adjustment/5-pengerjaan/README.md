@@ -23,6 +23,35 @@ of done). Bila bertentangan, `AGENTS.md` yang menang.
 
 ---
 
+## 0. Peta dokumen: mana yang dibaca saat bekerja
+
+Diaudit 2026-11-28 supaya AI tidak membaca semuanya dan tidak mengambil dari
+dokumen usang (`AGENTS.md`, "Source of truth").
+
+| Dokumen | Status | Dibaca saat bekerja? |
+|---|---|---|
+| `docs/adjustment/` (README, 2-keputusan, 3-rancangan, 4-rencana-kerja, 5-pengerjaan) | **Acuan target** | Ya, mulai dari README lalu entri tugas di peta kode |
+| Kode (`apps/`, `packages/`) | **Acuan kondisi sekarang** | Ya, hanya file di entri peta kode |
+| `docs/database/` (`docs.dbml`, `module-ownership.md`, dll.) | **Acuan database** | Ya, bila tugas menyentuh skema (Gate 1) |
+| `docs/plan/progress.md`, `backlog.md`, `plans/features.md` | **Buku resmi status** | Ditulis di setiap PR kode; dibaca bagian terakhir saja |
+| `docs/architecture/runbook.md`, `api-conventions.md`, `testing-strategy.md`, `stack-compatibility.md` | **Dipakai, dijaga** (A-14) | Ya, bila tugas memerlukannya |
+| `docs/architecture/decisions/` (ADR) | Riwayat; status diperbarui 28/11 | Hanya ADR yang ditulis/diubah tugas (A-12) |
+| `docs/architecture/architecture.md`, `domain-map.md`, `data-model.md` | Latar belakang | Tidak, kecuali entri peta kode menunjuk |
+| `docs/architecture/security-and-access.md` | **Ditahan** | Tidak (A-13) |
+| `docs/role-permission.md` | Hasil generator dari kode sekarang | Tidak sebagai acuan role target; dibuat ulang di P7-4 |
+| `docs/plan/erp-plan-*.md`, `erp-module-plans/` | Batas kontrak | Hanya untuk cek kontrak |
+| `docs/plan/port-portal-onto-main.md` | Rencana port portal (akan diperbarui di B-38) | Hanya saat B-38 |
+| `docs/plan/database-refactor/`, `docs/database/implementation-phases.md` | Riwayat ADR-0024 | Tidak |
+| `docs/user-guide/` | Panduan lama (diganti di langkah 12); panduan n8n/WA diperbarui di B-46 | Hanya saat B-46 / langkah 12 |
+| `docs/integrations/n8n/` | Workflow n8n | Hanya saat B-46 |
+| `docs/found-bugs/` | Laporan bug 26/11; bug terbuka dipindah ke daftar perbaikan lintas tugas (FB-1–FB-4) | Tidak |
+
+**Dihapus 2026-11-28** (ada di riwayat git): `docs/plan/phases/`,
+`docs/plan/uat/`, `docs/plan/plan.md`, rencana lama di `docs/plan/plans/`,
+`docs/user-guide/diagrams.md`, `docs/PANDUAN-DOKUMENTASI.id.md`,
+`docs/architecture/project-audit.md`, `docs/architecture/modules/`;
+`docs/simple-version/` (lokal saja).
+
 ## 1. Alur satu tugas
 
 ```mermaid
@@ -99,6 +128,7 @@ flowchart TD
 | A-11 | **Informasi penggunaan:** menu, halaman, tabel, form, status, dan kartu dasbor yang disentuh diberi keterangan cara pakai dan aturan validasi (RF-28–RF-34) |
 | A-12 | **ADR hanya dibuka bila tugas menulis atau mengubah ADR** (P7-2 ADR-0006, ADR K12, M11-4 investor, ADR schema `website` B-38, B-28 status ADR). Di luar itu ADR adalah riwayat: aturannya sudah dirangkum di `AGENTS.md` dan keputusan di `docs/adjustment/`; jangan mengambil perilaku dari ADR lama |
 | A-13 | `docs/architecture/security-and-access.md` **ditahan**: tidak dibuka dan tidak diubah sampai ada arahan (T-6) |
+| A-14 | **Dokumen yang dipakai ikut diperbarui di PR yang sama** bila tugas mengubah isinya: `docs/architecture/runbook.md` (perintah, env, compose), `api-conventions.md` (amplop respons, galat), `testing-strategy.md` (pola test), `stack-compatibility.md` (paket/versi). Dokumen latar belakang lain tidak perlu dikejar |
 | A-9 | Dokumen yang ikut berubah di PR yang sama: `docs/plan/progress.md`, `docs/plan/backlog.md`, `docs/plan/plans/features.md`, `docs/adjustment/catatan-progres.md`, file UAT tugas, dan `docs/database/` bila skema berubah |
 
 ---
@@ -114,6 +144,7 @@ flowchart TD
 - [ ] `docs/plan/progress.md`, `backlog.md`, `features.md` diperbarui
 - [ ] `docs/adjustment/catatan-progres.md` diperbarui, status tugas di README
 - [ ] `docs/role-permission.md` dibuat ulang bila rute/role berubah
+- [ ] Dokumen yang dipakai (runbook, api-conventions, testing-strategy, stack-compatibility) diperbarui bila isinya berubah (A-14)
 - [ ] Tidak ada rahasia; pesan commit Conventional Commits
 - [ ] Bila hook pre-commit gagal karena `graphify` tidak terpasang: lint/test/build dijalankan manual dan dicatat di PR sebelum memakai `--no-verify`
 

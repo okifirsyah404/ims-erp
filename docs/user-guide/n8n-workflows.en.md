@@ -138,7 +138,7 @@ To change a text, edit that topic's function in the `handlers` object of the sam
 | `quotation.sent` | A quotation is marked sent; the ERP has made its PDF (identical to the print page) | customer*: a message **with the PDF attached** (WAHA `sendFile` / Meta template with a Document header; the link lasts 30 days). No PDF → **the salesperson who made it** is asked to send it by hand |
 
 \* only with `notifyCustomers: true`; \*\* only with `notifySuppliers: true`.
-Field lists: `docs/architecture/modules/automation.md`, "The event contract".
+Field lists: `apps/backend/src/app/automation/contracts/outbox.contract.ts` and the event builders in each publishing service.
 
 ## 7. Testing without the ERP
 

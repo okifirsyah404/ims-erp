@@ -95,7 +95,7 @@ erDiagram
 | Perubahan | Sumber | Dampak ke schema | Status |
 |---|---|---|---|
 | Tarif pajak final dan aturan pembulatan | ERP-0016, gerbang D14/D18 (`features.md` M10 blocked) | none (data `taxes`) | diputuskan 27/11 (T-5): Bella mengisi tarif di master pajak (tanggal berlaku) saat UAT; pembulatan ke rupiah penuh per dokumen; Aqim mengonfirmasi |
-| Bukti potong PPh 21 tahunan (1721-A1) | `docs/architecture/modules/finance.md` (not built) | mungkin kolom/tabel | usulan |
+| Bukti potong PPh 21 tahunan (1721-A1) | `docs/architecture/modules/finance.md` (dihapus 2026-11-28, ada di riwayat git) (not built) | mungkin kolom/tabel | usulan |
 | Verifikasi format XML Coretax dengan impor uji | ERP-0140 | none | direncanakan |
 | `ExportedJournalService` (rekap pajak dari GL) | `module-ownership.md` (Finance) | none | usulan |
 | Perbarui angka tabel di `module-ownership.md` | temuan | none (dokumen) | usulan |

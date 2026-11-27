@@ -1,7 +1,7 @@
 # Panduan setup WhatsApp (WAHA) dan n8n (M04, T32)
 
 Untuk orang yang menghubungkan ERP dengan WAHA, n8n, dan penyedia AI.
-Kontrak teknisnya ada di `docs/architecture/modules/notification.md` dan
+Kontrak teknisnya ada di `docs/architecture/modules/notification.md` (removed 2026-11-28, see git history) dan
 ADR-0020; panduan ini versi langkah demi langkahnya. Versi Inggris:
 [whatsapp-n8n-setup.en.md](whatsapp-n8n-setup.en.md) (keduanya diubah
 bersamaan).

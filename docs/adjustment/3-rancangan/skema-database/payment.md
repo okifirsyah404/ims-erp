@@ -93,7 +93,7 @@ erDiagram
 |---|---|---|---|
 | Pemeriksaan pembayaran oleh orang kedua (Bella lewat jurnal dan rekonsiliasi), tanpa aturan baru di service | R6, 3.7, 3.8 (alur Pembelian/Gaji tetap 🟡) | none | usulan |
 | Bila A1 diperluas ke pembayaran: catat "disetujui pembuat (Pemilik)" di audit | A1 (b), 3.8 butir 2 | aturan (audit; `requested_by`/`approved_by` sudah ada) | disetujui 27/11: pembayaran tanpa pemeriksa kedua diterima (OB7, K7a); persetujuan sendiri dicatat audit (OA7) |
-| Refund lewat gateway / nota kredit | `docs/architecture/modules/finance.md` (not built) | aturan (`payment_type = refund` sudah ada) | usulan |
+| Refund lewat gateway / nota kredit | `docs/architecture/modules/finance.md` (dihapus 2026-11-28, ada di riwayat git) (not built) | aturan (`payment_type = refund` sudah ada) | usulan |
 | Impor laporan settlement penyedia untuk rekonsiliasi kliring | ERP-0139 (not built) | mungkin tabel | usulan |
 | Distribusi laba dan setoran modal investor | M11, ERP-0023 | aturan (`payment_type` sudah ada); tabel investor di modul lain | ditunda (K10, disetujui 27/11) **[Diubah 28/11, IV-1: M11 dibangun lengkap sekarang, `rancangan-investor-m11.md`]** |
 | Tutup ERP-0081 dan ERP-0020 | backlog | none | direncanakan |

@@ -4,6 +4,7 @@
   module only. `organization_id` is nullable on every cross-module reference
   per **ADR-0014**; the scope semantics below are an addition to that rule,
   not a replacement.
+- **Status update 2026-11-28 (T-6, recorded by programmer B, reviewed by Oki):** to be **amended** by the K12 ADR (`organization_id` columns dropped in stage 3).
 - **Context:** ADR-0007 decided master data is company-wide and therefore
   carries **no** `organization_id` tenant column. The inventory module cannot
   honour that literally, because inventory records genuinely belong to three

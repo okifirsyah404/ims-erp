@@ -2170,3 +2170,43 @@ Tidak ada perubahan kode.
   - A-13: `security-and-access.md` ditahan, tidak dibuka dan tidak diubah.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - Audit dokumen: ADR, architecture, modules, found-bugs
+
+Jawaban programmer B: hapus `project-audit.md` dan `modules/`; ikuti saran
+untuk architecture dan ADR, tetapi diaudit dulu agar AI tidak membaca
+semuanya dan tidak salah arah.
+
+- **Dihapus:**
+  - `docs/architecture/project-audit.md` dan `docs/architecture/modules/`
+    (34 file).
+  - Rujukan ke keduanya di 19 file diberi tanda "removed 2026-11-28".
+  - Rujukan kontrak event n8n diarahkan ke kode `outbox.contract.ts`.
+  - `AGENTS.md` (Definition of done butir 2) dan `testing-strategy.md`
+    memakai `progress.md` untuk kegagalan yang sudah ada.
+  - `architecture/README.md`: urutan baca diganti, baris `modules/`
+    dihapus.
+- **`architecture.md` "18 schema":** dicek, ternyata **sudah 20**. Angkanya
+  sekarang menunjuk ke `docs/database/module-ownership.md`, ditambah catatan
+  schema investor/website lewat ADR, supaya tidak usang lagi.
+  `bahan-keputusan.md` E2 diperbarui.
+- **Status ADR diperbarui** (bahasa Inggris, T-6, ditinjau Oki):
+  - accepted: 0018, 0020, 0021, 0022, 0024, 0029;
+  - tidak diterima: 0010 (diganti ADR K12);
+  - akan digantikan/diubah: 0001, 0007, 0008, 0012-multi (K12), 0006
+    (P7-2).
+  - **ADR-0012 ganda**: dua file bernomor sama. `single-organization`
+    sudah digantikan, `multi-organization` yang berlaku; keduanya diberi
+    catatan.
+  - ADR-0028 sengaja kosong, dipesan untuk schema `website` (B-38).
+- **Aturan A-14:** dokumen yang dipakai (runbook, api-conventions,
+  testing-strategy, stack-compatibility) diperbarui di PR yang sama bila
+  isinya berubah. Catatan A-14 ditambahkan di peta kode P7-6, L-18, dan
+  P7-7, juga di checklist sebelum push.
+- **Peta dokumen** (`5-pengerjaan/README.md` bagian 0): status setiap
+  dokumen `docs/` dan apakah dibaca saat bekerja.
+- **`docs/found-bugs/`:** 4 bug yang masih terbuka dipindah ke daftar
+  perbaikan lintas tugas FB-1 sampai FB-4 (`uat-pengerjaan.md` bagian 4),
+  masing-masing ditautkan ke L-16, B-35, P7-7, dan PK.
+
+Tidak ada perubahan kode.

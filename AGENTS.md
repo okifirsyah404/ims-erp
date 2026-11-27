@@ -364,7 +364,7 @@ call sites.
 
 1. Code follows the boundaries above; TypeScript type checks pass.
 2. `bun run lint` and workspace tests pass, or remaining failures are
-   documented as pre-existing in `project-audit.md` with causes.
+   documented as pre-existing in `docs/plan/progress.md` (known failures, with causes).
 3. New schema changes have a generated, human-inspected migration applied
    to a local database you can drop and recreate.
 4. Unit + integration coverage for authorization, ownership, and validation;

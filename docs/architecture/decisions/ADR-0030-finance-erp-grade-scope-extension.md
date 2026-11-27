@@ -11,7 +11,7 @@
   `m06-assets-equipment.md`, `m08-employees-attendance.md`, `m09-finance.md`
   and `m10-tax.md` (each carries a pointer to this record).
 - **Design source:** the grill-me session of 2026-11-25 (questions Q1-Q59,
-  answers recorded in `docs/architecture/modules/finance.md`).
+  answers recorded in `docs/architecture/modules/finance.md` (removed 2026-11-28, see git history)).
 
 ## Context
 

@@ -1,6 +1,7 @@
 # ADR-0029 - Invitation-only sign-in: Google never signs up, only active accounts get a session
 
 - **Status:** proposed (2026-11-21, ERP-0111).
+- **Status update 2026-11-28 (T-6, recorded by programmer B, reviewed by Oki):** **accepted**, reinforced by K13 (no Google sign-in for web admin and the employee portal; staff are invited).
 - **Amends:** ADR-0017 §8 and ADR-0018 §5 (login gate): the gate now also
   requires an active account.
 - **Numbering note:** ADR-0027 (portal session cookie) and ADR-0028 (website

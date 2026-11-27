@@ -12,4 +12,4 @@ Guides: [`n8n-workflows.id.md`](../../user-guide/n8n-workflows.id.md)
 ([English](../../user-guide/n8n-workflows.en.md)) and, for the official Meta Cloud API instead of
 WAHA, [`whatsapp-business-meta.id.md`](../../user-guide/whatsapp-business-meta.id.md)
 ([English](../../user-guide/whatsapp-business-meta.en.md)). Event fields:
-`docs/architecture/modules/automation.md`, "The event contract".
+`apps/backend/src/app/automation/contracts/outbox.contract.ts` and the event builders in each publishing service.

@@ -196,8 +196,7 @@ https://erp.contoh-perusahaan.com/procurement/purchase-returns/…
 Tagihan pemasok SB-0001 (INV/HIT/0099) ke PT Contoh Pemasok LEWAT jatuh tempo sejak 23 November 2026. Sisa: Rp 1.443.000.
 ```
 
-Daftar lengkap field per topik ada di `docs/architecture/modules/automation.md`, bagian
-"The event contract".
+Daftar lengkap field per topik ada di `apps/backend/src/app/automation/contracts/outbox.contract.ts` dan pembuat event di setiap service.
 
 ## 7. Menguji tanpa ERP
 

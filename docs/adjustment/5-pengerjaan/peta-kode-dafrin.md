@@ -159,6 +159,8 @@ Laporkan hanya: file yang diubah dan hasil test.
 
 ### P7-6 Dasar form (Tinggi, RF-A, TF-A, TF-1–TF-3, RF-27, L-7)
 
+> **Dokumen yang ikut diperbarui (A-14):** `docs/architecture/api-conventions.md` (amplop galat: semua kesalahan + kunci terjemahan + nomor referensi), `docs/architecture/stack-compatibility.md` (TanStack Form), `docs/architecture/testing-strategy.md` (pola test form).
+
 - **Seharusnya:**
   - Server mengirim **semua** kesalahan validasi, masing-masing `field` +
     **kunci terjemahan**, pesan berbahasa Indonesia sesuai pola 4.5 (TF-1, L-7).
@@ -1605,6 +1607,8 @@ Laporkan hanya: file yang diubah dan hasil test.
 ```
 
 ### L-18 Dokumentasi API: request body dan response body per endpoint (Tinggi untuk endpoint eksternal, bersama, NM-8, T32)
+
+> **Dokumen yang ikut diperbarui (A-14):** `docs/architecture/api-conventions.md` (cara mendokumentasikan request/response dengan `requestBodyDoc`/`responseDoc`).
 
 - **Seharusnya:**
   - Dokumen OpenAPI di `/docs` memuat **request body** (skema zod yang sama dengan validasi) dan **response body** (amplop `ok`/`okPaginated`/`errorEnvelope` + bentuk `data`) untuk setiap endpoint.

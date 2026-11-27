@@ -1,7 +1,7 @@
 # WhatsApp (WAHA) and n8n setup guide (M04, T32)
 
 For the person who connects the ERP to WAHA, n8n and an AI provider. The
-technical contract is in `docs/architecture/modules/notification.md` and
+technical contract is in `docs/architecture/modules/notification.md` (removed 2026-11-28, see git history) and
 ADR-0020; this guide is the step-by-step version. Indonesian version:
 [whatsapp-n8n-setup.id.md](whatsapp-n8n-setup.id.md) (keep both in step).
 

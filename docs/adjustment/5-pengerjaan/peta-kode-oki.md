@@ -137,7 +137,7 @@ portal karyawan ke `apps/web-employee/src/`, kecuali ditulis lengkap.
 | test | `test/unit/audit-writer.test.ts` **(baru)** | `recordInTx` melempar; transaksi gagal tidak menyisakan baris |
 | test | `test/helpers/audit-writer-double.ts` | Tambah `recordInTx` pada double |
 | test | `test/unit/user-admin.service.test.ts`, `test/unit/multi-organization.test.ts` | Audit role berubah/anggota dihapus |
-| docs | `docs/database/docs.dbml` (`audit.audit_logs`), `docs/architecture/modules/` audit bila ada | Catatan "wajib dalam transaksi"; kosakata aksi |
+| docs | `docs/database/docs.dbml` (`audit.audit_logs`), catatan audit di `docs/database/docs.dbml` | Catatan "wajib dalam transaksi"; kosakata aksi |
 
 - **Skema/migrasi:** tidak (kolom `action` text bebas, indeks sudah ada di `audit_logs`). Bila desain menambah indeks untuk `meta->>'self_approved'`: `docs.dbml` dulu, migrasi baru.
 - **Test:** di atas; `bun run test` di backend.
@@ -245,6 +245,8 @@ Laporkan hanya: file yang diubah dan hasil test.
 ```
 
 ### P7-7 Server siap pakai dan batas login (Tinggi, NM-5, NM-6, L-10, L-11)
+
+> **Dokumen yang ikut diperbarui (A-14):** `docs/architecture/runbook.md` (env `MAIL_SMTP_*`, compose dengan S3/Mailpit/Chromium, `SCHEDULER_ENABLED`, batas login, backup).
 
 - **Seharusnya:**
   - Lingkungan uji punya Chromium (PDF SPH/slip), S3 (RustFS), SMTP dengan nama env `MAIL_SMTP_*`, `SCHEDULER_ENABLED=true` (NM-5, L-3–L-6, X-5).
