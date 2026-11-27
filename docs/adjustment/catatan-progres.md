@@ -2287,3 +2287,24 @@ diperbarui. Cek tautan: 357 tautan, 0 rusak. Log lama (`progress.md`,
 `backlog.md`, catatan ini) tidak diubah.
 
 Tidak ada perubahan kode aplikasi.
+
+## 2026-11-28 — Urutan prioritas tugas Dafrin
+
+`5-pengerjaan/peta-kode-dafrin.md` mendapat bagian "Urutan prioritas" yang
+disusun dari baris "Bergantung pada". Isinya delapan gelombang:
+
+1. P7-6 lalu P7-5.
+2. Tugas bebas.
+3. Tugas setelah P7-6.
+4. P7-3.
+5. Halaman inti.
+6. SDM dan biaya lapangan.
+7. Tugas yang menunggu Oki atau Aqim.
+8. B-38 dan B-46.
+
+P7-6 didahulukan karena ditunggu 8 tugas. P7-5 tidak ditunggu tugas lain.
+
+Ditemukan dua pasangan yang saling bergantung: B-44 dengan B-45, dan B-38
+dengan B-46. Masing-masing dirancang bersama.
+
+Branch `feat/p7-6-dasar-form` dibuat dari `main` setelah PR #175 di-merge.

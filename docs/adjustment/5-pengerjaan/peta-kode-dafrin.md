@@ -81,6 +81,34 @@ modul Dafrin); PK-10 dan semua layar `apps/web-employee` (Oki; Dafrin hanya
 menyiapkan data/backend di B-44, B-45, B-48). L-7 masuk P7-6; L-2 dan B-27
 masuk P7-5; B-1 = P7-3.
 
+## Urutan prioritas (berdasarkan pengaruh)
+
+Disusun 2026-11-28 dari baris **"Bergantung pada"** setiap entri. Semua tugas
+berprioritas Tinggi, jadi urutannya ditentukan oleh **berapa tugas lain yang
+menunggu** dan **apakah masih menunggu orang lain**. Kerjakan dari gelombang
+atas; dalam satu gelombang, yang membuka tugas lebih banyak didahulukan.
+
+| Gelombang | Tugas (yang ditunggu tugas lain) | Kenapa di sini |
+|---|---|---|
+| **1. Fondasi, sekarang** | **P7-6** (ditunggu 8 tugas: PH-PO, PH-ADJ, PH-SPH, B-29, B-33, B-42, L-12-D, L-18; plus 1 tugas Oki) → **P7-5** (tidak ditunggu tugas lain) | P7-6 dipakai semua form langkah 8. P7-5 mandiri, cukup selesai sebelum langkah 9 |
+| **2. Bebas, tidak menunggu siapa pun** | **B-21** (membuka PH-PO, B-32), **B-30** (membuka B-31), B-13, B-40, B-36 | Bisa diselipkan kapan saja; B-21 dan B-30 didahulukan karena membuka tugas lain |
+| **3. Setelah P7-6** | **B-42** (membuka B-31), B-29, L-18 | Langsung jalan begitu P7-6 masuk `main` |
+| **4. Setelah P7-1 + P7-2 Oki** | **P7-3** (ditunggu PH-PO, PH-ADJ, PH-SPH, B-46) | Kerjakan segera setelah PR Oki masuk; tanyakan progresnya ke Oki |
+| **5. Setelah P7-3** | **PH-ADJ** (membuka L-12-D), PH-SPH, PH-PO, B-32, B-31 | Halaman inti alur uang dan stok |
+| **6. SDM dan biaya lapangan** | **B-44 + B-45 dikerjakan berpasangan** (saling bergantung; ditunggu B-39, B-48, B-46) → B-39, B-48 | Juga menunggu Oki: P7-4, M09-18, M09-19, PK-10, P7-7 |
+| **7. Menunggu Oki atau Aqim** | B-33 (Oki M09-17), M12-14-D (Oki M12-14), M12-16-D (pola ekspor Oki), B-41 dan B-35 (P7-7 Oki), **B-37** (contoh surat Aqim; membuka B-38) | Siapkan begitu yang ditunggu tersedia; jangan menunggu diam, kerjakan gelombang lain dulu |
+| **8. Paling akhir** | **B-38 + B-46 berpasangan** (saling bergantung; juga menunggu B-37, B-44, K13/B-24, C1/B-22, server n8n, nomor WA), L-12-D (setelah PH-ADJ), B-14 (Sedang, langkah 9) | Paling banyak syaratnya; dirancang dulu, dibangun setelah syarat terpenuhi |
+
+**Aturan memakai urutan ini:**
+
+- Sebelum membuka chat baru untuk satu tugas, cek gelombangnya: semua yang
+  ditulis di "Bergantung pada" harus sudah masuk `main`.
+- Tugas yang menunggu orang lain tidak ditunggu sambil diam. Kerjakan tugas
+  di gelombang bebas (2, 3) sambil menunggu.
+- Pasangan yang saling bergantung (B-44 + B-45, B-38 + B-46) dirancang
+  bersama: bagian data dibuat lebih dulu, lalu bagian yang memakainya.
+- Urutan ini diperbarui bila entri "Bergantung pada" berubah.
+
 ---
 
 ## Langkah 7
