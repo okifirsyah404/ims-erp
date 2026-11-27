@@ -40,62 +40,64 @@ portal karyawan ke `apps/web-employee/src/`, kecuali ditulis lengkap.
 
 ## Indeks
 
-| ID | Judul | Prioritas | Paket / urutan |
-|---|---|---|---|
-| [P7-1](#p7-1-audit-di-dalam-transaksi-tinggi-oa5oa7-l-1) | Audit di dalam transaksi | Tinggi | Langkah 7, Oki #1 |
-| [P7-2](#p7-2-ubah-adr-0006-tinggi-k1-k1a-e5) | Ubah ADR-0006 | Tinggi | Langkah 7, Oki #2 |
-| [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-10-b4) | Hak role baru | Tinggi | Langkah 7, Oki #3 |
-| [P7-7](#p7-7-server-siap-pakai-dan-batas-login-tinggi-nm-5-nm-6-l-10-l-11) | Server siap pakai + batas login | Tinggi | Langkah 7, kapan saja |
-| [M12-1](#m12-1-audit-peristiwa-wajib-tinggi) | Audit peristiwa wajib | Tinggi | = P7-1 |
-| [M12-2](#m12-2-k12-tahap-1-sembunyikan-organisasi-tinggi-oa1-oa2) | K12 tahap 1: sembunyikan Organisasi | Tinggi | Langkah 8, sesudah M12-14 |
-| [M12-5](#m12-5-erp-permissionsts-tinggi) | `erp-permissions.ts` | Tinggi | = P7-4 |
-| [M12-14](#m12-14-ubah-role-dari-halaman-pengguna--bug-form-karyawan-tinggi-kf-r1-kf-r2) | Ubah role dari halaman Pengguna + bug form karyawan | Tinggi | Langkah 8, awal |
-| [M12-15](#m12-15-atur-ulang-kata-sandi-oleh-admin-tinggi-kf-r3) | Atur ulang kata sandi oleh admin | Tinggi | Langkah 8 |
-| [M12-16](#m12-16-ekspor-daftar-utama--pdf-laporan-berkop-tinggi-kf-r5-kf-r6) | Ekspor daftar utama + PDF laporan berkop | Tinggi | Langkah 8 |
-| [M09-1](#m09-1-keuangan-membaca-bagan-akun-tinggi-ob1) | Keuangan membaca bagan akun | Tinggi | = P7-4 |
-| [M09-2](#m09-2-pemilih-akun-berpencarian-tinggi-ob2) | Pemilih akun berpencarian | Tinggi | Langkah 8 |
-| [M09-3](#m09-3-layar-pembayaran-pemasok-tinggi-ob3) | Layar pembayaran pemasok (baru) | Tinggi | Langkah 8 |
-| [M09-4](#m09-4-siapkan-dan-buka-kembali-periode-tinggi-ob4-ob6-ro1-ro4) | Siapkan dan buka kembali periode | Tinggi | Langkah 8 (hak di P7-4) |
-| [M09-7](#m09-7-kasbon-dan-pertanggungjawaban-satu-langkah-tinggi-ob9-ob13-ro5-ro6-kl-10) | Kasbon + pertanggungjawaban satu langkah | Tinggi | Langkah 8, sesudah P7-3 |
-| [M09-8](#m09-8-write-off-langsung-ke-beban-tinggi-ob10) | Write-off langsung ke beban | Tinggi | Langkah 8 |
-| [M09-15](#m09-15-pindah-dana-antar-kasbank-tinggi-kf-k1) | Pindah dana antar kas/bank | Tinggi | Langkah 8 |
-| [M09-16](#m09-16-batalkan-transaksi-kasbank-tinggi-kf-k2) | Batalkan transaksi kas/bank | Tinggi | Langkah 8 |
-| [M09-17 + M10-13](#m09-17--m10-13-pph-23-dipotong-pelanggan-tinggi-kf-k3-kf-t3) | PPh 23 dipotong pelanggan | Tinggi | Langkah 8, bersama B-33 |
-| [M09-18](#m09-18-pembayaran-upah-freelance-tinggi-kl-4) | Pembayaran upah freelance | Tinggi | Langkah 8, sesudah B-45 |
-| [M09-19](#m09-19-biaya-perjalanan-kasbon-nota-klaim-batas-tinggi-bp-1bp-6) | Biaya perjalanan | Tinggi | Langkah 8, sesudah M09-7 |
-| [M10-1](#m10-1-jenis-pajak-memakai-kosakata-server-tinggi-oc1) | Jenis pajak kosakata server | Tinggi | Langkah 8 |
-| [M10-2](#m10-2-hitung-ulang-catatan-pajak-draf-tinggi-oc2) | Hitung ulang catatan pajak draf | Tinggi | Langkah 8 |
-| [M10-3](#m10-3-masa-bupot-otomatis-tinggi-oc3) | Masa Bupot otomatis | Tinggi | Langkah 8 |
-| [M10-9](#m10-9-gerbang-sebelum-lapor-tinggi-sebelum-lapor-oc8) | Gerbang sebelum lapor | Tinggi sebelum lapor | Sebelum rilis |
-| [M10-11](#m10-11-terutang--dibayar--sisa-per-masa-tinggi-kf-t1) | Terutang / dibayar / sisa per masa | Tinggi | Langkah 8 |
-| [M10-12](#m10-12-pengaturan-rezim-pajak-sedang-tinggi-bila-umkm-kf-t2) | Pengaturan rezim pajak | Sedang (Tinggi bila UMKM) | Menunggu Bella |
-| [M06-1](#m06-1-daftar-unit-yang-bisa-dipinjam-tinggi-od1) | Daftar unit yang bisa dipinjam | Tinggi | Langkah 8 |
-| [M06-2](#m06-2-persetujuan-sendiri-peminjaman-ikut-k1-tinggi-od2) | Persetujuan sendiri peminjaman ikut K1 | Tinggi | Sesudah P7-1/P7-2 |
-| [M06-3](#m06-3-sen-di-penyimpanan-rupiah-di-layar-tinggi-od3) | Sen di penyimpanan, rupiah di layar | Tinggi | Langkah 8 |
-| [M06-6](#m06-6-tolak-hapusnonaktif-aset-yang-dipinjam-tinggi-od6) | Tolak hapus/nonaktif aset dipinjam | Tinggi | Langkah 8 |
-| [M06-14](#m06-14-satu-jalur-penyusutan-tinggi-kf-a1) | Satu jalur penyusutan | Tinggi | Langkah 8 |
-| [PH-PINJAM](#ph-pinjam-halaman-peminjaman-aset-tinggi-od4-c13-od7-fu13) | Halaman Peminjaman Aset | Tinggi | Bersama M06-1 |
-| [M11-4](#m11-4-adr-dan-schema-investor-tinggi-iv-1) | ADR + schema investor | Tinggi | Langkah 8, M11 #1 |
-| [M11-5](#m11-5-daftar-investor-dan-dana-tinggi-iv-2iv-4-iv-7-iv-8) | Daftar investor dan dana | Tinggi | M11 #2 |
-| [M11-6](#m11-6-bagi-hasil-tahunan-tinggi-iv-5) | Bagi hasil tahunan | Tinggi | M11 #3 |
-| [M11-7](#m11-7-portal-investor-tinggi-iv-6-iv-9-iv-10) | Portal investor | Tinggi | M11 #4 |
-| [PK-9](#pk-9-layar-admin-kunjungan-lokasi-tinggi-kf-e1) | Layar admin kunjungan lokasi | Tinggi | Langkah 8 |
-| [PK-10](#pk-10-menu-portal-per-penempatan-dan-freelance-tinggi-kl-2-kl-5-kl-10) | Menu portal per penempatan/freelance | Tinggi | Sesudah B-45, P7-4 |
-| [PH-PORTAL](#ph-portal-portal-karyawan-kasbon-riwayat-lokasi-lupa-sandi-radius-tinggi-ob13-og1og3-pk-1) | Portal: kasbon, riwayat lokasi, lupa sandi, radius | Tinggi | Langkah 8 |
-| [PH-MASUK](#ph-masuk-halaman-masuk-tanpa-google-pesan-nonaktif-tinggi-k13-oa3-oa14) | Masuk tanpa Google, pesan nonaktif | Tinggi | Langkah 8 |
-| [PH-UNDANG](#ph-undang-pengguna--undang-tinggi-oa12-oa13-k12) | Pengguna / Undang | Tinggi | Bersama M12-2 |
-| [PH-IMPOR](#ph-impor-impor-data-awal-modul-oki-tinggi-l-12-nm-1-nm-2) | Impor data awal (bagian Oki) | Tinggi | Bersama |
-| [PH-LAPHARIAN](#ph-lapharian-portal-laporan-harian-tinggi-b-44-dafrin--oki) | Portal: laporan harian (layar) | Tinggi | Sesudah B-44 |
-| [PH-WA](#ph-wa-profil-pengguna-nomor-wa-staf-tinggi-b-46) | Profil pengguna: nomor WA staf | Tinggi | Bersama B-46 |
-| [PH-DASBOR](#ph-dasbor-dasbor-sedang-rd1rd3-of1of3) | Dasbor (M01-1..M01-4) | Sedang | Langkah 9 |
-| [X-1](#x-1-autentikasi-dan-organisasi-tinggi) | Auth/organisasi | Tinggi | = M12-2, M12-4, P7-4 |
-| [X-2](#x-2-aturan-persetujuan-k1-bersama-tinggi) | Aturan K1 bersama | Tinggi | = P7-3 (Dafrin) |
-| [X-3](#x-3-penomoran-bersama-tinggi) | Penomoran | Tinggi | = P7-5 (Dafrin menulis) |
-| [X-4](#x-4-audit-sebagai-aktivitas-bisnis-tinggi) | Audit aktivitas bisnis | Tinggi | = P7-1 |
-| [X-5](#x-5-chromium-untuk-pdf-tinggi-untuk-produksi) | Chromium untuk PDF | Tinggi produksi | = P7-7 |
-| [X-7](#x-7-deploy-s3-smtp-scheduler-web-investor-backup-tinggi-untuk-produksi) | Deploy S3/SMTP/scheduler/backup | Tinggi produksi | P7-7 + X-13 |
-| [X-13](#x-13-backup-harian-dan-panduan-deploy-tinggi-nm-3-nm-10-l-13) | Backup harian + panduan deploy | Tinggi | Langkah 8–9 |
-| [X-14](#x-14-n8n-dan-waha-self-host-tinggi-n8-1-n8-2) | n8n + WAHA self-host | Tinggi | Langkah 8 |
+**Cara memakai:** kerjakan dari **nomor terkecil** yang semua isi kolom
+"Mulai setelah" sudah masuk `main`. Kalau masih menunggu orang lain, lompat
+ke nomor berikutnya yang sudah bisa, lalu kembali. Jangan membuka tugas di
+luar daftar ini. Urutan disusun 2026-11-28 dari baris "Bergantung pada"
+setiap entri: tugas yang ditunggu banyak tugas lain ada di atas. Tugas
+yang menunggu Dafrin, Aqim, atau Bella ditulis dengan nama orangnya.
+
+| No | Tugas | Judul | Prioritas | Mulai setelah |
+|---|---|---|---|---|
+| 1 | [P7-1](#p7-1-audit-di-dalam-transaksi-tinggi-oa5oa7-l-1) | Audit di dalam transaksi | Tinggi | — (mulai sekarang) |
+| 2 | [P7-2](#p7-2-ubah-adr-0006-tinggi-k1-k1a-e5) | Ubah ADR-0006 | Tinggi | P7-1 |
+| 3 | [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-10-b4) | Hak role baru | Tinggi | — |
+| 4 | [P7-7](#p7-7-server-siap-pakai-dan-batas-login-tinggi-nm-5-nm-6-l-10-l-11) | Server siap pakai + batas login | Tinggi | — (bagian dev); Aqim: server dan SMTP untuk produksi |
+| 5 | [M12-14](#m12-14-ubah-role-dari-halaman-pengguna--bug-form-karyawan-tinggi-kf-r1-kf-r2) | Ubah role dari halaman Pengguna + bug form karyawan | Tinggi | P7-1, P7-4 |
+| 6 | [M12-2](#m12-2-k12-tahap-1-sembunyikan-organisasi-tinggi-oa1-oa2) | K12 tahap 1: sembunyikan Organisasi | Tinggi | M12-14, P7-4 |
+| 7 | [PH-UNDANG](#ph-undang-pengguna--undang-tinggi-oa12-oa13-k12) | Pengguna / Undang | Tinggi | M12-2, P7-4 |
+| 8 | [M12-15](#m12-15-atur-ulang-kata-sandi-oleh-admin-tinggi-kf-r3) | Atur ulang kata sandi oleh admin | Tinggi | P7-1 |
+| 9 | [PH-MASUK](#ph-masuk-halaman-masuk-tanpa-google-pesan-nonaktif-tinggi-k13-oa3-oa14) | Masuk tanpa Google, pesan nonaktif | Tinggi | — |
+| 10 | [M09-2](#m09-2-pemilih-akun-berpencarian-tinggi-ob2) | Pemilih akun berpencarian | Tinggi | P7-4 |
+| 11 | [M09-15](#m09-15-pindah-dana-antar-kasbank-tinggi-kf-k1) | Pindah dana antar kas/bank | Tinggi | M09-2 |
+| 12 | [M09-3](#m09-3-layar-pembayaran-pemasok-tinggi-ob3) | Layar pembayaran pemasok (baru) | Tinggi | M09-2, P7-1 |
+| 13 | [M09-4](#m09-4-siapkan-dan-buka-kembali-periode-tinggi-ob4-ob6-ro1-ro4) | Siapkan dan buka kembali periode | Tinggi | P7-1, P7-4 |
+| 14 | [M09-16](#m09-16-batalkan-transaksi-kasbank-tinggi-kf-k2) | Batalkan transaksi kas/bank | Tinggi | P7-1 |
+| 15 | [M09-8](#m09-8-write-off-langsung-ke-beban-tinggi-ob10) | Write-off langsung ke beban | Tinggi | — |
+| 16 | [M10-1](#m10-1-jenis-pajak-memakai-kosakata-server-tinggi-oc1) | Jenis pajak kosakata server | Tinggi | — |
+| 17 | [M10-2](#m10-2-hitung-ulang-catatan-pajak-draf-tinggi-oc2) | Hitung ulang catatan pajak draf | Tinggi | M10-1 |
+| 18 | [M10-3](#m10-3-masa-bupot-otomatis-tinggi-oc3) | Masa Bupot otomatis | Tinggi | — |
+| 19 | [M06-3](#m06-3-sen-di-penyimpanan-rupiah-di-layar-tinggi-od3) | Sen di penyimpanan, rupiah di layar | Tinggi | — |
+| 20 | [M06-14](#m06-14-satu-jalur-penyusutan-tinggi-kf-a1) | Satu jalur penyusutan | Tinggi | M06-3 |
+| 21 | [M06-6](#m06-6-tolak-hapusnonaktif-aset-yang-dipinjam-tinggi-od6) | Tolak hapus/nonaktif aset dipinjam | Tinggi | — |
+| 22 | [M06-1](#m06-1-daftar-unit-yang-bisa-dipinjam-tinggi-od1) | Daftar unit yang bisa dipinjam | Tinggi | P7-4 |
+| 23 | [M09-7](#m09-7-kasbon-dan-pertanggungjawaban-satu-langkah-tinggi-ob9-ob13-ro5-ro6-kl-10) | Kasbon + pertanggungjawaban satu langkah | Tinggi | P7-1, P7-2, P7-4; Dafrin: P7-3 |
+| 24 | [M06-2](#m06-2-persetujuan-sendiri-peminjaman-ikut-k1-tinggi-od2) | Persetujuan sendiri peminjaman ikut K1 | Tinggi | P7-1, P7-2; Dafrin: P7-3 |
+| 25 | [PH-PINJAM](#ph-pinjam-halaman-peminjaman-aset-tinggi-od4-c13-od7-fu13) | Halaman Peminjaman Aset | Tinggi | M06-1, M06-2 |
+| 26 | [PH-PORTAL](#ph-portal-portal-karyawan-kasbon-riwayat-lokasi-lupa-sandi-radius-tinggi-ob13-og1og3-pk-1) | Portal: kasbon, riwayat lokasi, lupa sandi, radius | Tinggi | P7-7, M09-7; persetujuan Dafrin (absensi lokasi) |
+| 27 | [PK-9](#pk-9-layar-admin-kunjungan-lokasi-tinggi-kf-e1) | Layar admin kunjungan lokasi | Tinggi | persetujuan Dafrin (modul `project`) |
+| 28 | [M12-16](#m12-16-ekspor-daftar-utama--pdf-laporan-berkop-tinggi-kf-r5-kf-r6) | Ekspor daftar utama + PDF laporan berkop | Tinggi | P7-1, P7-7; endpoint ekspor Dafrin |
+| 29 | [M09-17 + M10-13](#m09-17--m10-13-pph-23-dipotong-pelanggan-tinggi-kf-k3-kf-t3) | PPh 23 dipotong pelanggan | Tinggi | dikerjakan bersama Dafrin B-33 |
+| 30 | [M10-11](#m10-11-terutang--dibayar--sisa-per-masa-tinggi-kf-t1) | Terutang / dibayar / sisa per masa | Tinggi | M09-17, M10-3 |
+| 31 | [M09-18](#m09-18-pembayaran-upah-freelance-tinggi-kl-4) | Pembayaran upah freelance | Tinggi | M09-3; Dafrin: B-45 |
+| 32 | [PK-10](#pk-10-menu-portal-per-penempatan-dan-freelance-tinggi-kl-2-kl-5-kl-10) | Menu portal per penempatan/freelance | Tinggi | P7-4, M09-18; Dafrin: B-45 |
+| 33 | [M09-19](#m09-19-biaya-perjalanan-kasbon-nota-klaim-batas-tinggi-bp-1bp-6) | Biaya perjalanan | Tinggi | M09-7, PH-PORTAL; dikerjakan bersama Dafrin B-48 |
+| 34 | [PH-LAPHARIAN](#ph-lapharian-portal-laporan-harian-tinggi-b-44-dafrin--oki) | Portal: laporan harian (layar) | Tinggi | Dafrin: B-44 |
+| 35 | [PH-IMPOR](#ph-impor-impor-data-awal-modul-oki-tinggi-l-12-nm-1-nm-2) | Impor data awal (bagian Oki) | Tinggi | Dafrin: P7-6, P7-3 |
+| 36 | [M11-4](#m11-4-adr-dan-schema-investor-tinggi-iv-1) | ADR + schema investor | Tinggi | Aqim: rincian dana per proyek (IV-5); boleh diselipkan lebih awal begitu jawabannya ada |
+| 37 | [M11-5](#m11-5-daftar-investor-dan-dana-tinggi-iv-2iv-4-iv-7-iv-8) | Daftar investor dan dana | Tinggi | M11-4, P7-1 |
+| 38 | [M11-6](#m11-6-bagi-hasil-tahunan-tinggi-iv-5) | Bagi hasil tahunan | Tinggi | M11-5; Aqim: aturan rinci |
+| 39 | [M11-7](#m11-7-portal-investor-tinggi-iv-6-iv-9-iv-10) | Portal investor | Tinggi | M11-5, M11-6, P7-7 |
+| 40 | [X-13](#x-13-backup-harian-dan-panduan-deploy-tinggi-nm-3-nm-10-l-13) | Backup harian + panduan deploy | Tinggi | P7-7; Aqim: akses server, lokasi backup |
+| 41 | [X-7](#x-7-deploy-s3-smtp-scheduler-web-investor-backup-tinggi-untuk-produksi) | Deploy S3/SMTP/scheduler/backup | Tinggi produksi | P7-7, X-13 |
+| 42 | [X-14](#x-14-n8n-dan-waha-self-host-tinggi-n8-1-n8-2) | n8n + WAHA self-host | Tinggi | P7-7, X-13; Dafrin: B-46 |
+| 43 | [PH-WA](#ph-wa-profil-pengguna-nomor-wa-staf-tinggi-b-46) | Profil pengguna: nomor WA staf | Tinggi | X-14; Dafrin: B-46 |
+| 44 | [M10-9](#m10-9-gerbang-sebelum-lapor-tinggi-sebelum-lapor-oc8) | Gerbang sebelum lapor | Tinggi sebelum lapor | M09-3, M10-3; Bella: keputusan (sebelum lapor pajak) |
+| 45 | [M10-12](#m10-12-pengaturan-rezim-pajak-sedang-tinggi-bila-umkm-kf-t2) | Pengaturan rezim pajak | Sedang (Tinggi bila UMKM) | Bella: rezim pajak |
+| 46 | [PH-DASBOR](#ph-dasbor-dasbor-sedang-rd1rd3-of1of3) | Dasbor (M01-1..M01-4) | Sedang | P7-4; kartu modul Dafrin (langkah 9) |
+
+**Tanpa nomor sendiri** (dikerjakan di tugas lain; entrinya tetap ada di bawah sebagai rincian): M12-1 = P7-1, M12-5 = P7-4, M09-1 = P7-4, X-1 = M12-2 + P7-4, X-2 = P7-3 (Dafrin), X-3 = P7-5 (Dafrin), X-4 = P7-1, X-5 = P7-7.
+
 
 ---
 
