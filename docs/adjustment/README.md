@@ -8,8 +8,10 @@ Pemilik (Aqim). Ditulis dalam bahasa Indonesia.
 disetujui (arahan programmer B, 2026-11-26). Catatan dinyatakan beres setelah
 langkah 6 selesai.
 
-**Posisi sekarang (2026-11-27):** langkah 1–5 selesai. Langkah 6 (tinjauan
-Oki dan merge PR #171) sedang berjalan. Berikutnya langkah 7.
+**Posisi sekarang (2026-11-28):** langkah 1–6 selesai (PR #171 di-merge).
+Rencana rinci langkah 7 sudah disusun
+([`4-rencana-kerja/rencana-langkah-7.md`](4-rencana-kerja/rencana-langkah-7.md)).
+Kode dimulai setelah programmer B menyatakan catatan beres.
 
 ---
 
