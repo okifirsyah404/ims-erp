@@ -385,7 +385,7 @@ Webhook (n8n) hanya daftar dengan tombol kirim ulang.
 
 | Form | Dibuka dari | Isian | Siapa |
 |---|---|---|---|
-| Karyawan baru | Karyawan | Nama lengkap, email, telepon, NIK, jenis kepegawaian, jenis kerja, tanggal masuk, role | SDM |
+| Karyawan baru | Karyawan | Nama lengkap, email, telepon, NIK, jenis kepegawaian (**+ Freelance**, KL-3), jenis kerja, **penempatan Kantor/Lapangan** (KL-1), **tarif freelance harian/borongan** (KL-4), tanggal masuk, role | SDM |
 | Ubah karyawan | Detail karyawan | Kode, nama, panggilan, NIK, telepon; status, jenis, jenis kerja, role, tanggal masuk/keluar; NPWP, PTKP, no. BPJS Kesehatan dan Ketenagakerjaan | SDM |
 | Tambah dokumen karyawan | Detail karyawan | Jenis dokumen, judul; lalu unggah berkas per baris | SDM |
 | Periode gaji baru | Detail karyawan | Berlaku mulai, gaji pokok, tunjangan | SDM, Keuangan |

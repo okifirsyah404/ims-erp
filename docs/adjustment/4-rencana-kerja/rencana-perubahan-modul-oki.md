@@ -99,6 +99,7 @@ risiko OA2 (diganti 27/11: kolom dihapus di tahap 3), OD8 diputuskan.
 | M09-15 | **Pindah dana antar akun kas/bank** (setor tunai, tarik tunai, isi kas kecil), tercatat di kedua akun | KF-K1 | Tinggi | Diputuskan 27/11 (KF-1) |
 | M09-16 | **Batalkan/koreksi transaksi kas/bank** (status `reversed` sudah ada di skema) dengan alasan | KF-K2 | Tinggi | Diputuskan 27/11 (KF-1) |
 | M09-17 | **PPh 23 dipotong pelanggan**: akun "PPh 23 dibayar dimuka", posting saat kuitansi, sisa faktur tertutup (bersama B-33 di `sale`) | KF-K3 | Tinggi | Diputuskan 27/11 (KF-1) (bersama Dafrin) |
+| M09-18 | **Pembayaran upah freelance** (harian atau borongan) dari rekap B-45, dibayar Bella, dicatat sebagai biaya proyek | KL-4 | Tinggi | Diputuskan programmer B 28/11 |
 
 ### M10 Pajak
 
@@ -162,12 +163,13 @@ risiko OA2 (diganti 27/11: kolom dihapus di tahap 3), OD8 diputuskan.
 | PK-1 | Di luar radius: simpan bertanda + layar tinjau admin; petunjuk radius dari setting; cek saat check-out → diganti 27/11: absen di luar radius **ditolak** (OG1), tanpa layar tinjau; petunjuk radius dari setting tetap | OG1 | Sedang | Diputuskan programmer B 27/11 |
 | PK-2 | Pekerja proyek (non-PIC) melihat riwayat absen lokasinya sendiri; perbaiki cek "tugas saya" (`_authed.projects.$projectId.tsx:193`) | OG2 | Sedang | Diputuskan programmer B 27/11 |
 | PK-3 | Halaman lupa kata sandi portal karyawan **dibuat** (OG3, berbeda dari rekomendasi) | OG3 | Sedang | Diputuskan programmer B 27/11 |
-| PK-4 | Semua karyawan wajib punya data karyawan, kecuali pekerja lepas (data oleh Aqim; seeder HR milik Dafrin). Aqim tidak perlu portal karyawan (OG5) | OG4, OG5 | Sedang | Diputuskan programmer B 27/11 |
+| PK-4 | Semua karyawan wajib punya data karyawan, kecuali pekerja lepas (data oleh Aqim; seeder HR milik Dafrin). Aqim tidak perlu portal karyawan (OG5) | OG4, OG5 | Sedang | Diputuskan programmer B 27/11 (diperjelas 28/11, KL-3: teknisi freelance punya data karyawan jenis Freelance) |
 | PK-5 | Tanda tangan dengan pratinjau dan konfirmasi; pesan `portal-denied` tidak ganda dan diterjemahkan; teks Inggris, bahasa awal Indonesia; `type="tel"` di profil | OG6; UAT portal 5–7 | Rendah | Diputuskan programmer B 27/11 |
 | PK-6 | Seeder demo portal deterministik (`ORDER BY`), lembur seed tidak disetujui pemohon sendiri | UAT portal 9 | Rendah | Tidak |
 | PK-7 | Hak `self_service` diperiksa di guard portal atau dihapus (kaitan: Anggota "hapus") → Anggota dihapus (27/11) | UAT portal 12; OA9 | Rendah | Ya |
 | PK-8 | Login portal karyawan tanpa Google: karyawan diundang, mengganti kata sandi, lalu login dengan username/email + kata sandi | K13 | Sedang | Diputuskan programmer B 27/11 |
 | PK-9 | **Layar admin kunjungan lokasi dan swafoto teknisi** untuk Aqim (bukan hanya PIC proyek) | KF-E1 | Tinggi | Diputuskan 28/11 (KF bagian kedua) |
+| PK-10 | Menu portal karyawan mengikuti **penempatan** (kantor: absen kantor; lapangan: check-in lokasi) dan **jenis Freelance** (tanpa cuti, lembur, slip gaji; dengan rekap upah); perluasan role **Pekerja Lepas** untuk freelance: proyek yang ditugaskan, pinjam alat, kasbon, tanpa tiket (M12-5) | KL-2, KL-5, KL-6 | Tinggi | Diputuskan programmer B 28/11 |
 
 ## 3. Lintas modul yang dipegang atau ikut dipegang Oki
 

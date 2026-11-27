@@ -324,6 +324,17 @@ Rincian di `3-rancangan/rancangan-laporan-kerja-dan-potongan-gaji.md`. Keduanya 
 | LK-4–LK-6 | Laporan mingguan/bulanan otomatis dari harian + ringkasan karyawan; dinilai Aqim, skor 1–5 per aspek + komentar |
 | LK-7 | Unduhan PDF per karyawan; rekap per tim disiapkan untuk nanti |
 
+### 8f. Karyawan kantor, lapangan, dan teknisi freelance (tanya-jawab programmer B 28/11)
+
+Rincian di `3-rancangan/rancangan-karyawan-kantor-lapangan-freelance.md`.
+
+| No | Keputusan |
+|---|---|
+| KL-1, KL-2 | Isian Penempatan Kantor/Lapangan; kantor absen cap waktu, lapangan absen dengan check-in lokasi proyek |
+| KL-3 | Teknisi freelance = data karyawan jenis Freelance, bisa masuk portal karyawan, tanpa kuota cuti dan gaji bulanan (memperjelas OG4) |
+| KL-4 | Bayaran freelance harian atau borongan per orang, dibayar Keuangan, masuk biaya proyek |
+| KL-5, KL-6 | Freelance: tugas proyek yang ditugaskan, check-in, bukti, laporan harian, pinjam alat, kasbon, dinilai; tanpa tiket; role Pekerja Lepas diperluas. Dafrin dan Oki tetap tanpa data karyawan (X4) |
+
 ## 9. Kesimpulan
 
 | Bagian                                     | Kesimpulan                         |

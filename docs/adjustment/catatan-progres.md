@@ -1723,3 +1723,33 @@ Programmer B meminta penjelasan alur teknisi setelah ditugaskan ke proyek.
 - `3-rancangan/diagram-alur/README.md`: tautan baru.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - Karyawan kantor, lapangan, dan teknisi freelance
+
+Klarifikasi programmer B: ada karyawan kantor dan lapangan, dan teknisi
+kadang freelance. Programmer B juga bertanya folder portal mana yang
+dipakai.
+
+- Dicek di kode: `employees.employment_type` (permanent, contract,
+  probation, internship, outsourced) dan `work_type` (onsite, remote,
+  hybrid). Belum ada kantor/lapangan dan belum ada freelance. Pekerja Lepas
+  tanpa data karyawan tidak bisa masuk portal karyawan.
+- Keputusan **KL-1 sampai KL-6**:
+  - penempatan Kantor/Lapangan;
+  - freelance dicatat sebagai data karyawan jenis Freelance dan memakai
+    portal karyawan;
+  - bayaran freelance harian atau borongan per orang;
+  - hak freelance: pinjam alat, kasbon, dinilai, tanpa tiket servis;
+  - role Pekerja Lepas diperluas; Dafrin dan Oki tetap tanpa data karyawan.
+- `3-rancangan/rancangan-karyawan-kantor-lapangan-freelance.md` (baru),
+  termasuk tabel "aplikasi mana dipakai siapa": portal teknisi =
+  `apps/web-employee`.
+- Diperbarui:
+  - `rencana-perubahan.md`: B-45.
+  - `rencana-perubahan-modul-oki.md`: M09-18, PK-10, catatan PK-4/OG4.
+  - `lembar-keputusan-rapat.md` bagian 8f.
+  - `skema-database/human_resource.md`, `peta-halaman.md`,
+    `menu-dan-form-per-role.md` (form karyawan),
+    `diagram-alur/alur-teknisi.md`, `README.md`.
+
+Tidak ada perubahan kode.

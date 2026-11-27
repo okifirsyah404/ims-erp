@@ -105,6 +105,9 @@ Sedang/Rendah = langkah 9 dan sesudahnya (lihat README).
 |---|---|---|---|---|
 | Penggajian + Pengaturan → Gaji | Potongan alpa, izin tanpa gaji, terlambat, pro-rata (diatur); upah lembur dihitung | B-39 | Tinggi | D |
 | Portal karyawan: Laporan harian **[baru]** | Isi laporan harian, pengingat, menyusul maks. 2 hari | B-44 | Tinggi | D + O |
+| Karyawan (form) | Penempatan Kantor/Lapangan, jenis Freelance, tarif harian/borongan | B-45 | Tinggi | D |
+| Rekap dan pembayaran upah freelance **[baru]** | Hari kerja sah / borongan, dibayar Bella | B-45, M09-18 | Tinggi | D + O |
+| Portal karyawan: menu per penempatan/freelance | Kantor vs lapangan vs freelance | PK-10 | Tinggi | O |
 | Laporan mingguan/bulanan + penilaian **[baru]** | Rangkuman otomatis, ringkasan karyawan, skor Aqim, PDF per karyawan | B-44 | Tinggi | D |
 | Detail pelanggan | Riwayat SPH/SO/faktur/proyek/lisensi/tiket dan saldo | B-40 | Tinggi | D |
 | Detail SPH / faktur | Unduh PDF, salin tautan, wa.me / email | B-41 | Tinggi | D |

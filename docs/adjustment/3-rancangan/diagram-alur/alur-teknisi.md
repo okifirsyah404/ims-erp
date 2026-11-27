@@ -100,6 +100,8 @@ sequenceDiagram
 
 | Hal | Keterangan |
 |---|---|
+| Teknisi freelance (28/11) | Memakai portal karyawan yang sama (`apps/web-employee`) sebagai data karyawan jenis Freelance: tugas proyek yang ditugaskan, check-in lokasi, bukti, laporan harian, pinjam alat, kasbon, dinilai. **Tidak** mengerjakan tiket servis, tanpa cuti/lembur/slip gaji; dibayar harian atau borongan lewat Keuangan (KL-1–KL-6) |
+| Karyawan kantor vs lapangan | Kantor absen cap waktu; lapangan absen dengan check-in lokasi proyek (KL-2) |
 | Dua jenis tugas | **Tugas proyek** (dari PM, per tahap) dan **tugas SDM** (dari Aqim, di luar proyek). Keduanya tampil di portal karyawan; teknisi hanya melihat tugasnya sendiri (D4) |
 | Tiket di portal karyawan | Belum ada (KF-P4, daftar tunggu "Tambahan"); sementara teknisi membuka tiket di web-admin |
 | Alat "pinjaman saya" | Kartu dasbor Teknisi menampilkan pinjaman yang harus kembali (RD1); layar khusus di portal masih daftar tunggu (KF-A7) |
