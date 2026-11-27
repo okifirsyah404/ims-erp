@@ -28,7 +28,7 @@
     "backend:drizzle:migrate-reset": "bun run --filter '@ims-erp/backend' drizzle:migrate-reset"
   },
   "devDependencies": {
-    "@dbml/core": "^12.1.0",
+    "@dbml/core": "^13.0.0",
     "@types/bun": "^1.4.4",
     "drizzle-kit": "^1.0.0-rc.6",
     "husky": "^9.1.7",
