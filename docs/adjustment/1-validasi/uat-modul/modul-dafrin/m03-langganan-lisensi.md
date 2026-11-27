@@ -60,7 +60,7 @@ Untuk `validate` kirim `{"licenseKey":"<KUNCI_LISENSI>"}` (boleh ditambah `"inst
 
 ### A1. Buat aplikasi sendiri (semua kolom)
 
-Menu **Langganan & Lisensi → Aplikasi** → tombol **Aplikasi baru**. Dialog berjudul "Aplikasi baru".
+Menu **Proyek → Langganan & Lisensi → Aplikasi** → tombol **Aplikasi baru**. Dialog berjudul "Aplikasi baru".
 
 | Isian | Isi dengan |
 |---|---|
@@ -116,7 +116,7 @@ Ganti isian:
 
 ### A3. Buat kunci API untuk GYM
 
-Menu **Langganan & Lisensi → Kunci API**. Hanya aplikasi sendiri yang tampil (kartu "GYM - Gym Access UAT"; ZKT-BIO tidak ada). Di kartu GYM klik **Kunci API baru**.
+Menu **Proyek → Langganan & Lisensi → Kunci API**. Hanya aplikasi sendiri yang tampil (kartu "GYM - Gym Access UAT"; ZKT-BIO tidak ada). Di kartu GYM klik **Kunci API baru**.
 
 | Isian | Isi dengan |
 |---|---|
@@ -143,7 +143,7 @@ Menu **Langganan & Lisensi → Kunci API**. Hanya aplikasi sendiri yang tampil (
 
 ### A4. Pensiunkan lalu pulihkan aplikasi kedua
 
-Menu **Langganan & Lisensi → Aplikasi** → baris ZKT-BIO → tombol **Tindakan** → **Pensiunkan**.
+Menu **Proyek → Langganan & Lisensi → Aplikasi** → baris ZKT-BIO → tombol **Tindakan** → **Pensiunkan**.
 **Harus terlihat:**
 - Pesan "Aplikasi disimpan"; ZKT-BIO hilang dari daftar.
 - Buka **Kontrak lisensi → Kontrak baru** → pilihan **Aplikasi** tidak memuat ZKT-BIO. Klik **Batal**.
@@ -187,7 +187,7 @@ Baris ZKT-BIO → **Tindakan** → **Ubah**. Dialog "Ubah aplikasi".
 
 ### A6. Cabut kunci API
 
-Menu **Langganan & Lisensi → Kunci API** → kartu GYM → **Kunci API baru** → Nama `Kunci cadangan UAT` → **Buat kunci** → **Salin** → **Sudah saya salin**. Lalu pada baris Kunci cadangan UAT → **Tindakan** → **Cabut**.
+Menu **Proyek → Langganan & Lisensi → Kunci API** → kartu GYM → **Kunci API baru** → Nama `Kunci cadangan UAT` → **Buat kunci** → **Salin** → **Sudah saya salin**. Lalu pada baris Kunci cadangan UAT → **Tindakan** → **Cabut**.
 **Harus terlihat:**
 - Pesan "Kunci API dicabut"; Status **Dicabut**; di bawah nama penerbit ada "Dicabut oleh <nama akun>"; baris ini tidak punya tindakan lagi.
 - Panggil API `validate` (contoh di atas) dengan kunci cadangan ini → `"status": 401`, pesan "Kunci API lisensi tidak valid".
@@ -207,7 +207,7 @@ Menu **Langganan & Lisensi → Kunci API** → kartu GYM → **Kunci API baru** 
 
 ### B1 🔧. Menu Kontrak lisensi (login `sales_seed`)
 
-Buka menu **Langganan & Lisensi → Kontrak lisensi**.
+Buka menu **Proyek → Langganan & Lisensi → Kontrak lisensi**.
 **Harus terlihat:** menu ada dan membuka halaman "Kontrak lisensi" berisi daftar kontrak (atau "Belum ada kontrak lisensi."), dengan tombol **Kontrak baru** *(diperbaiki 2026-11-24)*.
 
 - [ ] Sesuai
@@ -340,7 +340,7 @@ Masih `sales_seed`, buka kontrak B2.
 
 ### B7. Customer Service melihat dan menyalin (login `customer_service_seed`)
 
-Buka **Langganan & Lisensi → Kontrak lisensi** → kontrak B2.
+Buka **Proyek → Langganan & Lisensi → Kontrak lisensi** → kontrak B2.
 **Harus terlihat:** kunci tampil lengkap dan tombol **Salin** ada (klik → "Disalin"). **Tidak ada** tombol Ubah, Tambah kunci, Tangguhkan, Perpanjang, Buat SPH, Hentikan, atau Cabut.
 
 - [ ] Sesuai
@@ -412,7 +412,7 @@ Buka kontrak B2, tekan F5.
 
 ### B11. Daftar kontrak: kolom, cari, dan saring
 
-Menu **Langganan & Lisensi → Kontrak lisensi**.
+Menu **Proyek → Langganan & Lisensi → Kontrak lisensi**.
 **Harus terlihat:** kolom Kode, Pelanggan, Aplikasi, Masa berlaku, Nilai kontrak, Status; kontrak GYM (Aktif) dan ZKT (Draf) ada.
 
 | Isian | Isi dengan | Harus terlihat |
@@ -491,7 +491,7 @@ Ulangi activate dengan `"instanceId":"PC-UAT-02"`, lalu `"instanceId":"PC-UAT-03
 
 ### C4. Log validasi & aktivasi (login `sales_manager_seed`)
 
-Menu **Langganan & Lisensi → Validasi & Aktivasi**.
+Menu **Proyek → Langganan & Lisensi → Validasi & Aktivasi**.
 **Harus terlihat:** judul "Log validasi & aktivasi", keterangan menyebut masa tenggang 7 hari. Kolom Waktu, Kejadian, Hasil, Kontrak, Oleh, Rincian. Baris terbaru (dibaca dari bawah ke atas):
 
 | Kejadian | Hasil | Kontrak | Oleh | Rincian |
@@ -515,7 +515,7 @@ Panggilan yang ditolak sebelum masuk (tanpa kunci API, kunci API dicabut, body t
 
 ### C5 🔧. Sales membaca log (login `sales_seed`)
 
-Buka menu **Langganan & Lisensi → Validasi & Aktivasi**.
+Buka menu **Proyek → Langganan & Lisensi → Validasi & Aktivasi**.
 **Harus terlihat:** menu tampil dan log C4 terbaca (hak baca lisensi cukup) *(diperbaiki 2026-11-24)*. Menu **Kunci API** tidak tampil untuk `sales_seed`.
 
 - [ ] Sesuai
@@ -702,7 +702,7 @@ Langkah yang tidak sesuai (salin nomornya): ______
 
 **Kesimpulan M03:** lulus / belum lulus (coret salah satu)
 
-Catatan: integrasi lisensi ke aplikasi pilot (T24) masih menunggu Pemilik memilih aplikasinya, jadi tidak diuji di sini.
+Catatan: integrasi lisensi ke aplikasi pilot (T24) **ditunda** (keputusan 27/11, T-7), jadi tidak diuji di sini.
 
 Catatan penguji:
 
@@ -715,7 +715,7 @@ Catatan penguji:
 Hal yang ditemukan saat menyusun dari kode:
 
 1. **Masa perpanjangan bisa kurang sehari.** Perpanjangan memakai jumlah hari periode lama, bukan "1 tahun kalender". Bila periode baru melewati 29 Februari, tanggal berakhir maju sehari (25 Nov 2027 → 23 Nov 2028, bukan 24 Nov 2028). `apps/backend/src/app/project/utils/license.ts:41-43`.
-2. **Perpanjangan dini mengunci pelanggan.** Saat draf perpanjangan aktif, kunci pindah ke kontrak baru (`apps/backend/src/app/project/services/licensing.service.ts:306`), padahal tanggal mulainya sehari setelah tanggal berakhir lama (`utils/license.ts:41`). API lalu menjawab "Belum mulai" sampai periode baru mulai (`utils/license.ts:127`). Perlu keputusan.
+2. **Perpanjangan dini mengunci pelanggan.** Saat draf perpanjangan aktif, kunci pindah ke kontrak baru (`apps/backend/src/app/project/services/licensing.service.ts:306`), padahal tanggal mulainya sehari setelah tanggal berakhir lama (`utils/license.ts:41`). API lalu menjawab "Belum mulai" sampai periode baru mulai (`utils/license.ts:127`). **Keputusan 27/11 (T-2):** masa dihitung tahun kalender; kunci tetap di kontrak lama sampai periode baru mulai.
 3. **B4: tidak "ditolak", tapi dicegah.** Dokumen lama menulis "Ditolak: kunci wajib". Di layar, kolom Kunci wajib dan tombol Tambah kunci mati selama kosong (`apps/web-admin/src/routes/_authed/subscription/$contractId/index.tsx:394,441`). Pesan server ("Ketik kunci dari vendor (aplikasi pihak ketiga)") hanya muncul bila form dilewati.
 4. **Kunci yang dicabut menutupi status Dihentikan.** API memeriksa status kunci lebih dulu (`utils/license.ts:122`). Karena itu D6 memakai kunci kedua.
 5. **Pesan pensiun/pulihkan aplikasi** tetap "Aplikasi disimpan" (`apps/web-admin/src/routes/_authed/subscription/applications/index.tsx:68`).
@@ -726,4 +726,4 @@ Hal yang ditemukan saat menyusun dari kode:
 10. **Aktivasi manual tidak tercatat di log.** Mengaktifkan draf biasa (bukan perpanjangan) tidak menulis kejadian apa pun (`licensing.service.ts:303`); Log aktivitas kosong sampai ada panggilan API.
 11. **Nilai kontrak tanpa batas di layar.** Kolom Nilai kontrak (Rp) tidak punya batas atas (`contract-form.tsx:180`); angka sangat besar baru ditolak server dengan pesan umum "Validasi gagal" (`apps/backend/src/app/project/contracts/licensing.contract.ts:52`).
 12. **Berlaku sampai kunci tidak dicek.** Tanggal lampau atau di luar masa kontrak diterima tanpa peringatan (`licensing.service.ts:466-480`, `$contractId/index.tsx:419`).
-13. **Kode dan Sumber kunci aplikasi bisa diubah kapan saja**, juga setelah aplikasi punya kontrak atau kunci API (`licensing.service.ts:127`, `applications/index.tsx:200-234`). Mengubah GYM menjadi Pihak ketiga akan menyembunyikannya dari halaman Kunci API. ❓ perlu keputusan apakah dikunci.
+13. **Kode dan Sumber kunci aplikasi bisa diubah kapan saja**, juga setelah aplikasi punya kontrak atau kunci API (`licensing.service.ts:127`, `applications/index.tsx:200-234`). Mengubah GYM menjadi Pihak ketiga akan menyembunyikannya dari halaman Kunci API. **Keputusan 27/11 (T-3):** dikunci setelah dipakai; nama dan deskripsi tetap bisa diubah.

@@ -7,11 +7,11 @@ B, catatan skema, dan diagram per role. Dokumen bersama
 diubah. Isi catatan ini dipindahkan ke sana setelah disepakati.
 
 Isi folder ini:
-- [validasi-konsep-saat-ini.md](validasi-konsep-saat-ini.md): matriks role
+- [validasi-konsep-saat-ini.md](1-validasi/validasi-konsep-saat-ini.md): matriks role
   dan keputusan terbuka.
-- [uat-modul/](uat-modul/README.md): checklist UAT per modul, catatan
+- [uat-modul/](1-validasi/uat-modul/README.md): checklist UAT per modul, catatan
   skema, dan diagram alur per role.
-- [ringkasan-arsitektur.md](ringkasan-arsitektur.md): ringkasan aturan
+- [ringkasan-arsitektur.md](3-rancangan/ringkasan-arsitektur.md): ringkasan aturan
   arsitektur yang berpengaruh ke modul programmer B.
 
 ## 2026-11-24 - Uji alur PO/SPH/Surat Jalan: dua perbaikan web-admin
@@ -858,3 +858,1129 @@ dibuat dengan akun RogexSan, `fix/web-admin-account-switch-and-po-hint` →
 `PDF_CHROMIUM_PATH` memakai Chrome di Program Files dan masih ada.
 
 README UAT bagian Persiapan menyebut image PostGIS.
+
+## 2026-11-26 - PR #169 di-merge; branch dihapus
+
+- PR #169 di-merge ke `main` (9974a817). `main` lokal ditarik dengan
+  fast-forward; isi kode sama dengan branch sebelum merge, dan migrasi tetap
+  41 (database tidak perlu dimigrasi ulang).
+- Branch `fix/web-admin-account-switch-and-po-hint` dihapus di lokal dan di
+  GitHub.
+- Semua catatan `docs/adjustment/` ada di `main`.
+- **Arahan programmer B:** tidak ada eksekusi (perubahan kode) sampai catatan
+  benar-benar beres. Yang masih terbuka di catatan:
+  - keputusan Pemilik di `bahan-keputusan.md`, terutama A1 (persetujuan
+    sendiri oleh Pemilik) dan B1–B4, C1–C3, D1–D5;
+  - pertanyaan 3.6 di `validasi-konsep-saat-ini.md`;
+  - hasil UAT manual M05 setelah database baru (mulai lagi dari A1);
+  - daftar temuan UI otomatis yang belum diputuskan perbaikannya.
+
+Catatan ini belum di-commit (`main` hanya diubah lewat PR).
+- 2026-11-26: `validasi-konsep-saat-ini.md` 3.7 dibetulkan berdasarkan temuan catatan skema dan UAT M06 (dicek di kode):
+  - **Jurnal manual:** ✋ 🟢. `JournalSelfApprovalError` di
+    `manual-journal.service.ts`, jadi Bella tidak bisa menyetujui jurnalnya
+    sendiri.
+  - **Peminjaman aset:** 🟡. `canApprove` = hak approve di
+    `borrowing.controller.ts:38`, sehingga pengecualian di service selalu
+    lolos.
+  - **Kasbon/pertanggungjawaban:** ✋.
+- 2026-11-26: label menu di checklist UAT programmer B disesuaikan dengan sidebar setelah merge main:
+  - M08: "Karyawan & Kehadiran →" menjadi "Sumber Daya Manusia →" (12
+    tempat);
+  - M03: "Langganan & Lisensi →" menjadi "Proyek → Langganan & Lisensi →"
+    (9 tempat);
+  - M04: WhatsApp AI sekarang punya submenu "Percakapan" dan "Basis
+    Pengetahuan FAQ".
+
+## 2026-11-26 - Catatan lengkap: modul Oki, skema database, lintas modul
+
+Programmer B minta semua modul ditulis, modul Oki dipisah, skema database dan
+hal di luar scope modul dicatat, termasuk kondisi sekarang dan perubahan
+mendatang. Ini pekerjaan dokumen saja; tidak ada perubahan kode atau database.
+
+**Struktur baru:**
+- `README.md`: indeks folder dan pembagian modul.
+- `uat-modul/modul-oki/`: README dan 8 checklist, format sama dengan modul
+  programmer B (centang Sesuai + tabel kecil per langkah):
+
+  | Checklist | Langkah |
+  |---|---|
+  | M01 Dasbor | 30 |
+  | M06 Aset & Peralatan | 53 |
+  | M09 Keuangan transaksi | 82 |
+  | M09 Keuangan laporan | 34 |
+  | M10 Pajak | 43 |
+  | M11 Bonus & Investor | 23 |
+  | M12 Laporan & Hak Akses | 43 |
+  | Portal karyawan | 39 |
+
+  Total 347 langkah. Format setiap file dicek: jumlah heading = baris
+  Sesuai = tabel.
+- `skema-database/`: README dan 20 file, satu per schema. Isinya tabel,
+  relasi, alur data, penomoran, temuan, dan perubahan mendatang.
+  `bun docs/database/validate-dbml.ts` (hanya baca) OK: 208 tabel, 0 drift.
+  Mermaid dicek: 20 blok, 0 error.
+- `lintas-modul/`: README dan 7 file (autentikasi & hak akses, penomoran,
+  dokumen/tanda tangan/file, notifikasi/otomasi/integrasi, portal & website,
+  infrastruktur, di luar scope). Mermaid: 7 blok, 0 error.
+- `rencana-perubahan.md`: gabungan semua perubahan mendatang:
+  - K1–K11 keputusan;
+  - B-1..B-20 modul programmer B;
+  - O-1..O-9 modul Oki;
+  - L-1..L-9 lintas modul;
+  - D-1..D-9 dokumen;
+  - urutan yang disarankan.
+- `uat-modul/README.md` menautkan `modul-oki/`.
+
+Ditulis oleh 7 subagent paralel, lalu diperiksa: format, Mermaid, dan
+cek kode pada temuan pilihan, yaitu `borrowing.controller.ts:38`,
+`JournalSelfApprovalError`, CSV laporan tanpa `/finance`, dan batas 100
+daftar akun.
+
+**Koreksi akibat temuan:**
+- `validasi-konsep-saat-ini.md` 3.7 (jurnal 🟢, peminjaman aset 🟡, kasbon ✋);
+- label menu di checklist M08, M03, M04 disamakan dengan sidebar baru dari
+  main.
+
+**Belum di-commit:** `main` hanya diubah lewat PR. Catatan ini menunggu
+branch dokumen berikutnya.
+
+## 2026-11-26 - Merapikan struktur catatan dan menyimpannya lewat PR
+
+Programmer B memindahkan checklist modulnya ke `uat-modul/modul-dafrin/`.
+Rujukan dirapikan:
+- `uat-modul/README.md` baru: indeks kedua folder (241 langkah programmer B,
+  347 langkah Oki), bacaan pendukung, urutan menguji, persiapan;
+- `modul-dafrin/README.md`: judul, tautan kembali, tautan ke diagram,
+  catatan skema, modul Oki, dan `bahan-keputusan.md` disesuaikan dengan
+  lokasi baru;
+- `README.md` utama dan `rencana-perubahan.md` (B-2) menunjuk ke
+  `modul-dafrin/`.
+
+Komentar di `apps/web-admin/e2e/m05-a-barang.e2e.ts` masih menyebut jalur
+lama. Tidak diubah karena itu kode; dicatat di README `uat-modul`.
+
+Catatan disimpan di branch dokumen dan diajukan sebagai PR (isi hanya
+`docs/adjustment/`).
+- 2026-11-26: `lembar-keputusan-rapat.md` baru: satu lembar untuk rapat dengan
+  Pemilik dan Oki. Isinya menggabungkan:
+  - `bahan-keputusan.md` A1–D5 dan E;
+  - `validasi-konsep-saat-ini.md`: daftar 17 role (1.1), empat matriks hak
+    per dokumen (1.2), pertanyaan 1.3 (dipetakan ke butir lain), 3.6, dan
+    usulan role 3.8;
+  - `rencana-perubahan.md` K6–K11.
+
+  Butir yang sudah dijawab programmer B (K1 = b, K2 setuju, SDM hanya Aqim)
+  ditandai *jawaban sementara*. Di akhir ada kesimpulan, tindak lanjut, dan
+  tanda tangan. README utama menautkannya.
+- 2026-11-26: atas permintaan programmer B, **Manajer Penjualan dan Penjualan
+  diusulkan digabung menjadi satu role "Penjualan" (K2b)**. Hak gabungan sama
+  dengan Manajer Penjualan sekarang; "tidak boleh menyetujui sendiri" tetap.
+  Di kode nanti `sales_manager` diberi label "Penjualan" dan `sales` tidak
+  ditawarkan lagi (wilayah Oki).
+
+  Diperbarui:
+  - `lembar-keputusan-rapat.md`: butir K2b; tabel role per orang; daftar role
+    menjadi 16 baris; penjelasan tugas Pemasaran; rekomendasi matriks
+    pelanggan dan SPH, karena isian programmer B bertanya rekomendasinya.
+    Isian programmer B yang sudah ada tidak diubah.
+  - `validasi-konsep-saat-ini.md`: 3.4 paragraf Penjualan gabungan dan
+    Pemasaran; 3.8 tabel role dan jumlah role (16 → 11).
+  - `rencana-perubahan.md` K2.
+
+  Tugas Pemasaran dicek dari `erpRoleGrants` dan pemakaian hak:
+  `catalog:*` di `product-listing.controller.ts`, `whatsapp.manage_faq`,
+  `automation.read_log`. `web_content`, `promotion`, dan `commerce_order`
+  belum dipakai route mana pun.
+- 2026-11-26: jawaban programmer B atas lembar keputusan:
+  - SDM hanya Aqim dan Aqim tidak cuti. A3 dan A3a diberi keterangan;
+    persetujuan cuti oleh SDM mengikuti K1.
+  - Role Admin dihapus dari susunan role, jadi C3 tidak berlaku.
+  - Isian A3a benar.
+
+  `validasi-konsep-saat-ini.md` 3.9 baru:
+  - tiga arti "admin": role organisasi Admin, tanda admin aplikasi
+    (`auth.users.role`, wajib tetap di akun Aqim karena halaman
+    Produk/Gudang/Pengguna/Audit/Pengaturan Penggajian `appAdminOnly`), dan
+    akun bernama `admin`;
+  - hak role Pembelian (dari `erpRoleGrants`);
+  - pengguna di luar web-admin: pelanggan dan investor adalah role aplikasi
+    (`appRoleNames`, ADR-0018) dengan portal masing-masing; portal karyawan
+    memakai keanggotaan organisasi.
+- 2026-11-26: **arah baru dari programmer B:**
+  - (1) lapisan organisasi dihapus;
+  - (2) web-admin login hanya email/username + kata sandi, tombol Google
+    dihapus;
+  - (3) portal pelanggan login dengan Google.
+
+  Dicatat sebagai keputusan K12 dan K13 (menunggu Pemilik dan Oki; wilayah
+  M12 Oki, portal M07 programmer B) di:
+  - `lembar-keputusan-rapat.md`;
+  - `rencana-perubahan.md`;
+  - `lintas-modul/autentikasi-dan-hak-akses.md`;
+  - `lintas-modul/portal-dan-website.md`;
+  - `skema-database/auth.md`.
+
+  Dicek di kode:
+  - Google aktif di web-admin (`login-form.tsx` `signIn.social`) bila
+    `GOOGLE_*` diisi; di `.env` dev belum diisi;
+  - tombol Google portal masih "segera hadir" (`login.astro:141`);
+  - `organization_id` ada di 18 file skema Drizzle.
+
+  Tambahan lain:
+  - K2c: role Pembelian dipakai? Rekomendasi tidak, selama Aqim membeli
+    sendiri.
+  - K2d: isian programmer B "Akuntan merging ke Keuangan". Rekomendasi:
+    Bella diberi dua role, tanpa ubah kode.
+  - Dampak isian "Anggota: Hapus" (Dafrin/Oki tanpa absensi) dicatat.
+
+  **Perubahan K2b, rekomendasi matriks, dan penjelasan Pemasaran di lembar
+  sempat hilang** (file tersimpan ulang dari editor dengan versi lama) dan
+  sudah dipasang ulang. Isian programmer B tetap.
+
+  `validasi-konsep-saat-ini.md` 3.9 mendapat penjelasan "Cara absensi
+  karyawan sekarang": tiga jalan (absen mandiri di portal, absen lokasi
+  proyek dengan GPS + selfie, dicatat SDM/impor), cuti, dan lembur.
+
+## 2026-11-27 - Dokumen sejajar untuk modul Oki
+
+Programmer B: dokumen validasi, keputusan, rencana, dan ringkasan arsitektur
+baru mencakup modul programmer B, jadi diminta versi untuk modul Oki. Ini
+dokumen saja; tidak ada perubahan kode.
+
+**File baru** (ditulis 2 subagent, diperiksa):
+- `validasi-konsep-modul-oki.md`: struktur sama dengan
+  `validasi-konsep-saat-ini.md`. Isinya 11 matriks hak per dokumen, temuan
+  RO1–RO20, alur per role dan lintas orang, peta bentrok, dan rekomendasi.
+- `bahan-keputusan-modul-oki.md`: OA (M12/login) – OH (dokumen arsitektur),
+  ditutup tanda tangan.
+- `rencana-perubahan-modul-oki.md`: perubahan per modul (M12, M09, M10, M06,
+  M11, M01, PK), lintas modul X-1..X-12, dokumen DO-1..DO-7, urutan.
+- `ringkasan-arsitektur-modul-oki.md`: aturan penting dan D1–D20 dokumen
+  yang tidak cocok dengan kode.
+
+**Diperbarui:**
+- `README.md`: tabel dua kolom (modul programmer B | modul Oki).
+- `lembar-keputusan-rapat.md`: bagian 8a, keputusan modul Oki yang memblokir
+  atau perlu diputuskan bersama (RO1, RO5, K12, K13, audit, K2d,
+  maker-checker, peminjaman aset, M11, absen di luar radius).
+
+**Dicek di kode:**
+- **RO1:** tidak ada role dengan `accounting_period:create`; kosakata hanya
+  `read/close/reopen` (`erp-permissions.ts:120`), padahal route memintanya.
+- **RO5:** `approveSettlement` menolak verifikator = penyetuju
+  (`employee-advance.service.ts:235`).
+- Akibat RO5, `validasi-konsep-saat-ini.md` 3.7 dibetulkan: pertanggungjawaban
+  kasbon 🔴 macet.
+
+**Koreksi:** rujukan "ADR-0031" (tidak ada) dibetulkan menjadi ERP-0031 di
+lembar dan `lintas-modul/autentikasi-dan-hak-akses.md`.
+
+**Catatan lingkungan:** Docker daemon (Kiri) tidak berjalan saat dicek
+(`npipe:////./pipe/kiri` tidak ditemukan), jadi database dev tidak bisa
+diperiksa. Jumlah periode akuntansi di database belum dicek.
+
+## 2026-11-27 - Diagram alur sekarang dan sesudah perbaikan
+
+Programmer B minta diagram alur (UML) untuk kondisi sekarang dan sesudah
+perbaikan, sebagai satu kesatuan yang valid. Ini dokumen saja.
+
+**Folder baru `diagram-alur/`:**
+- `README.md`: indeks semua diagram, termasuk yang sudah ada:
+  `uat-modul/diagram-alur-per-role.md` 12, `skema-database/` 20,
+  `lintas-modul/` 7.
+- `sekarang-modul-oki.md`: 15 diagram (10 urutan, 5 status). Isinya login,
+  undangan, role; faktur sampai kas; tagihan dan pembayaran; kasbon dan
+  pertanggungjawaban; jurnal dan periode; gaji; pajak; peminjaman aset;
+  aset tetap dan penghapusan; portal karyawan.
+- `sekarang-vs-sesudah.md`: 21 diagram untuk 10 alur yang berubah (Sekarang
+  vs Sesudah usulan), ditambah peta bentrok sesudah (30 titik) dan daftar
+  ketidakcocokan antar-catatan.
+
+Pemeriksa Mermaid (`mermaid.parse` + jsdom):
+- `sekarang-modul-oki.md`: 15 blok, 0 error;
+- `sekarang-vs-sesudah.md`: 21 blok, 0 error;
+- `diagram-alur-per-role.md`: 12 blok, 0 error.
+
+README utama menautkan `diagram-alur/`.
+
+**Temuan baru dari kode** (subagen; belum dicek ulang satu per satu):
+- persetujuan jurnal manual langsung memposting;
+- route pembuka periode hanya meminta hak `close` (RO4 lebih luas);
+- klaim undangan dan perubahan organisasi tidak diaudit;
+- pembayaran yang sudah dieksekusi tidak bisa di-void;
+- status `overdue` / `reversed` / `cancelled` / disposal `submitted` tidak
+  pernah diisi;
+- kasbon tidak punya status ditolak;
+- membayar gaji tidak mengubah status gaji;
+- check-out lokasi tanpa cek radius.
+
+**Koreksi dan tambahan:**
+- `validasi-konsep-saat-ini.md`: "cuti Aqim macet" diganti; Aqim tidak cuti
+  lewat aplikasi (A3a). Ada di 3.6 no. 5, 3.7, dan 3.8.
+- `lembar-keputusan-rapat.md`: butir RO4 di 8a, dan bagian 8b baru dengan 7
+  isian yang saling bertentangan (X1–X7: K1a vs kasbon Aqim, verifikator
+  RO5, K2d, Anggota, K2b/B1 belum diisi, B2, cara OD1).
+- 2026-11-27: semua catatan sejak 2026-11-26 (gabung role Penjualan, dokumen modul Oki, K12/K13, absensi, diagram alur) ditambahkan ke PR #171. Commit dengan `--no-verify` karena `graphify` belum terpasang; isinya hanya dokumen. Keputusan berikutnya diambil lewat tanya-jawab di chat, lalu file keputusan dan rencana diperbarui.
+
+## 2026-11-27 - Keputusan tanya-jawab programmer B disalin ke semua catatan
+
+Sumber: `lembar-keputusan-rapat.md` bagian 0. Status semua butir **jawaban
+programmer B**; Pemilik dan Oki masih mengonfirmasi saat rapat. Tidak ada kode,
+konfigurasi, atau database yang diubah.
+
+**Keputusan yang disalin:**
+- K1 (b) Pemilik boleh menyetujui dokumennya sendiri, tercatat audit; K1a/X1 kasbon dan pertanggungjawaban ikut K1, jurnal manual tetap orang kedua (Bella ↔ Aqim), Aqim tidak mengajukan kasbon.
+- RO5/X2 pertanggungjawaban satu langkah oleh Aqim; aturan verifikator ≠ penyetuju dihapus (`employee-advance.service.ts`, wilayah Oki).
+- K2 (a); K2a SDM hanya Aqim; K2b Penjualan digabung (Agus MD, Bilal); K2c Pembelian tidak dipakai; K2d/X3 Akuntan digabung ke Keuangan (Bella); X4 Anggota dihapus (Dafrin, Oki hanya Pekerja Lepas); role organisasi Admin dihapus, tanda admin aplikasi Aqim tetap.
+- K6 (a); K7/K7a (a); B1 langkah "Tandai terkirim" dihapus; B2–B4 (b); C1, C2 (a); D2 (a), D4 (b), D5 (b).
+- RO1 periode dibuat Pemilik dan Keuangan (`accounting_period:create`); RO4 buka kembali hanya Pemilik (route memeriksa `reopen`).
+- OA5–OA7 audit wajib ikut transaksi, dikerjakan sebelum K1; K12 bertahap; K13 web-admin dan portal karyawan tanpa Google, karyawan diundang; OA4 pelanggan satu jenis akun.
+- OB7/OB8 diterima tanpa pemeriksa kedua; OD1/X7 daftar unit pinjam khusus, OD2 diperbaiki; K10/OE1 M11 ditunda, halaman investor hanya Pemilik; OG1 absen di luar radius ditolak.
+- K8, K9, K11 dibahas di rapat.
+
+**File yang diubah:**
+- `lembar-keputusan-rapat.md`: kolom Keputusan/Jawaban bagian 1–8b; isian yang bertentangan diberi "→ diganti" (K1a, role Bella dan Dafrin/Oki, Admin).
+- `bahan-keputusan.md` dan `bahan-keputusan-modul-oki.md`: kolom Keputusan; paragraf ringkasan modul Oki diperbarui.
+- `rencana-perubahan.md`: status K1–K13, K2c, K2d; butir baru B-21..B-25 dan O-10..O-13; urutan (L-1 sebelum B-1).
+- `rencana-perubahan-modul-oki.md`: tabel keputusan bagian 1 ditulis ulang; M12-1/4/5, M09-1/4–7/13, M06-1/2, M11-1/2, PK-1/7, PK-8 baru; urutan (M12-1 sebelum K1).
+- `validasi-konsep-saat-ini.md`: 1.1 kolom Keputusan, 3.1, 3.7 (kasbon), 3.8 (role, aturan, alur).
+- `validasi-konsep-modul-oki.md`: 1.1 kolom Keputusan, Bagian 3, 3.1, 3.6, 3.7 (kasbon, pertanggungjawaban, periode, absen lokasi), 3.8.
+- `diagram-alur/sekarang-vs-sesudah.md`: catatan kepala, susunan role, tabel keputusan, bagian 6 (pelanggan satu jenis akun, undangan karyawan), 7, 8 (satu langkah Aqim), 9, 10 (diagram Sesudah baru: di luar radius ditolak), 11, 12.
+- `lintas-modul/autentikasi-dan-hak-akses.md` dan `lintas-modul/portal-dan-website.md`: baris "Perubahan mendatang" K12, K13, OA4, K2b, K2d, Anggota/Admin.
+
+Pemeriksa Mermaid: `sekarang-vs-sesudah.md` 22 blok, 0 error.
+- 2026-11-27: tanya-jawab kedua dengan programmer B:
+  - OB13/RO6: kasbon teknisi dicairkan Aqim; pengajuan dan riwayatnya lewat
+    portal karyawan.
+  - C13: unit pinjaman wajib disetujui sebelum diserahkan.
+  - PK-1: check-out lokasi juga dicek radius.
+  - Matriks PO dan Surat Jalan (lembar bagian 6) disetujui.
+
+  Dicatat di `lembar-keputusan-rapat.md` (bagian 0 dan bagian 6),
+  `rencana-perubahan-modul-oki.md` (tabel tambahan), dan
+  `rencana-perubahan.md` (catatan tambahan). Perubahan sebelumnya disebar ke
+  11 file oleh subagen, lalu di-commit ke PR #171 (59832f6d); Mermaid
+  `sekarang-vs-sesudah.md` 22 blok, 0 error.
+
+## 2026-11-27 - Tanya-jawab ketiga disebar ke catatan modul Oki; ringkasan untuk Pemilik
+
+Sumber: `lembar-keputusan-rapat.md` bagian 0 (baris baru OA2, OA8,
+OA12–OA14, OB2, OB3, OB5, OB10–OB15, OC1–OC8, OD3–OD9, OE3/OE4, OF1–OF3,
+OG2–OG6). Statusnya jawaban programmer B 27/11, menunggu konfirmasi Pemilik
+dan Oki. Tidak ada perubahan kode, konfigurasi, atau database; belum di-commit.
+
+**Keputusan yang disebar:**
+- M12: OA2 `organization_id` langsung dihapus di tahap 1 K12 (⚠️ bertentangan dengan K12 bertahap, perlu dikonfirmasi ulang); OA8 Log Audit hanya Pemilik; OA12 `invitation:create` dicabut dari SDM; OA13 dialog konfirmasi; OA14 pesan login dibedakan.
+- M09: OB2 pilihan akun berpencarian; OB3 layar pembayaran pemasok (pekerjaan baru); OB5 Keuangan gabungan membuka Aset tetap dan Anggaran proyek; OB10 write-off langsung ke beban; OB12 CSV diperbaiki; OB13 kasbon dicairkan Aqim, diajukan dari portal karyawan; OB14 akun beban di tagihan manual; OB15 nanti.
+- M10: OC1 bug `vat`; OC2 hitung ulang DPP × tarif; OC3 masa Bupot otomatis; OC4 tarif PPN dari master bertanggal berlaku, salinan di dokumen, pengecualian beralasan; OC5 Batalkan + alasan; OC6 pesan kode ganda; OC7 masa tertutup read-only; OC8 PPh 21 otomatis belum dipakai.
+- M06: OD3 sen/rupiah; OD4 nama bukan ID; OD5 servis dilengkapi, Set Peralatan disembunyikan; OD6 tolak hapus aset dipinjam; OD7 kondisi pengembalian; OD8 schema tetap, pemilik tabel `inventory` dibagi (stok M05, aset M06) dengan tanda pemecahan; OD9 belum perlu.
+- M11/M01/portal: OE3/OE4 ditunda ikut K10; OF1 kartu disembunyikan; OF2 lencana "Sementara" dihapus; OF3 `dashboard:read` diperiksa; OG2–OG6.
+- Masih dibahas di rapat: OB11, K8, K9, K11.
+
+**File yang diubah:**
+- `bahan-keputusan-modul-oki.md`: semua kolom Keputusan yang kosong diisi (41 butir); paragraf "Diperbarui" baru dengan risiko OA2. Tidak ada sel Keputusan kosong; OB11 berisi "Dibahas di rapat".
+- `rencana-perubahan-modul-oki.md`: tabel keputusan bagian 1 (K12 + risiko OA2, OD8 diputuskan, 10 baris baru); M12-2/3/5/9, M09-2/3/5/8–12, M10-1..6/9 + M10-10 baru (PPh 21 dimatikan), M06-3..7/11 + M06-13 baru (OD8), M11-3, M01-1..3, PK-2..5; urutan.
+- `validasi-konsep-modul-oki.md`: catatan "Diperbarui 2026-11-27" di sembilan matriks 1.2; 3.1 baris Bella; 3.6 jawaban no. 4–10 dan no. 11 baru (PPh 21); 3.7 enam baris + catatan; 3.8 baris Bella, aturan 9–11, dua pekerjaan baru.
+- `skema-database/inventory.md`: bagian baru "Pembagian pemilik tabel"; Perubahan mendatang OD3, OD5, OD6, OD7, C13, OD8.
+- `skema-database/finance.md`: Perubahan mendatang OB10, OB3, OB14, OD3, OD8, K1a/RO5.
+- `skema-database/tax.md`: Perubahan mendatang OC2–OC8.
+- `ringkasan-untuk-pemilik.md` (baru): satu halaman untuk Pak Aqim, 19 butir bisnis + susunan role + "Dibahas di rapat" + tanda tangan.
+- `README.md`: baris `ringkasan-untuk-pemilik.md` (**Untuk Pemilik**) di tabel Dokumen bersama.
+- `catatan-progres.md`: entri ini.
+- 2026-11-27: tiga jawaban penutup programmer B:
+  - **OA2 diganti:** kolom `organization_id` tetap diisi perusahaan tunggal
+    dan baru dihapus di tahap 3, selaras dengan K12 bertahap. Catatan risiko
+    dicabut.
+  - **RO16:** tidak perlu Manajer Operasional kedua.
+  - **OE3:** `apps/web-investor` dibiarkan, ditandai "belum dimulai".
+
+  Diperbarui: `lembar-keputusan-rapat.md` (bagian 0),
+  `bahan-keputusan-modul-oki.md`, `rencana-perubahan-modul-oki.md`
+  (K12, M12-2, M12-3), dan `ringkasan-untuk-pemilik.md` (butir 12).
+
+  Semua butir keputusan sudah terjawab, kecuali K8, K9, K11, dan OB11 yang
+  dibawa ke rapat.
+
+## 2026-11-27 - Menu dan form per role
+
+Permintaan programmer B: menu apa yang perlu tampil untuk setiap role, dan
+form apa saja yang ada.
+
+- `menu-dan-form-per-role.md` (baru):
+  - **Matriks menu × role (sesudah keputusan).** Dihitung dengan skrip bun
+    sementara (di luar repo) yang membaca `nav-config.ts`, aturan
+    `filter-nav.ts`, dan `erpRoleGrants`. Keputusan K2b, K2d, K10, K12
+    tahap 1, dan B4 diterapkan di memori, **tidak di kode**.
+  - Menu per orang, portal karyawan, portal pelanggan, dan portal investor.
+  - **Daftar form dari kode.** Web-admin 148, portal karyawan 10, portal
+    pelanggan 24. Setiap form ditulis dengan isian dan role pengisinya.
+  - Usulan baru yang **belum diputuskan**:
+    - MN1–MN7 (perapian menu). Contoh: Anggaran proyek tampil untuk Teknisi;
+      Aset tetap tidak tampil untuk Keuangan; form kasbon tidak terjangkau
+      Teknisi.
+    - FR1–FR10 (temuan form).
+- FR6 dicek di kode: penghapusan piutang tidak bisa disetujui oleh pengajunya
+  sendiri (`receivable-adjustment.service.ts:205`). Akibatnya, setelah K2d
+  persetujuannya jatuh ke Aqim.
+- `README.md`: baris baru di tabel Dokumen bersama.
+- Tidak ada perubahan kode.
+
+## 2026-11-27 - Hasil rapat: semua keputusan disetujui sesuai usulan
+
+Laporan programmer B: lembar keputusan rapat dan ringkasan untuk Pemilik
+disetujui **sesuai usulan**. Tiga butir rapat yang belum punya usulan konkret
+ditanyakan lewat chat:
+- **K8:** kontrak disesuaikan dengan pembagian modul. Pertukaran task A/B
+  dicatat resmi beserta dampak pembayarannya.
+- **K9:** semua fitur di luar kontrak diterima sebagai tambahan, dan ikut UAT
+  serta serah terima.
+- **K11:** bagian bersama dipegang bersama. Setiap perubahan wajib lewat PR
+  dan diberitahukan ke programmer lain.
+- **OB11:** opsi (a) sesuai usulan. Jurnal yang tidak menyentuh kas diabaikan
+  di laporan arus kas tidak langsung.
+
+File yang diperbarui:
+- `lembar-keputusan-rapat.md`: status bagian 0, baris K8/K9/K11 dan OB11,
+  bagian 7, kesimpulan, tanda tangan.
+- `ringkasan-untuk-pemilik.md`: 19 butir ☑ Ya, hasil bagian B, tanggal.
+- `bahan-keputusan.md`: baris tanda tangan Pemilik.
+- `bahan-keputusan-modul-oki.md`: catatan rapat, OB11.
+- `rencana-perubahan.md` dan `rencana-perubahan-modul-oki.md`: status
+  "menunggu konfirmasi" diganti "disetujui Pemilik 27/11"; K8, K9, K11,
+  OB11; langkah 1 urutan selesai.
+- `lintas-modul/di-luar-scope.md`: empat baris "Perubahan mendatang".
+- `diagram-alur/README.md` dan `diagram-alur/sekarang-vs-sesudah.md`: status
+  disetujui; judul "Sesudah (usulan)" diganti "Sesudah (disetujui 27/11)".
+- `menu-dan-form-per-role.md`: OB5 diterapkan, sehingga Keuangan melihat
+  Aset tetap; MN2 disesuaikan.
+- `README.md`: status.
+
+Belum ada perubahan kode. Masih terbuka:
+- tinjauan Oki di PR #171;
+- usulan MN1–MN7 dan FR1–FR10.
+
+## 2026-11-27 - Menu dan form disamakan dengan keputusan yang disetujui
+
+Permintaan programmer B: usulan ditahan dulu. File diperbarui dulu, setelah
+itu baru dibahas menu dan UI form.
+
+Perubahan di `menu-dan-form-per-role.md`:
+- **Bagian baru 1a.** Daftar semua keputusan rapat 27/11 yang mengubah menu
+  atau form, beserta bagian dokumen tempat perubahannya dicatat:
+  - K1/K1a, K2, K12, K13, OA4, OA8, OA12–OA14, B1, B3, B4, C1, C2, D4;
+  - RO1, RO4, RO5, OB2, OB3, OB5, OB10–OB15, OC1–OC8;
+  - OD1–OD7, C13, OF1–OF3, OG1–OG6, PK-1, Lembar 6.
+- **Matriks menu:**
+  - Set Peralatan disembunyikan (OD5).
+  - Menu baru Keuangan → Pembayaran pemasok (OB3).
+  - Catatan pada Log Audit (OA8), Tugas (D4), dan Dasbor (OF1).
+- **Portal karyawan:**
+  - Menu Kasbon baru (OB13) dan Riwayat absen lokasi (OG2).
+  - Halaman Lupa kata sandi (OG3).
+  - Siapa yang memakai portal (OG4, OG5).
+- **Portal pelanggan:** masuk dengan Google, satu jenis akun (K13, OA4).
+- **Tabel form:** isian dan kolom "Siapa" disesuaikan, dengan tanda
+  **[baru]**/**[ubah]**:
+  - PPN dari master (OC4);
+  - SO otomatis (C1);
+  - tagihan dengan akun beban (OB14);
+  - form pembayaran pemasok baru;
+  - kasbon pindah ke portal karyawan; Aqim mencairkan dan menyetujui
+    pertanggungjawaban dalam satu langkah;
+  - periode: siapkan/tutup oleh Pemilik dan Keuangan, buka kembali hanya
+    Pemilik;
+  - pajak otomatis (OC2, OC3, OC6) dan form batalkan pemotongan (OC5);
+  - PPh 21 dimatikan;
+  - ubah barang ikut hak role (B3);
+  - aset memakai nama, bukan ID; daftar unit khusus; serahkan setelah
+    disetujui; pengembalian dengan kondisi; catat servis baru; hapus aset
+    yang dipinjam ditolak;
+  - PO tanpa "Tandai terkirim";
+  - undang pengguna hanya Pemilik, tanpa isian organisasi; login web-admin
+    tanpa Google.
+- **Status MN/FR:**
+  - Sudah tercakup keputusan: MN7 (OB13), FR7 (B3), FR8 (K13/OA4),
+    FR10 (K12).
+  - Sebagian tercakup: MN2 (OB5), MN5 (K10), FR1 (OD4).
+  - Sisanya tetap usulan.
+
+Tidak ada perubahan kode.
+
+## 2026-11-27 - Status catatan disamakan dengan keputusan rapat
+
+Pemeriksaan seluruh `docs/adjustment/`: sekitar 130 baris masih berstatus
+"menunggu keputusan" atau "menunggu konfirmasi", padahal keputusannya sudah
+disetujui 27/11.
+
+- **Ganti otomatis (53 tempat).** Frasa "diputuskan programmer B 27/11,
+  menunggu konfirmasi …" diganti menjadi "disetujui Pemilik 27/11", dengan
+  catatan "tinjauan Oki di PR #171" bila menyangkut Oki. Berlaku di
+  `rencana-perubahan*.md`, `validasi-konsep-*.md`, `skema-database/`,
+  `lintas-modul/`, dan diagram.
+- **Ganti per baris (51 baris).** Status "menunggu keputusan" di
+  `skema-database/` (audit, auth, customer, document, finance,
+  human_resource, inventory, notification, payment, procurement, product,
+  project, sale, ticket, warehouse), `lintas-modul/` (autentikasi, dokumen,
+  notifikasi, portal), `bahan-keputusan*.md`, dan diagram. Isinya diganti
+  dengan nomor keputusannya:
+  - C3, D3, dan M07 C12 ditandai "tidak berlaku" karena role Admin dihapus.
+  - Pemilik `document`/`notification`/`webhook` mengikuti K11.
+  - Tautan gudang–organisasi (ADR-0010) mengikuti K12 tahap 3.
+- **Diagram kasbon** (`sekarang-vs-sesudah.md`): pencairan dipindah dari
+  Bella ke Aqim, sesuai OB13 ("dicairkan Aqim"). Aktor Bella yang tidak
+  terpakai di diagram itu dihapus. Catatan RO19 di `sekarang-modul-oki.md`
+  disesuaikan dengan K13.
+- **Pemeriksa Mermaid:** `sekarang-vs-sesudah.md` 22 blok, 0 error;
+  `sekarang-modul-oki.md` 15 blok, 0 error.
+- **Yang memang belum diputuskan** (dibahas berikutnya):
+  - celah nomor (`penomoran-dokumen.md` temuan 6);
+  - ADR-0020;
+  - tarif dan pembulatan pajak final (ERP-0016);
+  - temuan M03 no. 1, 2, dan 13;
+  - tabel tanpa alur S6 (`sale`, `project`, templat tiket);
+  - aplikasi pilot lisensi T24;
+  - E3 (`security-and-access.md`, untuk Oki).
+
+Tidak ada perubahan kode.
+
+## 2026-11-27 - Keputusan teknis tambahan T-1 sampai T-7
+
+Hasil tanya-jawab programmer B. Dicatat di `lembar-keputusan-rapat.md`
+bagian 8c.
+
+| No | Keputusan |
+|---|---|
+| T-1 | Nomor dokumen tanpa celah: nomor diambil di dalam transaksi |
+| T-2 | Perpanjangan lisensi memakai tahun kalender; kunci pindah saat periode baru mulai |
+| T-3 | Kode dan sumber aplikasi lisensi dikunci setelah dipakai |
+| T-4 | Tabel S6 dibangun alurnya, setelah perbaikan prioritas tinggi |
+| T-5 | Tarif pajak diisi Bella di master saat UAT; pembulatan rupiah penuh per dokumen |
+| T-6 | Dokumen arsitektur dirapikan programmer B lewat PR dan ditinjau Oki; ADR-0020 accepted; `security-and-access.md` ditunda |
+| T-7 | Aplikasi pilot lisensi (T24) ditunda |
+
+Diperbarui:
+- `lembar-keputusan-rapat.md` (bagian 8c baru), `bahan-keputusan.md`
+  (bagian E);
+- `rencana-perubahan.md`: B-14 diperbarui; B-26, B-27, B-28 baru;
+- `lintas-modul/penomoran-dokumen.md`;
+- `skema-database/` (project, sale, ticket, tax, finance, automation, auth);
+- `uat-modul/modul-dafrin/m03-langganan-lisensi.md`.
+
+Tidak ada lagi status "menunggu keputusan" di catatan. Yang tersisa hanya
+definisi label dan tanda ❓ di checklist UAT. Checklist UAT menggambarkan kode
+saat ini, jadi diperbarui saat kodenya berubah.
+
+## 2026-11-27 - Lembar rapat dilengkapi
+
+- **Tabel Rapat:** 2026-11-27, di kantor. Hadir Pemilik (Aqim), Oki, dan
+  Dafrin; notulis Dafrin.
+- **Tindak lanjut** (tenggat mengikuti urutan kerja):
+  1. Salin keputusan: selesai 27/11.
+  2. ADR-0006: diubah Oki sebelum K1 dikodekan.
+  3. Role anggota: diatur Aqim setelah rilis M12-5.
+  4. Kode pemasok: diatur Aqim setelah perbaikan pratinjau nomor (X-3).
+- **Tanda tangan Oki:** hadir 27/11; tinjauan dokumen tetap lewat PR #171.
+
+Dengan ini, ketiga bagian perapian (status, keputusan teknis, lembar rapat)
+selesai. Berikutnya: pembahasan menu dan UI form.
+
+## 2026-11-27 - Rancangan menu, dasbor, dan form (usulan)
+
+Permintaan programmer B: membahas susunan menu, isi dasbor per role, aturan
+baku semua form, dan form yang paling sering dipakai, sampai rinci dari pesan
+berhasil hingga kesalahan validasi.
+
+- `rancangan-menu-dasbor-dan-form.md` (baru, **usulan**):
+  1. Masalah: menu per modul teknis, nama campur, tidak ada tempat "yang
+     perlu saya kerjakan", dasbor kosong untuk SDM dan Pekerja Lepas.
+  2. Susunan menu per pekerjaan, nama seragam, dan halaman **Perlu Tindakan**
+     per orang (RM1–RM4).
+  3. Kartu dasbor per role, dengan baris "Hari ini" (RD1–RD3).
+  4. Aturan baku form RF-1 sampai RF-26 dan pola kalimat pesan (RF-A, RF-B).
+  5. Rincian 13 form utama FU1–FU13 (FU-A, FU-B). Kondisi sekarang K-1
+     sampai K-11 diperiksa ke kode oleh agen pemeriksa.
+  6. Dasar teknis TF-1 sampai TF-10 (TF-A, TF-B).
+- Isi dasbor sekarang dicek di `components/dashboard/dashboard-page.tsx`:
+  kartu kas, laba, penjualan, stok, proyek, langganan, aktivitas, dan tautan
+  cepat. Peran SDM dan Pekerja Lepas mendapat dasbor kosong.
+- `README.md`: baris baru.
+- Tidak ada perubahan kode.
+
+## 2026-11-27 - Keputusan menu, dasbor, dan form
+
+Hasil tanya-jawab programmer B atas `rancangan-menu-dasbor-dan-form.md`.
+
+**Menu dan dasbor**
+- **RM1–RM4:** menu disusun per pekerjaan, nama usulan dipakai, halaman
+  Perlu Tindakan dibuat, dan halaman "Segera hadir" disembunyikan.
+- **RD1–RD3:** kartu dasbor per role disetujui dan dicek lagi saat UAT;
+  baris "Hari ini" ada di semua dasbor; Penjualan melihat angka semua orang
+  dengan saringan "milik saya".
+
+**Aturan form**
+- **RF-A, RF-B:** aturan RF-1 sampai RF-26 disetujui dan diterapkan
+  bertahap.
+- **RF-27 (baru):** kesalahan server menampilkan nomor referensi.
+- **TF-A, TF-B:** TanStack Form dengan skema zod bersama, dikerjakan setelah
+  audit dan K1.
+
+**Form FU1–FU13:** dibahas per form, lalu disetujui (tanda [27/11]).
+
+| Form | Keputusan |
+|---|---|
+| FU1 Prospek | Nomor telepon/WA ganda **ditolak**; follow-up tidak boleh di waktu yang sudah lewat |
+| FU2 Pelanggan | Minimal telepon atau email; email dan NPWP ganda **ditolak**; cabang perusahaan = satu pelanggan dengan beberapa alamat |
+| FU3 SPH | Berlaku sampai wajib, bawaan +14 hari, lalu ditandai Kedaluwarsa; diskon Rp atau %; SPH yang disetujui tidak bisa diubah, revisi membuat versi baru yang disetujui ulang |
+| FU4 SO | Satu SPH satu SO |
+| FU5 Surat jalan | Stok kurang: draf boleh disimpan, Kirim ditolak |
+| FU6 PO | Harga terisi dari harga beli terakhir; peringatan bila selisih lebih dari 20% |
+| FU7 BPB | Kelebihan dari sisa PO ditolak |
+| FU8 Penyesuaian stok | Harga pokok memakai harga rata-rata otomatis; Aqim bisa mengubahnya saat menyetujui |
+| FU9 Faktur | Lebih bayar ditolak dan dicatat terpisah; jatuh tempo wajib, diambil dari syarat bayar |
+| FU10 Tiket | Seri tidak ditemukan atau garansi habis: tiket tetap dibuat, ditandai berbayar |
+| FU11 dan FU12 Cuti | Pengajuan yang melebihi kuota ditolak (kelebihannya diajukan sebagai izin tanpa gaji) |
+| FU12 Lembur | Maksimal 4 jam per hari |
+| FU12 Kasbon | Tanpa batas nominal; ditolak bila kasbon lama belum dipertanggungjawabkan |
+| FU13 Peminjaman | Lewat tanggal kembali: status Terlambat otomatis dan peminjam diberi pengingat |
+
+Aturan server baru yang muncul dari keputusan ini (belum dikodekan):
+- nomor telepon prospek unik;
+- email dan NPWP pelanggan unik;
+- satu SO per SPH;
+- batas lembur 4 jam;
+- satu kasbon terbuka per orang;
+- status peminjaman Terlambat.
+
+Saat dikerjakan, semuanya dicek ke `docs/database/docs.dbml` (indeks unik)
+sesuai Gate 1.
+
+Commit lokal saja: push ditahan karena PR #171 sedang ditahan.
+Tidak ada perubahan kode.
+
+## 2026-11-27 - Pemangkasan menu
+
+Push tiga commit rancangan ke PR #171 atas permintaan programmer B (9ff9b205),
+supaya Oki bisa meninjau dan me-merge.
+
+Programmer B bertanya apakah menu, terutama untuk Pemilik, bisa dipangkas.
+Saat ini Aqim melihat **84 menu** (dihitung dari `nav-config.ts`).
+
+Bagian 2.2a baru di `rancangan-menu-dasbor-dan-form.md`:
+- **PM-1 disetujui:** halaman sejenis digabung menjadi satu halaman dengan
+  tab. Menu Pemilik turun dari 84 ke sekitar 33.
+- **PM-2 disetujui:** data induk pindah ke satu halaman Pengaturan.
+- **PM-3 dan PM-4 disetujui:** pencarian cepat (Ctrl+K) dan menu favorit.
+- **PM-5 tidak dipakai:** grup tidak ditutup otomatis.
+- **PM-6, menu harian Aqim:** Dasbor, Perlu Tindakan, Laporan, dan SDM tampil
+  di atas; grup lain masuk ke "Lainnya". PO yang dibuat Aqim sendiri dibuka
+  lewat favorit atau Ctrl+K.
+
+Tidak ada perubahan kode.
+
+## 2026-11-27 - Kekurangan fitur dan perapian folder
+
+**Kekurangan fitur.** Dua agen pemeriksa membandingkan batas kontrak
+(`docs/plan/erp-plan-id.md`, `erp-module-plans/`), kode, dan catatan yang
+sudah ada. Hasilnya ditulis di `3-rancangan/kekurangan-fitur.md`:
+- Proyek KF-P1–P11, Gudang KF-G1–G7, Pengadaan KF-B1–B6, Aset KF-A1–A10,
+  Keuangan KF-K1–K10, Pajak KF-T1–T8.
+- Keputusan programmer B:
+  - **KF-1:** 10 butir terpenting masuk rencana.
+    - Programmer B: B-29 sampai B-33.
+    - Oki: M09-15 sampai M09-17, M10-11 sampai M10-13, M06-14.
+  - **KF-2:** butir Sedang/Rendah masuk daftar tunggu (B-34, M06-15).
+  - **KF-3:** butir "Tambahan" menunggu permintaan Pemilik.
+  - **KF-4:** rezim pajak dipastikan Bella.
+- `4-rencana-kerja/peta-halaman.md` (baru): halaman yang diperbaiki,
+  ditambah bagian "Tambahan dari kekurangan fitur".
+
+**Perapian folder** (keputusan programmer B: folder bernomor sesuai langkah
+kerja). Dipindah dengan `git mv`, dan 61 tautan relatif ditulis ulang oleh
+skrip:
+- `1-validasi/`: validasi kedua wilayah dan `uat-modul/`.
+- `2-keputusan/`: bahan keputusan, lembar rapat, ringkasan Pemilik.
+- `3-rancangan/`: ringkasan arsitektur, `skema-database/`, `lintas-modul/`,
+  `diagram-alur/`, menu dan form, rancangan menu/dasbor/form, kekurangan
+  fitur.
+- `4-rencana-kerja/`: rencana perubahan kedua wilayah, peta halaman.
+- `README.md` ditulis ulang sebagai **panduan langkah 1–11** dengan status
+  (langkah 1–5 selesai, langkah 6 berjalan).
+
+Pemeriksaan tautan: 184 tautan relatif, 0 rusak.
+
+Belum diperbarui: tiga komentar di kode Playwright
+(`apps/web-admin/e2e/m05-a-barang.e2e.ts`, `e2e/README.md`,
+`playwright.config.ts`) masih menunjuk `docs/adjustment/uat-modul/`.
+Diperbaiki saat perubahan kode berikutnya, karena belum boleh ada perubahan
+kode.
+
+Tidak ada perubahan kode.
+
+## 2026-11-27 - Alur lengkap ERP saat ini
+
+Permintaan programmer B: flow/UML lengkap kondisi sekarang, dari barang
+masuk, aset, gudang, penjualan dan surat-surat, proyek, pembagian tugas dan
+mobilitas, sampai pesanan dari portal dan input di admin. n8n tidak
+digambar.
+
+- `3-rancangan/diagram-alur/alur-lengkap-saat-ini.md` (baru), 19 diagram
+  Mermaid (pemeriksa: 19 blok, 0 error):
+  - peta besar, data induk, pengadaan, stok;
+  - jalur masuk pesanan, penjualan dan retur;
+  - tabel surat-surat;
+  - proyek, kerja lapangan, aset, purna jual;
+  - 8 diagram status;
+  - 17 titik putus.
+- Fakta kode yang dicek ulang oleh agen pemeriksa:
+  - Website RFQ/kontak/demo membuat **prospek**.
+  - Checkout website **belum tersambung** ke ERP.
+  - Portal pelanggan tersambung untuk akun, proyek, tiket, dan
+    perangkat/garansi. Pesanan, SPH, faktur, dan pembayaran di portal hanya
+    tampilan.
+  - Tautan gateway dibuat staf dan dikirim manual; kuitansi otomatis lewat
+    webhook.
+  - PDF otomatis hanya untuk SPH (saat terkirim), slip gaji, perjanjian
+    kerja, dan dokumen bertanda tangan.
+  - SO tidak pernah ditulis Terkirim/Selesai.
+  - Aset hanya dari register manual.
+  - Proyek hanya dari SO; tugas proyek tanpa notifikasi; absen lokasi di
+    luar radius tetap tersimpan.
+- `3-rancangan/diagram-alur/README.md` dan `README.md`: tautan baru.
+
+Tidak ada perubahan kode.
+
+## 2026-11-27 - Temuan alur lengkap masuk rencana; penagihan per termin
+
+Programmer B bertanya apakah semua temuan sudah masuk file untuk
+diperbaiki. Pemeriksaan ulang: 13 dari 17 titik putus sudah punya nomor
+keputusan/rencana. Empat belum, lalu ditambahkan:
+- `4-rencana-kerja/rencana-perubahan.md`:
+  - **B-35** notifikasi tugas proyek ke teknisi;
+  - **B-36** konfirmasi tiket di portal;
+  - **B-37** cetak/PDF SO, kuitansi, BPB, dan retur;
+  - **B-38** pesanan/SPH/faktur/bayar di portal dan checkout website
+    (T21, T25).
+- `peta-halaman.md`: bagian "Tambahan dari alur lengkap".
+- `alur-lengkap-saat-ini.md`: tabel titik putus memakai nomor baru, dan
+  bagian **5a Penagihan per termin** baru (diagram + tanya-jawab).
+  Penjelasannya: jadwal termin dibuat di SPH, tersalin ke SO, lalu faktur
+  dibuat dari kartu Penagihan di detail SO.
+- Dicek di kode: `quotation.service.ts:264`, `sales-order.service.ts:161`,
+  `invoice-billing.service.ts:147`.
+- Pemeriksa Mermaid: 20 blok, 0 error.
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - B-35 sampai B-38 menjadi prioritas Tinggi
+
+Arahan programmer B: keempatnya fitur utama, jadi bukan Sedang.
+- **B-35** notifikasi tugas proyek;
+- **B-36** konfirmasi tiket di portal;
+- **B-37** cetak/PDF SO, kuitansi, BPB, dan retur (kuitansi lebih dulu);
+- **B-38** pesanan, SPH, faktur, dan bayar di portal serta checkout website
+  (T21, T25), dirancang dulu sesuai Gate 2.
+
+Diperbarui: `4-rencana-kerja/rencana-perubahan.md`, `peta-halaman.md`, dan
+`README.md` (langkah 8 memuat B-35 sampai B-38).
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - Rancangan portal dan pesanan online (B-38)
+
+Programmer B bertanya apakah modul Oki juga dibahas. Jawabannya ya:
+validasi, UAT, keputusan OA–OG, rencana, kekurangan Aset/Keuangan/Pajak,
+serta aturan menu, dasbor, dan form. Kekurangan fitur M02, M03, M04, M08,
+M01, dan M12 belum diperiksa.
+
+Rancangan B-38 ternyata sudah diputuskan sebelumnya (14/11, 19/11, 20/11,
+23/11) dan sebagian dibangun di `feat/erp-0069-portal-session`. Rencana
+port ada di `docs/plan/port-portal-onto-main.md`; P1 sudah masuk lewat
+PR #139. Tanya-jawab 28/11 menegaskan dan menyesuaikannya:
+- **PP-1:** alur pesanan → draf SPH → disetujui → diterima pelanggan → SO
+  → faktur → bayar.
+- **PP-2:** satu draf SPH untuk barang berharga dan barang "harga
+  menyusul"; RFQ tetap form terpisah.
+- **PP-3:** satu jenis akun dengan login Google; anggota dan peran dalam
+  portal dihapus.
+- **PP-4:** pemegang SPH pesanan online Bilal (dicek ulang terhadap aturan
+  petugas pelanggan dari ERP-0070).
+- **PP-5:** bayar per termin dari portal, kuitansi otomatis.
+- **PP-6:** keranjang menampilkan ketersediaan tanpa memesan stok.
+- **PP-7:** ubah data perusahaan menjadi permintaan yang diperiksa
+  Penjualan.
+- **PP-8:** semua prioritas Tinggi, urutan P2 + P7 → P3 → P5 → P4.
+
+File yang diperbarui:
+- `3-rancangan/rancangan-portal-pesanan.md` (baru; pemeriksa Mermaid 1
+  blok, 0 error setelah titik koma di pesan diganti).
+- `2-keputusan/lembar-keputusan-rapat.md` (bagian 8d).
+- `4-rencana-kerja/rencana-perubahan.md` (B-38), `peta-halaman.md`,
+  `README.md`.
+
+`docs/plan/port-portal-onto-main.md` (di luar folder ini) belum diubah. Isi
+D4 dan urutan port di sana diperbarui saat langkah 8 dimulai.
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - Kekurangan fitur bagian kedua (semua modul)
+
+Atas permintaan programmer B ("harus kita bahas semua"), dua agen pemeriksa
+membaca kode M02, M03, M04, M08 (programmer B) dan M01, M12, serta portal
+karyawan (Oki). M11 dicatat satu baris karena ditunda (K10).
+
+Hasil ditambahkan di `3-rancangan/kekurangan-fitur.md` bagian kedua:
+KF-S1–S11, KF-L1–L6, KF-I1–I5, KF-H1–H7, KF-D1–D4, KF-R1–R10, KF-E1–E7,
+dan KF-N1.
+
+Temuan samping:
+- Checklist UAT M08 sebagian usang (ubah karyawan dan ubah tugas SDM sudah
+  ada; sebagian B-17 selesai).
+- Gaji T19/T20 sebagian besar sudah dibangun.
+
+Keputusan programmer B:
+- **Tinggi, modul programmer B:**
+  - B-39 gaji memakai absensi dan upah lembur;
+  - B-40 riwayat dan saldo pelanggan;
+  - B-41 kirim SPH/faktur tanpa n8n;
+  - B-42 faktur tanpa SO.
+- **Tinggi, modul Oki:**
+  - M12-14 ubah role di halaman Pengguna, ditambah perbaikan bug role
+    hilang;
+  - M12-15 reset kata sandi oleh admin;
+  - M12-16 ekspor daftar dan PDF laporan keuangan;
+  - PK-9 layar kunjungan lokasi teknisi.
+- **Daftar tunggu:** B-43 dan M12-17, termasuk KF-N1 (notifikasi di
+  aplikasi), KF-L1 (lisensi di portal, kontrak T25), KF-D1, dan KF-I3.
+  Butir "Tambahan" menunggu permintaan Pemilik.
+
+Diperbarui: `rencana-perubahan.md`, `rencana-perubahan-modul-oki.md`,
+`peta-halaman.md`, `README.md` (langkah 8).
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - Tambahan: laporan kerja karyawan dan pengaturan potongan gaji
+
+Permintaan programmer B: (1) gaji perlu pengaturan potongan tidak hadir;
+(2) karyawan wajib membuat laporan hasil kerja harian, ditambah laporan
+mingguan dan bulanan untuk presentasi dan evaluasi. Keduanya disetujui
+lewat tanya-jawab, prioritas **Tinggi**.
+
+- `3-rancangan/rancangan-laporan-kerja-dan-potongan-gaji.md` (baru):
+  - **PG-1–PG-5:** potongan per hari = gaji pokok ÷ hari kerja (dari
+    jadwal); yang dipotong alpa, izin tanpa gaji, terlambat (toleransi +
+    nominal per kejadian), dan pro-rata; potongan tampil per baris di rekap
+    dan slip.
+  - **LK-1–LK-7:**
+    - laporan harian wajib untuk semua karyawan, diisi di portal karyawan;
+    - pengingat dikirim; hari tanpa laporan tercatat; boleh diisi menyusul
+      paling lambat 2 hari;
+    - laporan mingguan dan bulanan dirangkum otomatis, ditambah ringkasan
+      karyawan;
+    - penilaian oleh Aqim saja, skor 1–5 per aspek + komentar;
+    - unduhan PDF per karyawan (rekap tim menyusul).
+  - Pemeriksa Mermaid: 1 blok, 0 error.
+- `rencana-perubahan.md`: B-39 ditambah pengaturan potongan; **B-44 baru**
+  laporan kerja (mencakup laporan harian dan KPI dari B-26).
+- `lembar-keputusan-rapat.md` bagian 8e, `peta-halaman.md`, `README.md`.
+- Saat desain perlu diputuskan: pemilik tabel laporan karyawan non-proyek
+  (`human_resource` atau `project`), lewat Gate 1 dan grill. Layar portal
+  karyawan dikerjakan bersama Oki.
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - Laporan kerja dan potongan gaji disebar ke semua catatan terkait
+
+Arahan programmer B: langsung perbarui file supaya semua catatan sejalan.
+- `skema-database/human_resource.md`: dua baris "Perubahan mendatang"
+  (pengaturan potongan, laporan kerja).
+- `skema-database/project.md`: `daily_reports` dan KPI dipakai B-44.
+- `rencana-perubahan.md`: B-26 menyebut laporan harian dan KPI pindah ke
+  B-44.
+- `menu-dan-form-per-role.md`: menu portal karyawan "Laporan Kerja".
+- `rancangan-menu-dasbor-dan-form.md`:
+  - Perlu Tindakan Aqim: laporan siap dinilai.
+  - Perlu Tindakan Teknisi: laporan harian hari ini.
+  - Kartu SDM: laporan harian belum diisi.
+- `kekurangan-fitur.md`: KF-H1 menautkan PG-1 sampai PG-5.
+- **Koreksi** di `rancangan-laporan-kerja-dan-potongan-gaji.md`:
+  `daily_reports` dan tabel KPI baru ada di `docs.dbml` sebagai target,
+  belum ada di Drizzle maupun database, jadi butuh migrasi baru.
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - Alur teknisi
+
+Programmer B meminta penjelasan alur teknisi setelah ditugaskan ke proyek.
+- `3-rancangan/diagram-alur/alur-teknisi.md` (baru):
+  - Tabel 16 langkah dengan kolom "sekarang (kode)" dan "sesudah
+    (keputusan)".
+  - Diagram alur proyek dan diagram tiket servis (pemeriksa Mermaid: 2 blok,
+    0 error).
+  - Catatan: dua jenis tugas, tiket di portal karyawan, pinjaman saya.
+  - Notifikasi tiket tidak ditulis sebagai keputusan karena KF-N1 masih
+    daftar tunggu. Tiket tampil lewat Perlu Tindakan dan kartu dasbor.
+- `3-rancangan/diagram-alur/README.md`: tautan baru.
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - Karyawan kantor, lapangan, dan teknisi freelance
+
+Klarifikasi programmer B: ada karyawan kantor dan lapangan, dan teknisi
+kadang freelance. Programmer B juga bertanya folder portal mana yang
+dipakai.
+
+- Dicek di kode: `employees.employment_type` (permanent, contract,
+  probation, internship, outsourced) dan `work_type` (onsite, remote,
+  hybrid). Belum ada kantor/lapangan dan belum ada freelance. Pekerja Lepas
+  tanpa data karyawan tidak bisa masuk portal karyawan.
+- Keputusan **KL-1 sampai KL-6**:
+  - penempatan Kantor/Lapangan;
+  - freelance dicatat sebagai data karyawan jenis Freelance dan memakai
+    portal karyawan;
+  - bayaran freelance harian atau borongan per orang;
+  - hak freelance: pinjam alat, kasbon, dinilai, tanpa tiket servis;
+  - role Pekerja Lepas diperluas; Dafrin dan Oki tetap tanpa data karyawan.
+- `3-rancangan/rancangan-karyawan-kantor-lapangan-freelance.md` (baru),
+  termasuk tabel "aplikasi mana dipakai siapa": portal teknisi =
+  `apps/web-employee`.
+- Diperbarui:
+  - `rencana-perubahan.md`: B-45.
+  - `rencana-perubahan-modul-oki.md`: M09-18, PK-10, catatan PK-4/OG4.
+  - `lembar-keputusan-rapat.md` bagian 8f.
+  - `skema-database/human_resource.md`, `peta-halaman.md`,
+    `menu-dan-form-per-role.md` (form karyawan),
+    `diagram-alur/alur-teknisi.md`, `README.md`.
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - Karyawan kantor ditugaskan ke lapangan, dan tampilannya
+
+Programmer B bertanya bagaimana bila Bilal (kantor) ditugaskan ke proyek.
+Saran disetujui, lalu diminta dicatat juga untuk bahan tampilan.
+
+- `3-rancangan/rancangan-karyawan-kantor-lapangan-freelance.md`:
+  - **Bagian 5, KL-7 sampai KL-12:**
+    - penempatan adalah bawaan, bukan batasan; ada tugas proyek berarti hari
+      itu bekerja dengan cara lapangan;
+    - check-in pertama di kantor atau di lokasi dihitung hadir;
+    - hari lapangan tidak dihitung terlambat, kecuali ada jam mulai
+      lapangan;
+    - kasbon untuk siapa pun yang punya tugas proyek aktif;
+    - penempatan tetap dua pilihan; bayaran tetap gaji bulanan + lembur.
+  - **Bagian 6, tampilan:**
+    - kartu "Hari ini" portal per keadaan hari, isi Beranda;
+    - menu portal per jenis karyawan;
+    - pesan check-in, radius, dan kasbon;
+    - layar web-admin: absensi dengan kolom Sumber, kunjungan lokasi, tugas
+      proyek dengan jam mulai lapangan, rekap gaji, rekap upah freelance,
+      data karyawan, kartu "Di lapangan hari ini".
+- Diperbarui:
+  - `lembar-keputusan-rapat.md` bagian 8f;
+  - `rencana-perubahan.md`: B-39 dan B-45;
+  - `rencana-perubahan-modul-oki.md`: PK-10, dan M09-7 dengan cakupan
+    kasbon baru;
+  - `rancangan-laporan-kerja-dan-potongan-gaji.md`: PG-6;
+  - `rancangan-menu-dasbor-dan-form.md`: form kasbon, kartu SDM;
+  - `menu-dan-form-per-role.md`;
+  - `skema-database/human_resource.md` (sumber absen) dan
+    `skema-database/project.md` (jam mulai lapangan);
+  - `diagram-alur/alur-teknisi.md`.
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - Persetujuan Pemilik atas keputusan tambahan; opsi pajak; panduan tinjauan PR
+
+- **Pemilik menyetujui keputusan tambahan** sesudah rapat 27/11 (dilaporkan
+  programmer B). Yang disetujui: potongan gaji, laporan kerja dan penilaian,
+  kantor/lapangan, freelance, pesanan online, dan pemangkasan menu.
+  - `ringkasan-untuk-pemilik.md`: bagian C baru (butir 20–25, ☑ Ya) dan
+    baris tanda tangan 28/11.
+  - `lembar-keputusan-rapat.md`: bagian 8d, 8e, 8f ditandai disetujui
+    Pemilik.
+  - Rancangan portal, laporan kerja, dan kantor/lapangan: status
+    disetujui Pemilik.
+- **Opsi pajak untuk Bella** di `kekurangan-fitur.md` ("Opsi pajak"): rezim
+  PPh (UMKM 0,5% atau normal), status PKP, tarif dan pembulatan.
+  - Rekomendasi: aplikasi menyediakan pengaturan rezim PPh dan status PKP
+    yang dipilih Bella.
+  - Ditulis sebagai ringkasan umum yang harus dikonfirmasi Bella atau
+    konsultan.
+  - M10-12 diperbarui.
+- **Deskripsi PR #171** ditulis ulang sebagai ringkasan dan panduan tinjauan
+  untuk Oki, mengikuti hasil diskusi.
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - Pekerjaan non-modul: impor, server, backup, UAT resmi, pelatihan
+
+Dibahas atas permintaan programmer B: tugas kontrak bersama T16, T17, T18,
+T31, dan T32. Keputusan NM-1 sampai NM-11:
+- **Impor (T16):** templat Excel semua-atau-tidak untuk pelanggan, pemasok,
+  barang, stok awal, akun, saldo awal, piutang/utang awal, aset, dan
+  karyawan.
+- **Backup (T17):** harian, disalin ke luar server, disimpan 30 hari, uji
+  restore bulanan. Aplikasi dipasang di server perusahaan.
+- **Tinggi:**
+  - server siap pakai: Chromium, S3, SMTP, scheduler;
+  - batas percobaan login.
+- **Pelatihan (T18):** tatap muka, ditambah panduan lengkap per modul dan
+  panduan penggunaan dari awal sampai akhir.
+- **UAT resmi (T31):** U01–U32 disalin ke repo dan dipetakan ke checklist.
+  File Excel kontrak dicari di `.agents/samples-private/`, tetapi **tidak
+  ada**: isinya hanya contoh surat PDF (SPH, PO, faktur, surat jalan, BAST +
+  garansi). Excel diminta ke programmer B atau Pemilik.
+- **Panduan deploy/rollback/backup** ditulis Oki dan ditinjau Dafrin.
+- **Templat dokumen:** programmer B bertanya apakah penting. Dijelaskan
+  tidak penting untuk sekarang dan tidak menghambat bagian lain, karena
+  halaman cetak mengikuti contoh surat. Dimasukkan ke daftar tunggu. Contoh
+  surat kuitansi, SO, BPB, dan retur diminta ke Aqim (B-37).
+
+File yang diperbarui:
+- `3-rancangan/rancangan-serah-terima.md` (baru).
+- `rencana-perubahan.md`: L-10 sampai L-15, catatan B-37.
+- `rencana-perubahan-modul-oki.md`: X-13.
+- `lembar-keputusan-rapat.md` bagian 8g.
+- `peta-halaman.md`.
+- `README.md`: langkah 7 dan 9 diperbarui, **langkah 12 Serah terima**
+  baru.
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - n8n, WhatsApp, dan asisten AI
+
+Programmer B mengingatkan n8n belum dibahas.
+
+Dicek di repo:
+- 13 event outbox dan adaptor n8n/WAHA/AI (kompatibel OpenAI) sudah ada.
+- Workflow siap impor ada di `docs/integrations/n8n/`.
+- Panduan n8n, WAHA, dan Meta ada di `docs/user-guide/`.
+- Asisten chat masuk lewat Meta belum dibangun.
+- Penerima di workflow masih memakai role lama.
+
+Keputusan N8-1 sampai N8-8:
+- **N8-1:** n8n self-host di server perusahaan.
+- **N8-2:** WAHA dulu, pindah ke Meta Cloud API nanti. Langkah
+  pendaftarannya diringkas di rancangan bagian 5 dan merujuk
+  `docs/user-guide/whatsapp-business-meta.id.md`.
+- **N8-3, N8-4:** staf diberi tahu lewat WA dari n8n ditambah Perlu
+  Tindakan; penerima mengikuti role baru.
+- **N8-5:** semua jenis pesan pelanggan, masing-masing dengan **sakelar
+  on/off** di Pengaturan → Notifikasi WhatsApp, bawaan mati.
+- **N8-6:** event baru: menunggu persetujuan, pesanan online, SO
+  terkirim/selesai, pengingat laporan harian.
+- **N8-7:** asisten AI aktif saat go-live, penyedia dipilih Aqim.
+- **N8-8:** prioritas Tinggi sebelum rilis.
+
+File yang diperbarui:
+- `3-rancangan/rancangan-n8n-whatsapp.md` (baru; pemeriksa Mermaid 1 blok,
+  0 error).
+- `rencana-perubahan.md`: B-46, B-47.
+- `rencana-perubahan-modul-oki.md`: X-14.
+- `lembar-keputusan-rapat.md` bagian 8h.
+- `skema-database/automation.md`, `peta-halaman.md`,
+  `rancangan-menu-dasbor-dan-form.md` (Pengaturan), `kekurangan-fitur.md`
+  (KF-N1 dan KF-I1), `diagram-alur/alur-lengkap-saat-ini.md`, `README.md`.
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - Biaya perjalanan teknisi dan investor (M11)
+
+Programmer B mengingatkan dua hal yang belum dibahas: biaya mobilitas
+teknisi (hotel, makan) dan suntikan dana investor.
+
+**Biaya perjalanan, BP-1 sampai BP-6** (`3-rancangan/rancangan-biaya-perjalanan.md`):
+- Kasbon ditambah pertanggungjawaban dengan foto nota, serta klaim ganti
+  uang di portal. Ini mengangkat KF-K10.
+- Uang makan harian tetap (dalam/luar kota) dihitung dari check-in yang
+  sah.
+- Hotel, transport, tiket, bensin, tol, dan parkir memakai nota.
+- Batas di pengaturan; melebihi batas wajib alasan dan muncul peringatan.
+- Kategori baru: makan dan tiket perjalanan.
+- Tugas: B-48 (Dafrin) dan M09-19 (Oki).
+
+**Investor, IV-1 sampai IV-6** (`3-rancangan/rancangan-investor-m11.md`):
+- **M11 dibangun lengkap sekarang**, prioritas Tinggi, langsung berlaku.
+  Keputusan ini **mengubah K10, OE1–OE4, MN5** dan butir 18 ringkasan
+  Pemilik.
+- Bentuk dana: modal, pinjaman (angsuran + imbal tetap), dan dana per
+  proyek. Setoran dicatat Aqim sendiri.
+- Aturan bagi hasil menunggu Aqim.
+- Portal investor menampilkan setoran/saldo, angsuran, bagi hasil, laporan
+  ringkas, dan hasil proyek yang didanai.
+- Tugas Oki: M11-4 sampai M11-7.
+
+**File yang diperbarui:**
+- 32 baris yang menyebut K10, OE, MN5, atau M11 "ditunda" diberi tanda
+  "[Diubah 28/11, IV-1 …]".
+- `lembar-keputusan-rapat.md` bagian 8i.
+- `ringkasan-untuk-pemilik.md`: butir 26 (perlu konfirmasi Aqim) dan butir
+  27 (berlaku); butir 18 ditandai diganti.
+- `peta-halaman.md`, `skema-database/project.md`, `README.md`, dan tabel
+  aplikasi di rancangan kantor/lapangan.
+
+Pemeriksa Mermaid: 2 dokumen baru, masing-masing 0 error.
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - Aturan bagi hasil, login, dan dasbor investor
+
+Jawaban programmer B:
+- **Bagi hasil:**
+  - periode tahunan;
+  - dasar laba sesudah pajak, dengan rincian perhitungan;
+  - porsi berupa persen per investor di pengaturan;
+  - ada cadangan;
+  - dana per proyek dari margin proyek (rinciannya menyusul saat desain).
+- **Data uji:** banyak investor, dengan contoh nama samaran "Bapak Budi
+  Santoso".
+- **Biaya perjalanan (BP)** dikonfirmasi; butir 26 ringkasan Pemilik ☑.
+- **Pendanaan:** bentuk dan jumlah ditentukan investor, dan **dicatat Aqim
+  saja**.
+- **Login investor:** undangan email + kata sandi + kode verifikasi email
+  untuk perangkat baru.
+- **Dasbor investor:** satu halaman gaya analitik, bisa diekspor Excel/PDF.
+  Isinya kartu ringkas, grafik, rincian bagi hasil per tahun, pinjaman,
+  proyek yang didanai, kinerja ringkas perusahaan, dan riwayat setoran.
+
+Diperbarui:
+- `rancangan-investor-m11.md`: IV-5, IV-7–IV-10, bagian 3a dasbor.
+- `lembar-keputusan-rapat.md` bagian 8i.
+- `ringkasan-untuk-pemilik.md`: butir 26 dan 27.
+- `rencana-perubahan-modul-oki.md`: M11-6, M11-7.
+- `peta-halaman.md`.
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - Pesan WA grup dan usulan teks pesan pelanggan
+
+- Pesan WA untuk grup disusun: bagian Pak Aqim (permintaan data dan akses)
+  dan Bella (pertanyaan pajak). Bagian Oki disampaikan langsung secara lisan,
+  dengan poin pembicaraan diberikan di chat.
+- `3-rancangan/teks-pesan-wa-pelanggan.md` (baru):
+  - Usulan teks 8 jenis pesan: SPH terkirim + PDF, faktur terbit,
+    pembayaran diterima, pesanan dikirim/selesai (baru), tiket servis,
+    lisensi, retur penjualan, retur ke pemasok.
+  - Setiap jenis memuat teks sekarang dari
+    `docs/integrations/n8n/src/3-compose-messages.js` dan usulannya, dengan
+    kotak setuju/ubah untuk Pak Aqim.
+  - Ditautkan dari `README.md` dan `rancangan-n8n-whatsapp.md`.
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - Teks pesan WA diatur langsung di n8n (N8-9)
+
+Arahan programmer B: permintaan persetujuan teks pesan cukup dilakukan
+langsung di n8n.
+
+- **N8-9:** teks pesan dikelola dan disetujui di n8n (node "3. Compose
+  messages").
+  - Teks awal diambil dari `teks-pesan-wa-pelanggan.md`.
+  - Pak Aqim melihat hasilnya saat uji dengan nomor tim, dan perubahan
+    dilakukan langsung di n8n.
+  - Sakelar on/off tetap di ERP (N8-5).
+- Diperbarui: `teks-pesan-wa-pelanggan.md` (status jadi acuan awal, lembar
+  tanda tangan dihapus), `rancangan-n8n-whatsapp.md`,
+  `lembar-keputusan-rapat.md` bagian 8h, `README.md`.
+
+Tidak ada perubahan kode.

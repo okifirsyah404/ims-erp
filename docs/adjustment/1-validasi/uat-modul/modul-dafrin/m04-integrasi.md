@@ -145,7 +145,7 @@ Login `admin_seed`, buka **Integrasi → Webhook (n8n)**. Lalu login `marketing_
 
 ### B1. Tambah FAQ, semua kolom (login `marketing_seed`)
 
-Menu **Integrasi → WhatsApp AI (otomatisasi)** → tombol **FAQ asisten** → tombol **Tambah FAQ**. Judul form "Tambah FAQ".
+Menu **Integrasi → WhatsApp AI (otomatisasi) → Basis Pengetahuan FAQ** → tombol **Tambah FAQ**. Judul form "Tambah FAQ".
 
 | Isian | Isi dengan |
 |---|---|
@@ -250,7 +250,7 @@ Baris FAQ 2 → ⋮ → **Hapus**.
 
 ### B6. Daftar chat, banner, dan saringan (login `admin`)
 
-Menu **Integrasi → WhatsApp AI (otomatisasi)**.
+Menu **Integrasi → WhatsApp AI (otomatisasi) → Percakapan**.
 **Harus terlihat:**
 
 - Judul "WhatsApp AI" dan tombol **FAQ asisten** di kanan atas.
@@ -336,7 +336,7 @@ Masih di chat B8:
 
 ### B10 🔧. Customer service dan Manajer penjualan (dulu B7)
 
-Login `customer_service_seed`, lalu `sales_manager_seed`. Buka **Integrasi → WhatsApp AI (otomatisasi)**.
+Login `customer_service_seed`, lalu `sales_manager_seed`. Buka **Integrasi → WhatsApp AI (otomatisasi) → Percakapan**.
 **Harus terlihat:**
 
 - Menu tampil; daftar chat terbaca *(diperbaiki 2026-11-24)*.
@@ -353,7 +353,7 @@ Login `customer_service_seed`, lalu `sales_manager_seed`. Buka **Integrasi → W
 
 ### B11. Pemasaran tidak bisa membalas chat (login `marketing_seed`)
 
-Buka **Integrasi → WhatsApp AI (otomatisasi)**.
+Buka **Integrasi → WhatsApp AI (otomatisasi) → Percakapan**.
 **Harus terlihat:**
 
 - Daftar chat dan banner terbaca; tombol **FAQ asisten** membuka FAQ dengan tombol **Tambah FAQ**.
