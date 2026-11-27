@@ -239,6 +239,35 @@ sequenceDiagram
     end
 ```
 
+### 5a. Penagihan per termin (dari SPH yang Deal)
+
+```mermaid
+sequenceDiagram
+    actor S as Penjualan - Bilal
+    actor F as Keuangan - Bella
+    actor C as Pelanggan
+    participant SO as Sales order
+    participant INV as Faktur
+
+    S->>S: SPH: jadwal termin, misal DP 30 persen, progres 40 persen, pelunasan 30 persen (total 100)
+    S->>SO: Buat SO: jadwal termin ikut tersalin dari SPH
+    F->>SO: Detail SO, kartu Penagihan: lihat sudah ditagih dan sisa
+    F->>INV: Buat faktur: pilih termin berikutnya (otomatis), sisa tagihan, atau persen/jumlah bebas
+    F->>INV: Terbitkan faktur (nomor tetap, piutang tercatat)
+    C->>F: bayar (transfer atau tautan gateway)
+    F->>INV: Catat pembayaran: Dibayar sebagian / Lunas, kuitansi
+    F->>INV: ulangi untuk termin berikutnya sampai seluruh SO tertagih
+```
+
+| Pertanyaan | Jawaban (kode saat ini) |
+|---|---|
+| Di mana jadwal termin dibuat? | Di **form SPH** (bagian Pembayaran: label + persen, total harus 100%) |
+| Di mana faktur per termin dibuat? | **Detail SO → kartu Penagihan → Buat faktur**. Kartu menampilkan termin berikutnya dari jadwal SPH, bagian yang sudah ditagih, dan sisa |
+| Di mana daftar tagihan per pelanggan? | **Penjualan → Faktur** (semua faktur), **Uang Muka** (faktur termin DP), **Kuitansi** (pembayaran), dan **Keuangan → Piutang** (umur piutang per pelanggan) |
+| Bagaimana pembayaran tercatat? | Detail faktur → **Catat pembayaran** (manual), atau tautan gateway dari faktur (kuitansi otomatis lewat webhook) |
+| Jenis termin | Uang muka (`down_payment`), angsuran/progres (`installment`), pelunasan (`settlement`) |
+| Yang belum ada | Faktur tidak dibuat otomatis per termin (selalu diklik Bella); jatuh tempo belum wajib (FU9); pengingat piutang jatuh tempo (KF-K7); pelanggan belum bisa melihat/membayar faktur di portal (B-38); kuitansi belum bisa dicetak (B-37); PPh 23 dipotong pelanggan (KF-K3) |
+
 **Retur penjualan:**
 
 ```mermaid
@@ -524,15 +553,15 @@ stateDiagram-v2
 | 3 | "Tandai terkirim" menahan PO dari gudang | 2 | B1 |
 | 4 | Pembayaran pemasok belum ada; PO kurang kirim tidak bisa ditutup | 2 | OB3, KF-B1 |
 | 5 | Bahan proyek tidak bisa dikeluarkan dari stok secara manual | 3, 7 | KF-G1 |
-| 6 | Checkout website dan pesanan/SPH/faktur di portal belum tersambung | 4 | T21/T25 (di luar langkah sekarang) |
+| 6 | Checkout website dan pesanan/SPH/faktur di portal belum tersambung | 4 | B-38 (T21, T25) |
 | 7 | SO tidak pernah Terkirim/Selesai | 5 | C1 |
 | 8 | Retur rusak masuk stok jual | 5 | B-13 |
-| 9 | Kuitansi, SO, BPB, retur tanpa cetak | 6 | daftar tunggu |
-| 10 | Teknisi tidak diberi notifikasi tugas proyek | 7 | RM3 (Perlu Tindakan) |
+| 9 | Kuitansi, SO, BPB, retur tanpa cetak | 6 | B-37 |
+| 10 | Teknisi tidak diberi notifikasi tugas proyek | 7 | B-35, RM3 |
 | 11 | Absen lokasi di luar radius tetap diterima | 7, 8 | OG1, PK-1 |
 | 12 | Biaya proyek tanpa PO proyek | 7 | KF-P7 |
 | 13 | Kasbon tidak terjangkau teknisi | 8 | OB13 |
 | 14 | Peminjaman: ID mentah, serah tanpa persetujuan, kondisi kembali | 9 | OD1, OD4, C13, OD7 |
 | 15 | Penyusutan manual vs otomatis bentrok | 9 | KF-A1 |
 | 16 | Garansi barang tanpa proyek; tiket berbayar tidak bisa ditagih | 10 | KF-P2, KF-P1 |
-| 17 | Konfirmasi tiket di portal belum tersambung | 10 | B-16 |
+| 17 | Konfirmasi tiket di portal belum tersambung | 10 | B-36 |

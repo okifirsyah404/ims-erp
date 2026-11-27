@@ -1549,3 +1549,25 @@ digambar.
 - `3-rancangan/diagram-alur/README.md` dan `README.md`: tautan baru.
 
 Tidak ada perubahan kode.
+
+## 2026-11-27 - Temuan alur lengkap masuk rencana; penagihan per termin
+
+Programmer B bertanya apakah semua temuan sudah masuk file untuk
+diperbaiki. Pemeriksaan ulang: 13 dari 17 titik putus sudah punya nomor
+keputusan/rencana. Empat belum, lalu ditambahkan:
+- `4-rencana-kerja/rencana-perubahan.md`:
+  - **B-35** notifikasi tugas proyek ke teknisi;
+  - **B-36** konfirmasi tiket di portal;
+  - **B-37** cetak/PDF SO, kuitansi, BPB, dan retur;
+  - **B-38** pesanan/SPH/faktur/bayar di portal dan checkout website
+    (T21, T25).
+- `peta-halaman.md`: bagian "Tambahan dari alur lengkap".
+- `alur-lengkap-saat-ini.md`: tabel titik putus memakai nomor baru, dan
+  bagian **5a Penagihan per termin** baru (diagram + tanya-jawab).
+  Penjelasannya: jadwal termin dibuat di SPH, tersalin ke SO, lalu faktur
+  dibuat dari kartu Penagihan di detail SO.
+- Dicek di kode: `quotation.service.ts:264`, `sales-order.service.ts:161`,
+  `invoice-billing.service.ts:147`.
+- Pemeriksa Mermaid: 20 blok, 0 error.
+
+Tidak ada perubahan kode.
