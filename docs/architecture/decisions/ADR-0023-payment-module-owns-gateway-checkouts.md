@@ -10,7 +10,7 @@ ADR-0021 put online invoice checkout in the Sales module:
 `sales.gateway_payments`, the `GatewayPaymentService`, the provider adapters
 and the webhook controller. That was defensible while the gateway only served
 one use case (pay a sales invoice), but it left the ERP without a `payment`
-module even though `docs/architecture/modules/payment.md` and the M09 plan
+module even though `docs/architecture/modules/payment.md` (removed 2026-11-28, see git history) and the M09 plan
 describe one, and it put a provider integration (Xendit / SingaPay secrets,
 signature verification, webhook replay handling) inside Sales' schema and DI
 container.

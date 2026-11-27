@@ -242,7 +242,7 @@ sequenceDiagram
   programmer B 27/11); diagram status PO ikut berubah). Programmer B.
 - Hak `purchase_order:cancel` untuk Pembelian (draf milik sendiri) dan Manajer
   Operasional; hak baca PO dan SO untuk Gudang (`erp-permissions.ts`, Oki, lalu
-  `bun docs/gen-role-permission.ts`).
+  `bun docs/architecture/gen-role-permission.ts`).
 - Halaman Produk/Gudang memakai hak role, bukan `appAdminOnly` (guard Oki,
   halaman programmer B, X-11).
 

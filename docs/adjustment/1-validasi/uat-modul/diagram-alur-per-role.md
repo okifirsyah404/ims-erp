@@ -9,7 +9,7 @@ dengan dukungan Mermaid).
 
 Sumber: hak akses di `packages/common/src/authorization/erp-permissions.ts`
 dan tombol di web-admin, dibaca 2026-11-24. Versi ini menggantikan
-`docs/user-guide/diagrams.md` (2026-11-06, sebagian usang) sampai
+`docs/user-guide/diagrams.md` (2026-11-06; dihapus 2026-11-28, ada di riwayat git) sampai
 programmer kedua setuju memindahkannya ke folder bersama.
 
 **Penulis:** disusun oleh Claude (asisten AI) atas permintaan programmer B

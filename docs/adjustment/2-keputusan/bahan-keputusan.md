@@ -64,7 +64,7 @@ Bukan keputusan bisnis. Butuh persetujuan Oki karena dokumennya miliknya.
 | No | Dokumen | Masalah |
 |---|---|---|
 | E1 | ADR-0024 | Status masih "proposed", padahal sudah dijalankan |
-| E2 | `architecture.md` | Masih 18 schema; seharusnya 20 (ADR-0026) |
+| E2 | `architecture.md` | Masih 18 schema; seharusnya 20 (ADR-0026). **Dicek 2026-11-28: sudah 20**, dan angkanya sekarang menunjuk ke `docs/database/module-ownership.md` agar tidak usang lagi saat schema investor/website ditambah |
 | E3 | `security-and-access.md` | Masih 19 role organisasi; seharusnya 17 (ADR-0018) |
 | E4 | `security-and-access.md` | Menyebut batas nominal persetujuan SPH (`approval_rule`) yang tidak ada di kode |
 | E5 | ADR-0006 butir 6 | Mengikuti keputusan A1 (A1 = (b), jawaban programmer B 27/11) |

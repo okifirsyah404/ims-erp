@@ -2,6 +2,7 @@
 
 - **Status:** proposed (2026-11-12). Records the M04 owner decisions of
   2026-11-07; becomes accepted with the owner's review of the M04 PR.
+- **Status update 2026-11-28 (T-6, recorded by programmer B, reviewed by Oki):** **accepted** (decision T-6; outbox and WAHA are implemented). Current decisions: `docs/adjustment/3-rancangan/rancangan-n8n-whatsapp.md`.
 - **Context:** M04 needs (1) business events (new lead, invoice issued,
   payment received, ticket updated, license ending) to reach WhatsApp/email
   notifications, and (2) a WhatsApp assistant that answers customers from

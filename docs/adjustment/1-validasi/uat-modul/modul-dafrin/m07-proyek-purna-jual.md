@@ -967,7 +967,7 @@ Langkah baru: A2, A4, A5, A7, A10, A11, B3, B4, B7, C3, C4, C6, D3.
 3. **A12 (dulu A6): teknisi bisa mengubah sebagian.** Teknisi boleh mengubah status tugas miliknya dan mengunggah bukti (`apps/web-admin/src/components/projects/project-tasks-card.tsx:118`, `project-evidence-card.tsx:31`), tapi tidak bisa mengubah data proyek.
 4. **A12 butuh tugas untuk teknisi**; A6 dan A7 sekarang menugaskan teknisi.
 5. **C9 (dulu C6): tiket orang lain tidak terlihat sama sekali** (`apps/backend/src/app/ticket/services/ticket.service.ts:105,121`).
-6. **C12 (dulu C9): Admin kemungkinan tidak bisa membuat tiket.** Form memuat pelanggan dari `/customers/people` (butuh `customer:read`) dan proyek dari `/projects` (butuh `project:read`); Admin tidak punya keduanya (`apps/web-admin/src/routes/_authed/tickets/new.tsx:29-30`, `docs/role-permission.md:682,1167`). Admin masih bisa Mulai kerjakan dan Buka lagi (`$ticketId.tsx:89,156,161`).
+6. **C12 (dulu C9): Admin kemungkinan tidak bisa membuat tiket.** Form memuat pelanggan dari `/customers/people` (butuh `customer:read`) dan proyek dari `/projects` (butuh `project:read`); Admin tidak punya keduanya (`apps/web-admin/src/routes/_authed/tickets/new.tsx:29-30`, `docs/architecture/role-permission.md:682,1167`). Admin masih bisa Mulai kerjakan dan Buka lagi (`$ticketId.tsx:89,156,161`).
 7. **B11 butuh sales order kedua**; sekarang ada di Prasyarat.
 
 **Temuan baru:**

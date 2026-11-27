@@ -8,8 +8,13 @@ Pemilik (Aqim). Ditulis dalam bahasa Indonesia.
 disetujui (arahan programmer B, 2026-11-26). Catatan dinyatakan beres setelah
 langkah 6 selesai.
 
-**Posisi sekarang (2026-11-27):** langkah 1–5 selesai. Langkah 6 (tinjauan
-Oki dan merge PR #171) sedang berjalan. Berikutnya langkah 7.
+**Posisi sekarang (2026-11-28):** langkah 1–6 selesai (PR #171 di-merge).
+**Catatan dinyatakan beres oleh programmer B (28/11)**, jadi kode boleh
+dimulai. Rencana rinci langkah 7:
+[`4-rencana-kerja/rencana-langkah-7.md`](4-rencana-kerja/rencana-langkah-7.md).
+**Semua pengerjaan kode mengikuti
+[`5-pengerjaan/README.md`](5-pengerjaan/README.md)** (aturan, peta kode, UAT
+pengerjaan, trik prompt AI).
 
 ---
 
@@ -25,8 +30,8 @@ dan status. Status: ✅ selesai · 🔄 berjalan · ⏳ belum.
 | **3. Keputusan** | Semua pertanyaan dijawab dan disetujui Pemilik | [`2-keputusan/ringkasan-untuk-pemilik.md`](2-keputusan/ringkasan-untuk-pemilik.md) (1 halaman), [`2-keputusan/lembar-keputusan-rapat.md`](2-keputusan/lembar-keputusan-rapat.md) (lengkap, termasuk T-1–T-7), [`2-keputusan/bahan-keputusan.md`](2-keputusan/bahan-keputusan.md), [`2-keputusan/bahan-keputusan-modul-oki.md`](2-keputusan/bahan-keputusan-modul-oki.md) | Pemilik, Oki, Dafrin | ✅ rapat 27/11 |
 | **4. Rancangan** | Bentuk sesudah perbaikan: arsitektur, skema, lintas modul, alur, menu, dasbor, form, kekurangan fitur | Folder [`3-rancangan/`](#3-rancangan) | Dafrin (Oki meninjau) | ✅ 27/11 |
 | **5. Rencana kerja** | Daftar tugas per programmer dan peta halaman yang diperbaiki | [`4-rencana-kerja/rencana-perubahan.md`](4-rencana-kerja/rencana-perubahan.md) (Dafrin), [`4-rencana-kerja/rencana-perubahan-modul-oki.md`](4-rencana-kerja/rencana-perubahan-modul-oki.md) (Oki), [`4-rencana-kerja/peta-halaman.md`](4-rencana-kerja/peta-halaman.md) | Dafrin, Oki | ✅ 27/11 |
-| **6. Tinjauan dan merge** | Oki meninjau semua catatan, terutama bagian wilayahnya, lalu PR #171 di-merge ke `main`. Dafrin menyatakan catatan beres | PR #171 | Oki, Dafrin | 🔄 |
-| **7. Fondasi kode** | Dasar yang dipakai semua perbaikan: (a) audit di dalam transaksi (M12-1, OA5–OA7); (b) ubah ADR-0006; (c) aturan persetujuan sendiri K1 (B-1, X-2); (d) hak role baru (M12-5); (e) penomoran tanpa celah dan kode pemasok pendek (L-2, B-27); (f) dasar form: TanStack Form + zod, pesan per isian, konfirmasi baku (TF-1–TF-3); (g) server siap pakai dan batas percobaan login (L-10, L-11) | Rencana kerja bagian Tinggi; [`3-rancangan/rancangan-menu-dasbor-dan-form.md`](3-rancangan/rancangan-menu-dasbor-dan-form.md) bagian 6 | (a)(b)(d) Oki · (c) Dafrin · (e)(f) bersama | ⏳ |
+| **6. Tinjauan dan merge** | Oki meninjau semua catatan, terutama bagian wilayahnya, lalu PR #171 di-merge ke `main`. Dafrin menyatakan catatan beres | PR #171 | Oki, Dafrin | ✅ PR #171 di-merge 28/11 |
+| **7. Fondasi kode** | Dasar yang dipakai semua perbaikan: (a) audit di dalam transaksi (M12-1, OA5–OA7); (b) ubah ADR-0006; (c) aturan persetujuan sendiri K1 (B-1, X-2); (d) hak role baru (M12-5); (e) penomoran tanpa celah dan kode pemasok pendek (L-2, B-27); (f) dasar form: TanStack Form + zod, pesan per isian, konfirmasi baku (TF-1–TF-3); (g) server siap pakai dan batas percobaan login (L-10, L-11) | Rencana kerja bagian Tinggi; [`3-rancangan/rancangan-menu-dasbor-dan-form.md`](3-rancangan/rancangan-menu-dasbor-dan-form.md) bagian 6 | (a)(b)(d) Oki · (c) Dafrin · (e)(f) bersama | 🔄 rencana rinci: [`4-rencana-kerja/rencana-langkah-7.md`](4-rencana-kerja/rencana-langkah-7.md) |
 | **8. Perbaikan prioritas tinggi** | Semua baris **Tinggi** di peta halaman, termasuk 10 kekurangan fitur terpenting (B-29–B-33, M09-15–17, M10-11–13, M06-14) kekurangan fitur bagian kedua (B-39–B-42, laporan kerja B-44, kantor/lapangan/freelance B-45, n8n dan WhatsApp B-46, biaya perjalanan B-48 + M09-19, investor M11-4–M11-7, M12-14–M12-16, PK-9), dan fitur utama dari alur lengkap (B-35–B-38: notifikasi tugas proyek, konfirmasi tiket portal, cetak SO/kuitansi/BPB/retur, portal pesanan/SPH/faktur/bayar) | [`4-rencana-kerja/peta-halaman.md`](4-rencana-kerja/peta-halaman.md) | Dafrin, Oki | ⏳ |
 | **9. Data dan UAT ulang** | Aqim mengatur role per orang (K2) dan kode pemasok (K6); Bella mengisi tarif pajak (T-5) dan memastikan rezim pajak (KF-T2); UAT diulang dari M05 A1 di database baru; impor data awal dengan templat Excel (L-12); skenario resmi U01–U32 dipetakan (L-14); uji restore pertama (L-13) | [`1-validasi/uat-modul/`](1-validasi/uat-modul/README.md) | Aqim, Bella, Dafrin, Oki | ⏳ |
 | **10. Tampilan** | Menu per pekerjaan dengan tab, Perlu Tindakan, dasbor per role, menu harian Aqim, Ctrl+K, favorit, lalu 13 form utama dan form lain bertahap | [`3-rancangan/rancangan-menu-dasbor-dan-form.md`](3-rancangan/rancangan-menu-dasbor-dan-form.md) | Bersama | ⏳ |
@@ -75,6 +80,7 @@ tulis entri di [`catatan-progres.md`](catatan-progres.md).
 | [`rancangan-biaya-perjalanan.md`](3-rancangan/rancangan-biaya-perjalanan.md) | Biaya perjalanan teknisi: kasbon, nota, klaim, uang makan harian, batas, kategori (BP-1–BP-6) |
 | [`rancangan-investor-m11.md`](3-rancangan/rancangan-investor-m11.md) | Investor dan suntikan dana: modal, pinjaman, dana per proyek, bagi hasil, portal investor (IV-1–IV-6; mengubah K10) |
 | [`teks-pesan-wa-pelanggan.md`](3-rancangan/teks-pesan-wa-pelanggan.md) | Teks awal pesan WA ke pelanggan dan pemasok (8 jenis) untuk dimasukkan ke n8n; disetujui saat uji di n8n (N8-9) |
+| [`rancangan-data-seeder.md`](3-rancangan/rancangan-data-seeder.md) | Data uji seeder: akun per orang (K2), data per alur dan semua status, prinsip deterministik/idempoten (L-16) |
 | [`kekurangan-fitur.md`](3-rancangan/kekurangan-fitur.md) | Fitur yang belum ada atau setengah jadi di Proyek, Gudang, Pengadaan, Aset, Keuangan, Pajak |
 
 ### 4-rencana-kerja
@@ -83,7 +89,18 @@ tulis entri di [`catatan-progres.md`](catatan-progres.md).
 |---|---|
 | [`rencana-perubahan.md`](4-rencana-kerja/rencana-perubahan.md) | Tugas programmer B (B-1–B-34), keputusan bersama K1–K13, lintas modul |
 | [`rencana-perubahan-modul-oki.md`](4-rencana-kerja/rencana-perubahan-modul-oki.md) | Tugas Oki per modul (M01, M06, M09, M10, M11, M12, portal karyawan) |
+| [`rencana-langkah-7.md`](4-rencana-kerja/rencana-langkah-7.md) | Rencana rinci langkah 7: paket P7-1 sampai P7-7, pemegang, ketergantungan, aturan PR, kriteria selesai |
 | [`peta-halaman.md`](4-rencana-kerja/peta-halaman.md) | Halaman yang diperbaiki, prioritas, dan pemegangnya |
+
+### 5-pengerjaan
+
+| File | Isi |
+|---|---|
+| [`README.md`](5-pengerjaan/README.md) | **Aturan pengerjaan kode**: alur satu tugas, aturan menulis kode, checklist sebelum push, templat PR |
+| [`peta-kode-dafrin.md`](5-pengerjaan/peta-kode-dafrin.md) | Per tugas programmer B: seharusnya, sekarang, file yang diubah, skema, test, UAT |
+| [`peta-kode-oki.md`](5-pengerjaan/peta-kode-oki.md) | Sama, untuk tugas Oki |
+| [`uat-pengerjaan.md`](5-pengerjaan/uat-pengerjaan.md) | UAT setelah pengerjaan: Valid / Tidak valid, daftar perbaikan, syarat push |
+| [`prompt-ai.md`](5-pengerjaan/prompt-ai.md) | Trik prompt supaya AI langsung ke file yang dituju dan hemat token |
 
 [`catatan-progres.md`](catatan-progres.md): log kerja per tanggal.
 

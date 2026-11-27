@@ -3,6 +3,7 @@
 - **Status:** proposed (2026-11-04). Not accepted until the owner signs the
   v5.1 change-control note. Amends ADR-0008 §1 (warehouse scope) and §3
   (warehouse access).
+- **Status update 2026-11-28 (T-6, recorded by programmer B, reviewed by Oki):** **not accepted**. Organizations are removed in stages (K12); warehouse-organization links disappear in stage 3. Replaced by the K12 ADR.
 - **Context:** The v5.1 plan (`docs/plan/erp-plan-en.md`) fixes one business
   entity and one warehouse. The build shipped multiple internal organizations
   (ADR-0007) and multiple warehouses with storages (ERP-0027). Warehouses were

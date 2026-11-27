@@ -4,6 +4,7 @@
   that record the organization which issued them. Does not supersede ADR-0007
   or ADR-0008. Amended 2026-11-08 by ADR-0014: the `organization_id`
   reference is nullable (was `NOT NULL`).
+- **Status update 2026-11-28 (T-6, recorded by programmer B, reviewed by Oki):** to be **superseded** by the K12 ADR. **Duplicate number:** two files carry ADR-0012; this one is in force, `ADR-0012-single-organization.md` is superseded.
 - **Context:** ADR-0007 allows several internal organizations inside one
   company (for example a Jakarta HQ and a Bali branch) and keeps master data
   company-wide. It does not say which transaction documents carry the

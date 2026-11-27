@@ -415,7 +415,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 ## Contract obligations per target
 
 Each target below names the exported service of the owning module
-(`docs/plan/database-refactor/02-shared-patterns.md` §4) that the referring
+(`docs/plan/database-refactor/02-shared-patterns.md` §4 (removed 2026-11-28, see git history)) that the referring
 module must call before writing a row that carries the reference. Concrete
 method names live in that module's `contracts/` file; only the methods the plan
 fixes by name are repeated here.

@@ -3,7 +3,7 @@
 Disusun 2026-11-28. Kembali ke [catatan penyesuaian](../README.md).
 
 **Status: keputusan programmer B lewat tanya-jawab 2026-11-28.** Belum ada
-kode. Mencakup tugas kontrak bersama A + B (`docs/plan/erp-plan-id.md`):
+kode. Mencakup tugas kontrak bersama A + B (`docs/plan/kontrak/erp-plan-id.md`):
 T16 impor terbatas dan UAT, T17 deployment dan uji backup/restore, T18
 pilot pelatihan dan serah terima, T31 integrasi UAT, T32 rilis terpadu dan
 serah terima.

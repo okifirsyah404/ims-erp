@@ -368,6 +368,7 @@ Rincian di `3-rancangan/rancangan-n8n-whatsapp.md`.
 | N8-6 | Event baru: menunggu persetujuan, pesanan online, SO terkirim/selesai, pengingat laporan harian |
 | N8-7 | Asisten AI aktif saat go-live, penyedia dipilih Aqim |
 | N8-8 | Prioritas Tinggi sebelum rilis |
+| N8-10 | Nama perusahaan di pesan WA: CV Inti Multi Solusi |
 | N8-9 | Teks pesan dikelola dan disetujui langsung di n8n saat uji (teks awal di `teks-pesan-wa-pelanggan.md`); sakelar on/off tetap di ERP |
 
 ### 8i. Biaya perjalanan teknisi dan investor (tanya-jawab programmer B 28/11)

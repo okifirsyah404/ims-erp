@@ -1,7 +1,8 @@
 # ADR-0024: Database normalization and baseline v2
 
-Status: **proposed** (2026-11-19). Plan: `docs/plan/database-refactor/`
+Status: **proposed** (2026-11-19). Plan: `docs/plan/database-refactor/` (removed 2026-11-28, see git history)
 (ERP-0070..ERP-0089).
+**Status update 2026-11-28 (T-6, recorded by programmer B, reviewed by Oki):** **accepted** (executed: 20 schemas, per-schema migration baseline).
 
 ## Context
 

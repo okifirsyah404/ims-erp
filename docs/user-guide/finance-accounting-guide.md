@@ -5,8 +5,9 @@ Versi: 2026-11-27 · berlaku untuk UI web admin setelah pembaruan Finance & Tax
 tampilan diubah ke English, nama field mengikuti terjemahan bahasa Inggris.
 
 Panduan ini menjelaskan **apa yang harus dilakukan akuntan / staf keuangan**
-di menu **Keuangan** dan **Pajak**, bukan cara memprogram sistem. Untuk alur
-penjualan, pengadaan, gudang, dan proyek, lihat [id.md](id.md).
+di menu **Keuangan** dan **Pajak**, bukan cara memprogram sistem. Panduan alur
+penjualan, pengadaan, gudang, dan proyek ditulis di langkah 12
+(`docs/adjustment/README.md`); panduan lama `id.md` dihapus 2026-11-28.
 
 ## Daftar isi
 

@@ -5,6 +5,7 @@
   internal organizations are allowed. Its creation/restore 409 gate
   (`SingleOrganizationError`, `organization.singleCompany`) has been removed;
   the seeder still seeds only the first organization.
+- **Status update 2026-11-28 (T-6, recorded by programmer B, reviewed by Oki):** **duplicate number, superseded.** Do not use as a reference; `ADR-0012-multi-organization.md` is in force, then the K12 ADR.
 - **Context:** ADR-0007 allowed several internal organizations (departments)
   inside the one company, and ADR-0010 linked warehouses to them. The owner
   confirmed the business is one company without separate departments, and

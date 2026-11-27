@@ -2,6 +2,7 @@
 
 Date: 2026-10-29
 Status: accepted
+**Status update 2026-11-28 (T-6, recorded by programmer B, reviewed by Oki):** item 6 **will be amended** in task P7-2 (decision K1: the owner may approve their own documents, recorded in the audit log; manual journals still need a second person).
 
 ## Context
 

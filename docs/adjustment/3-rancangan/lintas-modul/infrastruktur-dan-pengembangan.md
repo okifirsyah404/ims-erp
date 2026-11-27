@@ -96,8 +96,8 @@ dan build dijalankan manual dan lulus (`../catatan-progres.md`).
 
 - Setiap perubahan kode memperbarui `docs/plan/progress.md` (entri bertanggal,
   perintah, hasil) dan `docs/plan/backlog.md` (status `ERP-*`), serta
-  `docs/plan/plans/features.md` bila status berubah.
-- Perubahan route/guard/hak: jalankan `bun docs/gen-role-permission.ts`.
+  `docs/plan/features.md` bila status berubah.
+- Perubahan route/guard/hak: jalankan `bun docs/architecture/gen-role-permission.ts`.
 - Perubahan struktur tabel: `docs/database/` ikut di perubahan yang sama.
 - Teks web-admin wajib ada di `en` dan `id` (`packages/locales`).
 - Arahan programmer B: catatan konsep saat ini ditulis di `docs/adjustment/`

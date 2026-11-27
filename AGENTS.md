@@ -5,29 +5,44 @@ maintenance, projects, subscriptions). Monorepo: Bun workspaces + Turborepo,
 Elysia backend (`apps/backend`), React/TanStack web admin, Better Auth,
 Drizzle ORM (Relational v2) on PostgreSQL.
 
-This file is short on purpose. Detailed, evidence-based answers live in
-`docs/architecture/` (tech) and `docs/plan/` (planning/status). Read in this order:
+This file is short on purpose. **Working scope: `docs/adjustment/`** (Indonesian;
+decisions approved by the owner, designs, step plan, implementation rules).
+Read in this order:
 
-1. `docs/architecture/README.md` — navigation and resume reading order (index)
-2. `docs/architecture/project-audit.md` — what actually exists and what works
-3. `docs/architecture/stack-compatibility.md` — exact resolved versions and risks
-4. `docs/plan/progress.md` — where work stopped; the next executable task
-5. `docs/architecture/architecture.md` — boundaries you must not violate
-6. `docs/architecture/runbook.md` — commands before you invent any
+1. `docs/adjustment/README.md` — step guide with statuses (where we are)
+2. `docs/adjustment/5-pengerjaan/README.md` — implementation rules; then only
+   the task entry in `peta-kode-dafrin.md` / `peta-kode-oki.md`
+3. `docs/architecture/runbook.md` — commands before you invent any
+4. `docs/plan/progress.md` — official log and next executable task
 
-Read by need: `docs/architecture/domain-map.md` (business ownership),
-`docs/architecture/data-model.md` (schema), `docs/architecture/api-conventions.md`,
-`docs/architecture/security-and-access.md`, `docs/architecture/testing-strategy.md`,
-`docs/plan/backlog.md` + `docs/plan/phases/` (planning),
-`docs/architecture/modules/` (per-module boundaries and
-state), `docs/architecture/decisions/` (ADR history),
-`.agents/docs/skills.md` (skill inventory).
+**Source of truth, in this order:** (1) `docs/adjustment/` for the *target*
+behaviour (roles, flows, forms, menus, priorities); (2) the code for the
+*current* behaviour; (3) `docs/database/docs.dbml` for persistence. **Do not
+take roles, flows, endpoints or request/response shapes from
+`docs/architecture/` (including `role-permission.md`), `docs/integrations/` or
+`docs/plan/kontrak/modul/`:** they are background, partly stale (e.g. 17
+roles, organizations, `security-and-access.md` 19 roles), and are corrected only
+through their planned tasks. When they disagree with `docs/adjustment/` or the
+code, ignore them and verify in code. Read them only when a task entry points
+to them: `docs/architecture/architecture.md` (boundaries),
+`stack-compatibility.md` (versions), `api-conventions.md`,
+`testing-strategy.md`, `docs/architecture/decisions/` (ADR history),
+`docs/plan/backlog.md` (ERP ledger), `.agents/docs/skills.md` (skills).
 
 ## Starting work
 
-- Base every session on `progress.md`'s **"Next executable task"**, claim it
-  against `backlog.md` (stable `ERP-*` IDs), and respect the phase entry/exit
-  criteria in `docs/plan/phases/`. Do not jump forward over failing gates.
+- **Current program: `docs/adjustment/`.** Start every session at
+  `docs/adjustment/README.md` (step guide with statuses) and the plan of the
+  current step (e.g. `docs/adjustment/4-rencana-kerja/rencana-langkah-7.md`).
+  Claim the task against `backlog.md` (stable `ERP-*` IDs) and respect the
+  step order and dependencies. Do not jump forward over failing gates.
+- **Every code task follows `docs/adjustment/5-pengerjaan/README.md`:** open
+  only the files listed in the task entry of `peta-kode-dafrin.md` /
+  `peta-kode-oki.md` (each has a copy-paste AI prompt), write the work UAT
+  file in `docs/adjustment/5-pengerjaan/uat/`, log every failed step as
+  `<task>-F<n>`, and push only when all steps are Valid.
+- `docs/adjustment/` is written in Indonesian by owner decision (exception to
+  the English-docs rule below); code, identifiers and this file stay English.
 - Keep work small and verticals complete: a slice isn't done until backend,
   UI, migration, seed, and tests all reflect the same reality.
 
@@ -79,7 +94,7 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
   contract methods are in `docs/database/module-ownership.md`. Removed modules
   (`accounting`, `aftersales`, `assets`, `catalog`, `code-number`, `crm`,
   `licensing`, `portal`) and the schemas `organization`, `payroll`, `approval`,
-  `budgeting`, `investor`, `commerce` must not be reintroduced; pre-refactor docs that mention them are
+  `budgeting`, `investor`, `commerce` must not be reintroduced; **pending exceptions:** decision IV-1 (M11 investor module, ADR in task M11-4) reintroduces an investor schema and decision PP-8 (B-38) adds a `website` schema, each only through its ADR; pre-refactor docs that mention them are
   historical and say so.
 - **Cross-module references are nullable.** A column that points at another
   module's table (including `auth`) is a plain nullable id column - no
@@ -125,7 +140,7 @@ accepted / blocked`. Automated tests passing is not business acceptance.
   with exact commands and outcomes) and `docs/plan/backlog.md` (claimed
   `ERP-*` status moved with evidence) in the same change — never in a
   follow-up. Statuses live in `progress.md`, `backlog.md`, and
-  `docs/plan/plans/features.md` (feature rollup grouped todo / in-progress /
+  `docs/plan/features.md` (feature rollup grouped todo / in-progress /
   done); `features.md` moves with any `backlog.md` status change, and
   `progress.md`'s "next task" is refreshed when you stop working.
 
@@ -349,16 +364,17 @@ call sites.
 
 1. Code follows the boundaries above; TypeScript type checks pass.
 2. `bun run lint` and workspace tests pass, or remaining failures are
-   documented as pre-existing in `project-audit.md` with causes.
+   documented as pre-existing in `docs/plan/progress.md` (known failures, with causes).
 3. New schema changes have a generated, human-inspected migration applied
    to a local database you can drop and recreate.
 4. Unit + integration coverage for authorization, ownership, and validation;
    any slice touching DB shape seeds idempotently (verify by running twice).
 5. `progress.md` updated with exact commands and results; `backlog.md`
    statuses moved with evidence (and only to `accepted` on real reviewer
-   approval); `docs/plan/plans/features.md` updated in the same change.
-6. The phase exit criteria in `docs/plan/phases/<current-phase>.md` that
-   apply to the task are all met, or the task is left explicitly partial.
+   approval); `docs/plan/features.md` updated in the same change.
+6. The task's work UAT (`docs/adjustment/5-pengerjaan/uat/<task>.md`) is all
+   Valid with no open fix, and the step's exit criteria in `docs/adjustment/`
+   that apply to the task are met, or the task is left explicitly partial.
 7. No secrets printed or committed.
 8. The **Feature module lifecycle** gates were respected: `docs/database/` was
    read and the `grill-me` pass (or its documented manual fallback) completed
@@ -376,8 +392,8 @@ duplicates. Keep documents short and synchronized with verified code. Meaningful
 architectural choices get a short ADR in `docs/architecture/decisions/`. When a doc
 and the code disagree, fix whichever is wrong and note it in `progress.md`.
 
-`docs/role-permission.md` lists roles, grants and every backend route with
-its guard; its second half is generated. Re-run `bun docs/gen-role-permission.ts`
+`docs/architecture/role-permission.md` lists roles, grants and every backend route with
+its guard; its second half is generated. Re-run `bun docs/architecture/gen-role-permission.ts`
 in the same change as any route, guard option or role-grant change.
 
 `docs/database/` is the persistence contract and is updated in the **same**

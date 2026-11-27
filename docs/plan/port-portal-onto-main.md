@@ -120,7 +120,7 @@ customer-facing prefix), `aftersales.*` → `ticket.*`, `sales.*` → `sale.*`.
 | website forms + catalog | already on main: `/projects/public/v1/{rfq,contact,demo}`, `/products/public/v1/catalog/*` (served by the `product` module since ADR-0026) |
 | `/service-tickets/*`, `/delivery-notes/*` (staff) | `/tickets/*`, `/sales/delivery-notes/*` |
 
-The full branch route list is in `docs/architecture/modules/customer-portal.md`
+The full branch route list is in `docs/architecture/modules/customer-portal.md` (removed 2026-11-28, see git history)
 on the branch.
 
 ## 6. Port order

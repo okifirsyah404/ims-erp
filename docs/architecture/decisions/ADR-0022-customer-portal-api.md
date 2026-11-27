@@ -6,6 +6,7 @@
   (investor and customer app roles) and ADR-0019 (migration baseline) in
   parallel (PR #101); then from 0020, because the M04 outbox record took
   ADR-0020 when it was merged. ADR-0021 is the payment gateway (PR #99).
+- **Status update 2026-11-28 (T-6, recorded by programmer B, reviewed by Oki):** **accepted**; portal ordering, accounts and payment updated by decisions PP-1..PP-8 (`docs/adjustment/3-rancangan/rancangan-portal-pesanan.md`).
 - **Context:** M07 T26 (project status and own tickets) and the account part
   of M12 T25 need customers to sign in. The portal UI already exists in the
   website app (`apps/web-customer-portal`, Astro SSR; moved into this monorepo 2026-11-15): its server
@@ -21,7 +22,7 @@
      unused.
   2. **One login per person, with a role; individuals sign up, businesses
      are invited** (owner decisions D1/D2 of 2026-11-14, taken after the
-     website gap analysis `docs/plan/plans/website-integration.md`; the first
+     website gap analysis `docs/plan/plans/website-integration.md` (removed 2026-11-28, see git history); the first
      choice the same morning — one login per customer, invitation only —
      would have blocked online retail and the website's member screens). The
      identity points at the CRM contact (`contact_id`, unique per contact)
@@ -70,7 +71,7 @@
      module in `docs.dbml` stays target-only.
 - **Consequences:** the portal works without any Better Auth plugin change;
   the website team configures `PortalRoutes` from
-  `docs/architecture/modules/customer-portal.md`. Roles gate only member
+  `docs/architecture/modules/customer-portal.md` (removed 2026-11-28, see git history). Roles gate only member
   management today (owner); approver/finance gates arrive with quotations
   and invoices. A pending sign-up leaves an unverified user without an
   identity (it can never sign in). Ticket photos/attachments, orders,

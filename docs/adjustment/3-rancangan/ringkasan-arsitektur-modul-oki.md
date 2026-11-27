@@ -19,7 +19,7 @@ Ini ringkasan, bukan pengganti: bila ragu, dokumen aslinya yang berlaku.
 | ADR-0024 Normalisasi database v2 | **proposed** 2026-11-19, tapi sudah dijalankan |
 | ADR-0029 Login hanya lewat undangan | **proposed** 2026-11-21, tapi sudah dijalankan |
 | ADR-0030 Keuangan kelas ERP | accepted, 2026-11-25 (Pemilik menyetujui perluasan lingkup) |
-| `docs/architecture/security-and-access.md`, `docs/architecture/modules/finance.md` | aturan umum |
+| `docs/architecture/security-and-access.md`, `docs/architecture/modules/finance.md` (dihapus 2026-11-28, ada di riwayat git) | aturan umum |
 
 ---
 
@@ -49,7 +49,7 @@ Ini ringkasan, bukan pengganti: bila ragu, dokumen aslinya yang berlaku.
 - ADR-0030 butir 7: setiap transisi status dokumen keuangan, posting rule, perubahan bagan akun, dan transisi periode **wajib** ke `audit.audit_logs`.
 - Kenyataan: `AuditWriter` fire-and-forget (tidak ikut transaksi); pembayaran dan klaim biaya belum maker-checker; peminjaman aset bypass. Lihat OA5, OB7, OB8, OD2.
 
-## 4. Keuangan (ADR-0030, `modules/finance.md`)
+## 4. Keuangan (ADR-0030, `modules/finance.md` (dihapus 2026-11-28, ada di riwayat git))
 
 - **Buku besar satu-satunya sumber kebenaran.** Hanya modul `finance` menulis tabel finance.
 - Modul sumber memanggil `PostingService.postBusinessEvent(tx, …)` **di dalam transaksinya sendiri** (aturan D9); peran akun diselesaikan lewat `finance.posting_rules`. Aturan hilang = posting gagal = dokumen sumber gagal.
@@ -113,9 +113,9 @@ dokumen sebelum diperbaiki.
 | D7 | ADR-0018, ADR-0029 | Status "proposed" | Sudah dijalankan (role aplikasi, login gate, undangan) | Oki |
 | D8 | `docs/database/module-ownership.md` | 199 tabel; finance 30, tax 5, payment 5 | `docs.dbml` punya 208 `Table`; finance 35, tax 8 | Oki |
 | D9 | AGENTS.md, `module-ownership.md` | Setiap schema punya `code_numberings` | 14 dari 20 schema | Bersama |
-| D10 | `docs/role-permission.md:1493-1497` | `/admin/invitations` "every organization member" | Dicek admin aplikasi di controller (`invitation.controller.ts:48-51`) | Oki (generator `gen-role-permission.ts`) |
-| D11 | `docs/role-permission.md` (sekitar 761-768, 981-998, 1334-1346) | Rute portal karyawan "no guard macro" | Dijaga `employee-portal-guard.ts`; generator belum mengenalinya | Oki (generator) |
-| D12 | `docs/role-permission.md:873` | `accounting_period:create` "no org role" | Benar, tapi berarti "Siapkan periode" tidak bisa dipakai siapa pun (OB4) | Oki |
+| D10 | `docs/architecture/role-permission.md:1493-1497` | `/admin/invitations` "every organization member" | Dicek admin aplikasi di controller (`invitation.controller.ts:48-51`) | Oki (generator `gen-role-permission.ts`) |
+| D11 | `docs/architecture/role-permission.md` (sekitar 761-768, 981-998, 1334-1346) | Rute portal karyawan "no guard macro" | Dijaga `employee-portal-guard.ts`; generator belum mengenalinya | Oki (generator) |
+| D12 | `docs/architecture/role-permission.md:873` | `accounting_period:create` "no org role" | Benar, tapi berarti "Siapkan periode" tidak bisa dipakai siapa pun (OB4) | Oki |
 | D13 | Rencana `m12-reports-access.md` | 6 role (owner, finance, admin, hr, warehouse, technician); ekspor dan arsip "none"; setiap ekspor diaudit | 17 role; arsip bulanan dan ekspor CSV/XLSX ada; ekspor tidak diaudit | Oki |
 | D14 | Rencana `m11-bonuses-investors.md:113-121` | 11 tabel schema `investor` | Schema dihapus (ADR-0024, ADR-0030); butuh ADR baru | Oki |
 | D15 | Rencana `m06-assets-equipment.md:96-108` | Modul `assets` (11 tabel) "planned", register "none" | Aset di `inventory` + aset tetap di `finance`; status dan kondisi aset berbeda | Oki |
@@ -127,7 +127,7 @@ dokumen sebelum diperbaiki.
 
 ## 10. Yang perlu diingat saat mengerjakan modul Oki
 
-1. Hak baru = ubah `erp-permissions.ts`, lalu `bun docs/gen-role-permission.ts` di perubahan yang sama.
+1. Hak baru = ubah `erp-permissions.ts`, lalu `bun docs/architecture/gen-role-permission.ts` di perubahan yang sama.
 2. Setiap aksi keuangan: posting di transaksi dokumen sumber, maker-checker, dan audit wajib (ADR-0030).
 3. Uang rupiah-sen, waktu unix milidetik, tanggal bisnis Asia/Jakarta.
 4. Ubah tabel: `docs.dbml` dulu, lalu Drizzle, migrasi append-only, dan `bun docs/database/validate-dbml.ts` harus `OK`.

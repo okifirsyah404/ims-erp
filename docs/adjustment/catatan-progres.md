@@ -1984,3 +1984,306 @@ langsung di n8n.
   `lembar-keputusan-rapat.md` bagian 8h, `README.md`.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - PR #171 di-merge; rencana rinci langkah 7
+
+- **PR #171 di-merge** ke `main` (c5ad64b7). Semua commit masuk; tidak ada
+  yang tertinggal di branch. Pekerjaan lanjut di branch baru
+  `docs/adjustment-langkah-7` dari `main`.
+- **N8-10:** nama perusahaan di pesan WA "CV Inti Multi Solusi".
+  Diperbarui di `teks-pesan-wa-pelanggan.md`, `rancangan-n8n-whatsapp.md`,
+  dan `lembar-keputusan-rapat.md`.
+- **`4-rencana-kerja/rencana-langkah-7.md` (baru):**
+  - Paket P7-1 sampai P7-7: audit dalam transaksi, ADR-0006, aturan K1 di
+    7 service, hak role baru, penomoran tanpa celah, dasar form, server
+    siap pakai dan batas login.
+  - Untuk tiap paket: pemegang, sumber keputusan, ketergantungan,
+    skema/migrasi.
+  - Jalur paralel Oki dan Dafrin.
+  - Aturan setiap PR (Definition of done AGENTS.md, nomor ERP-* dipesan
+    saat PR).
+  - Kriteria selesai dan hal yang didahulukan di langkah 8.
+  - Pemeriksa Mermaid: 1 blok, 0 error.
+- `README.md`: posisi sekarang, langkah 6 ✅, langkah 7 🔄 (rencana rinci),
+  tautan rencana.
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - Catatan beres; folder 5-pengerjaan (aturan, peta kode, UAT, prompt)
+
+**Programmer B menyatakan catatan beres.** Perubahan kode boleh dimulai
+mengikuti rencana langkah 7 dan aturan pengerjaan.
+
+Folder `5-pengerjaan/` (baru):
+- `README.md` (aturan pengerjaan):
+  - alur satu tugas (diagram);
+  - aturan menulis kode A-1 sampai A-9;
+  - checklist sebelum push: semua UAT Valid, daftar perbaikan kosong;
+  - templat PR;
+  - cara menangani temuan setelah merge.
+- `uat-pengerjaan.md`:
+  - UAT oleh penulis kode, satu file per tugas di `uat/`;
+  - status Valid/Tidak valid;
+  - daftar perbaikan `<tugas>-F<n>`, push hanya bila semua Valid;
+  - templat dan contoh P7-3.
+- `prompt-ai.md`: prinsip T-1 sampai T-12, templat prompt (tugas baru,
+  perbaikan UAT, kesalahan test, tinjauan sebelum push), dan daftar hal
+  yang membuat boros token.
+- `peta-kode-dafrin.md`: 29 tugas, disusun agen pemeriksa.
+- `peta-kode-oki.md`: 42 entri lengkap + 12 penunjuk, disusun agen
+  pemeriksa.
+- Setiap tugas di peta kode memuat seharusnya, sekarang (`path:baris`),
+  file yang diubah, skema/migrasi, test, UAT, dan ketergantungan.
+
+Temuan dari penyusunan peta kode:
+- Celah K1 di penyesuaian stok: semua pemegang hak approve bisa menyetujui
+  dokumennya sendiri.
+- Rujukan PO bergeser ke `purchase-order.service.ts:241`;
+  `rencana-langkah-7.md` sudah dibetulkan.
+- `numbering.next` sudah menerima `tx`, tetapi pemanggilnya tidak
+  meneruskannya.
+- `meta.requestId` sudah ada untuk RF-27.
+- Audit menelan galat dan repository-nya tidak menerima `tx`.
+- `accounting_period:create` sudah ada untuk Pemilik dan Akuntan, belum
+  untuk `finance`.
+- Compose memakai `SMTP_*`, sedangkan config membaca `MAIL_SMTP_*`; image
+  backend tanpa Chromium; `auth.options.ts` tanpa `rateLimit`.
+- Satuan uang aset salah di `formatMoney` dan disposal.
+- Peminjaman disetujui otomatis saat diserahkan (bertentangan dengan C13).
+
+`README.md`: posisi sekarang (catatan beres) dan bagian folder
+5-pengerjaan.
+
+Pemeriksaan tautan: 269 tautan, 0 rusak.
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - AGENTS.md, pembersihan docs, prompt per tugas, seeder, informasi penggunaan
+
+Jawaban programmer B: (1) perbarui AGENTS.md; (2) dokumen usang dihapus
+saja; (3) buat branch baru. Branch yang dipakai:
+`docs/aturan-pengerjaan-dan-pembersihan`, dari `docs/adjustment-langkah-7`.
+
+- **`AGENTS.md`** (tetap bahasa Inggris, lihat catatan token di bawah):
+  - "Starting work" mengarah ke `docs/adjustment/README.md` dan aturan
+    `5-pengerjaan/`.
+  - Pengecualian bahasa untuk `docs/adjustment/`.
+  - Definition of done butir 6 memakai UAT pengerjaan.
+  - Catatan pengecualian schema investor (IV-1) dan `website` (PP-8)
+    lewat ADR.
+- **`docs/plan/progress.md`:** entri 2026-11-28 dan *Next executable task*
+  langkah 7.
+- **Dihapus (33 file; tetap ada di riwayat git):**
+  - `docs/plan/phases/`, `docs/plan/uat/`, `docs/plan/plan.md`;
+  - semua rencana lama di `docs/plan/plans/` kecuali `features.md`;
+  - `docs/user-guide/diagrams.md`, `docs/PANDUAN-DOKUMENTASI.id.md`.
+- **Tautan ke file yang dihapus dibetulkan** di user-guide WhatsApp,
+  `erp-module-plans` (m01, m04, m05), ADR-0022, `architecture/modules`
+  (customer-portal, notification, tax, website-and-portal), dan catatan
+  adjustment.
+- **Tidak dihapus:**
+  - `docs/simple-version/` hanya ada di komputer ini, dikecualikan lewat
+    `.git/info/exclude`, tidak ada di repo atau riwayat git. Menghapusnya
+    tidak bisa dibatalkan, jadi menunggu konfirmasi.
+  - Log lama di `progress.md`, `backlog.md`, dan `features.md` yang menyebut
+    path lama dibiarkan sebagai riwayat.
+  - Komentar kode yang menyebut rencana lama (`dashboard-api.ts`,
+    `warehouse.errors.ts`, `tax-math.ts`, `smoke-warehouse-pic.ts`)
+    dibetulkan di PR kode pertama, bersama komentar Playwright.
+- **Prompt AI siap salin di setiap tugas:** 29 di
+  `peta-kode-dafrin.md`, 54 di `peta-kode-oki.md` (entri penunjuk merujuk
+  entri lain). `prompt-ai.md` menyebut blok ini sebagai cara paling cepat.
+- **`3-rancangan/rancangan-data-seeder.md` (baru):**
+  - kondisi seeder sekarang dan prinsip SD-1 sampai SD-7;
+  - akun uji per orang sesuai K2 (termasuk freelance dan investor
+    samaran);
+  - data per alur dengan semua status;
+  - tugas **L-16** (rombak seeder, setelah P7-4) dan aturan **A-10**.
+- **Informasi penggunaan RF-28 sampai RF-34**
+  (`rancangan-menu-dasbor-dan-form.md` 4.4a): keterangan menu, kalimat
+  halaman dan panel "Cara pakai", tooltip kolom dan legenda status, keadaan
+  kosong, aturan isian sebelum diisi, tooltip status dengan langkah
+  berikutnya, definisi angka di kartu dasbor.
+  - Aturan **A-11** dan UAT **U-9**, **U-10**.
+  - Tugas **L-17**.
+  - Checklist sebelum push diperbarui; setiap prompt menyebut A-10 dan
+    A-11.
+
+**Catatan token:** teks berbahasa Indonesia umumnya memakan **lebih banyak**
+token daripada bahasa Inggris pada model AI. `AGENTS.md`, yang dibaca setiap
+sesi, tetap bahasa Inggris; `docs/adjustment/` tetap bahasa Indonesia sesuai
+arahan.
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - Lingkup AI hanya docs/adjustment; tanda dokumen usang; dokumentasi API (L-18)
+
+Kekhawatiran programmer B: agen AI bisa ikut membaca dokumen usang
+(contohnya `docs/role-permission.md`) lalu salah arah. Programmer B ingin
+lingkup kerja hanya `docs/adjustment/`.
+
+- **`AGENTS.md`:**
+  - Urutan baca diganti: `docs/adjustment/README.md` → aturan
+    `5-pengerjaan/` dan entri peta kode → `runbook.md` → `progress.md`.
+  - Bagian baru **"Source of truth"**:
+    - `docs/adjustment/` menentukan perilaku **target**;
+    - kode menentukan perilaku **sekarang**;
+    - `docs.dbml` menentukan persistensi.
+  - Role, alur, endpoint, dan bentuk request/response **tidak boleh** diambil
+    dari `docs/architecture/`, `docs/role-permission.md`,
+    `docs/user-guide/`, atau `docs/plan/erp-module-plans/`.
+- **Tanda "Background, may be stale"** di bagian atas:
+  - `docs/role-permission.md`: menggambarkan kode sekarang (17 role) sampai
+    P7-4; tanda berada di bagian tulisan tangan, tidak tertimpa generator.
+  - `docs/architecture/README.md`.
+  - `docs/user-guide/README.md`.
+- **Tanda "Contract scope reference only"** di
+  `docs/plan/erp-module-plans/README.md`.
+- **Dicek di kode:**
+  - OpenAPI `/docs` (`app.ts:77`) terutama berisi skema Better Auth.
+  - `requestBodyDoc` baru dipakai di `portal.controller.ts`.
+  - Dari 95 controller, **0** yang mendeklarasikan skema response.
+  - `apps/api-docs/` hanya ada di komputer lokal (`dist`, `node_modules`).
+- **Tugas L-18 (baru):** dokumentasi API, request dan response body per
+  endpoint, eksternal dulu (kontrak T32). Tercatat di `rencana-perubahan.md`
+  dan `peta-kode-dafrin.md` (entri + prompt).
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - simple-version dihapus; rujukan ADR di peta kode dirapikan
+
+- `docs/simple-version/` **dihapus** atas konfirmasi programmer B. Folder ini
+  hanya ada di komputer lokal (`.git/info/exclude`), tidak di repo, jadi
+  tidak ada perubahan git.
+- **Rujukan ADR di peta kode dicek:** ADR-0006 (12×), ADR-0001/0007/0008/0012
+  (di ADR K12), ADR-0002, ADR-0018, ADR-0020, ADR-0024, ADR-0030.
+  - **Dipertahankan** bila tugasnya memang menulis atau mengubah ADR: P7-2
+    ADR-0006, ADR baru K12, M11-4 investor, ADR schema `website` (B-38).
+  - **Rujukan latar belakang** diganti dengan sumber aturannya atau
+    ditandai "riwayat, tidak perlu dibuka": ADR-0002 → aturan uang
+    `AGENTS.md`; ADR-0024/0030, ADR-0018, ADR-0020 → riwayat (rincian di
+    rancangan n8n).
+  - **`security-and-access.md` dikeluarkan** dari pekerjaan P7-2 dan P7-4
+    (sebelumnya tercantum untuk diubah), karena ditahan (T-6).
+- **Aturan baru di `5-pengerjaan/README.md`:**
+  - A-12: ADR hanya dibuka bila tugas menulis/mengubah ADR.
+  - A-13: `security-and-access.md` ditahan, tidak dibuka dan tidak diubah.
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - Audit dokumen: ADR, architecture, modules, found-bugs
+
+Jawaban programmer B: hapus `project-audit.md` dan `modules/`; ikuti saran
+untuk architecture dan ADR, tetapi diaudit dulu agar AI tidak membaca
+semuanya dan tidak salah arah.
+
+- **Dihapus:**
+  - `docs/architecture/project-audit.md` dan `docs/architecture/modules/`
+    (34 file).
+  - Rujukan ke keduanya di 19 file diberi tanda "removed 2026-11-28".
+  - Rujukan kontrak event n8n diarahkan ke kode `outbox.contract.ts`.
+  - `AGENTS.md` (Definition of done butir 2) dan `testing-strategy.md`
+    memakai `progress.md` untuk kegagalan yang sudah ada.
+  - `architecture/README.md`: urutan baca diganti, baris `modules/`
+    dihapus.
+- **`architecture.md` "18 schema":** dicek, ternyata **sudah 20**. Angkanya
+  sekarang menunjuk ke `docs/database/module-ownership.md`, ditambah catatan
+  schema investor/website lewat ADR, supaya tidak usang lagi.
+  `bahan-keputusan.md` E2 diperbarui.
+- **Status ADR diperbarui** (bahasa Inggris, T-6, ditinjau Oki):
+  - accepted: 0018, 0020, 0021, 0022, 0024, 0029;
+  - tidak diterima: 0010 (diganti ADR K12);
+  - akan digantikan/diubah: 0001, 0007, 0008, 0012-multi (K12), 0006
+    (P7-2).
+  - **ADR-0012 ganda**: dua file bernomor sama. `single-organization`
+    sudah digantikan, `multi-organization` yang berlaku; keduanya diberi
+    catatan.
+  - ADR-0028 sengaja kosong, dipesan untuk schema `website` (B-38).
+- **Aturan A-14:** dokumen yang dipakai (runbook, api-conventions,
+  testing-strategy, stack-compatibility) diperbarui di PR yang sama bila
+  isinya berubah. Catatan A-14 ditambahkan di peta kode P7-6, L-18, dan
+  P7-7, juga di checklist sebelum push.
+- **Peta dokumen** (`5-pengerjaan/README.md` bagian 0): status setiap
+  dokumen `docs/` dan apakah dibaca saat bekerja.
+- **`docs/found-bugs/`:** 4 bug yang masih terbuka dipindah ke daftar
+  perbaikan lintas tugas FB-1 sampai FB-4 (`uat-pengerjaan.md` bagian 4),
+  masing-masing ditautkan ke L-16, B-35, P7-7, dan PK.
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - Pemeriksaan docs/plan dan docs/user-guide; hapus yang tidak dipakai
+
+Arahan programmer B: periksa `docs/plan/` dan `docs/user-guide/`, hapus yang
+tidak dipakai.
+
+- **Dipertahankan (masih dipakai):**
+  - `progress.md`, `backlog.md`, `plans/features.md`: buku resmi yang
+    diwajibkan AGENTS.
+  - `erp-plan-id.md`: kontrak v5.1.
+  - `erp-module-plans/`: batas kontrak per modul, 14 rujukan.
+  - `port-portal-onto-main.md`: dipakai di B-38.
+  - Panduan `n8n-workflows`, `whatsapp-n8n-setup`, `whatsapp-business-meta`:
+    dipakai di B-46 dan B-47.
+- **Dihapus (ada di riwayat git):**
+  - `docs/plan/erp-plan-en.md`: terjemahan kontrak; acuannya
+    `erp-plan-id.md`.
+  - `docs/plan/database-refactor/`: riwayat ADR-0024 yang sudah selesai.
+  - `docs/user-guide/en.md` dan `id.md`: panduan lama, diganti panduan
+    langkah 12.
+- Rujukan dibetulkan di `docs/database/logical-references.md`,
+  `implementation-phases.md`, `architecture/README.md`, ADR-0024,
+  `erp-module-plans/README.md`, `.agents/docs/README.md`, `lintas-modul/`,
+  `catatan-skema-dan-alur.md`, dan peta dokumen `5-pengerjaan/README.md`.
+- `docs/user-guide/README.md` ditulis ulang menjadi indeks panduan yang
+  tersisa.
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 - PR #175
+
+PR #175 dibuat ke `main` dari `docs/aturan-pengerjaan-dan-pembersihan`.
+PR ini juga membawa isi branch `docs/adjustment-langkah-7`.
+
+Isinya:
+- aturan pengerjaan, peta kode dengan prompt, UAT pengerjaan;
+- rencana langkah 7;
+- lingkup AI di `AGENTS.md`;
+- pembaruan status ADR;
+- penghapusan dokumen usang;
+- rancangan seeder, informasi penggunaan, dan dokumentasi API (L-18).
+
+Deskripsi PR memuat panduan tinjauan untuk Oki.
+
+Tidak ada perubahan kode.
+
+## 2026-11-28 — Folder `docs/` dirapikan
+
+Isi `docs/` dikelompokkan menjadi lima folder dan satu indeks baru,
+`docs/README.md`:
+
+| Folder | Isi |
+|---|---|
+| `adjustment/` | Program sekarang |
+| `database/` | Kontrak skema |
+| `plan/` | Log, backlog, fitur, dan `kontrak/` |
+| `architecture/` | Referensi teknis, ADR, dan `role-permission.md` beserta generatornya |
+| `integrations/` | n8n dan WhatsApp |
+
+Perpindahan berkas (dengan `git mv`):
+
+| Asal | Tujuan |
+|---|---|
+| `docs/role-permission.md` dan `gen-role-permission.ts` | `docs/architecture/` |
+| `docs/found-bugs/` | `adjustment/1-validasi/laporan-bug/` |
+| `plan/plans/features.md` | `plan/features.md` |
+| `plan/erp-plan-id.md` dan `plan/erp-module-plans/` | `plan/kontrak/` (`erp-plan-id.md`, `modul/`) |
+| `user-guide/` (n8n) | `integrations/n8n/guide-workflows.*` |
+| `user-guide/` (WhatsApp) | `integrations/whatsapp/waha-n8n-setup.*` dan `integrations/whatsapp/meta-cloud-api.*` |
+
+Generator dijalankan ulang dengan
+`bun docs/architecture/gen-role-permission.ts`; hasilnya 815 rute ditulis.
+Tautan di `AGENTS.md`, `.agents/docs/README.md`, dan semua dokumen
+diperbarui. Cek tautan: 357 tautan, 0 rusak. Log lama (`progress.md`,
+`backlog.md`, catatan ini) tidak diubah.
+
+Tidak ada perubahan kode aplikasi.

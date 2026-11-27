@@ -1034,12 +1034,12 @@ Catatan penguji:
 
 **Beda rencana dan kode**
 
-- Rencana (`docs/plan/erp-module-plans/m12-reports-access.md`) mengusulkan 6 role (owner, finance, admin, hr, warehouse, technician); kode punya 17 role organisasi (`packages/common/src/authorization/erp-permissions.ts:257-276`), dan satu anggota boleh memegang beberapa role (disimpan dipisah koma).
+- Rencana (`docs/plan/kontrak/modul/m12-reports-access.md`) mengusulkan 6 role (owner, finance, admin, hr, warehouse, technician); kode punya 17 role organisasi (`packages/common/src/authorization/erp-permissions.ts:257-276`), dan satu anggota boleh memegang beberapa role (disimpan dipisah koma).
 - Rencana: audit mencakup login, persetujuan, posting, pembalikan, buka/tutup periode, perubahan role, override lisensi, dan ekspor. Di kode, modul user hanya menulis undangan dan siklus akun (`apps/backend/src/app/user/services/invitation.service.ts:256-430`, `user-admin.service.ts:106-154`); perubahan peran dan pengeluaran anggota tidak tercatat (`apps/backend/src/app/organization/services/organization.service.ts` tanpa panggilan audit). Modul lain (keuangan, inventaris, produk) menulis audit sendiri, tetapi halaman Log Audit hanya punya pilihan filter untuk tindakan modul user (`apps/web-admin/src/routes/_authed/admin/audit/index.tsx:40-59`).
 - Tabel "Current state" rencana (dicek 2026-11-04) menulis ekspor dan arsip bulanan "none". Arsip bulanan sudah ada (`/reports/monthly-archives`, `POST /finance/reports/archives`), ekspor CSV ada untuk tiga laporan keuangan dan XLSX untuk paket manajemen.
 - Rencana: setiap ekspor diaudit. Tidak ada penulisan audit untuk ekspor di kode yang diperiksa.
-- Rencana: Auditor membaca log audit. Server mengizinkan (`audit_log:read` untuk Pemilik, Admin, Auditor; `docs/role-permission.md:651`), tetapi menu dan halaman `/admin/*` hanya untuk admin aplikasi (`apps/web-admin/src/components/sidebar/nav-config.ts:662`, `apps/web-admin/src/routes/_authed/admin.tsx`).
-- `docs/role-permission.md:1493-1498` mencatat `/admin/invitations` sebagai "every organization member"; pemeriksaan admin aplikasi ada di dalam controller (`apps/backend/src/app/user/controllers/invitation.controller.ts:48-51`), jadi aman, tetapi dokumen hasil generator menyesatkan.
+- Rencana: Auditor membaca log audit. Server mengizinkan (`audit_log:read` untuk Pemilik, Admin, Auditor; `docs/architecture/role-permission.md:651`), tetapi menu dan halaman `/admin/*` hanya untuk admin aplikasi (`apps/web-admin/src/components/sidebar/nav-config.ts:662`, `apps/web-admin/src/routes/_authed/admin.tsx`).
+- `docs/architecture/role-permission.md:1493-1498` mencatat `/admin/invitations` sebagai "every organization member"; pemeriksaan admin aplikasi ada di dalam controller (`apps/backend/src/app/user/controllers/invitation.controller.ts:48-51`), jadi aman, tetapi dokumen hasil generator menyesatkan.
 
 **Temuan baru**
 

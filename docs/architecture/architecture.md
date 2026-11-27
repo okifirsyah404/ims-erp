@@ -67,7 +67,7 @@ drizzle/                      Drizzle client + schemas (code-owned)
 - `erp` schema: never existed. The shared domain schema in the original plan
   was never created; its tables landed in their own schemas (`audit.audit_logs`,
   `customer.customers`). Do not create it.
-- One module owns exactly one Postgres schema (ADR-0024, ADR-0026: 20 schemas,
+- One module owns exactly one Postgres schema (ADR-0024, ADR-0026: 20 schemas today; the current list and owners are in `docs/database/module-ownership.md`, and decisions IV-1/PP-8 add investor and `website` schemas through their ADRs;
   196 tables: `auth`, `location`, `company`, `customer`, `supplier`, `product`,
   `warehouse`, `inventory`, `sale`, `procurement`, `finance`, `tax`, `payment`,
   `project`, `ticket`, `human_resource`, `document`, `notification`, `audit`,

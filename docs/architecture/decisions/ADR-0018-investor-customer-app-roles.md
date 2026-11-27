@@ -2,6 +2,7 @@
 
 - **Status:** proposed (2026-11-14). Depends on ADR-0017 acceptance for the
   login-gate amendment in this record.
+- **Status update 2026-11-28 (T-6, recorded by programmer B, reviewed by Oki):** **accepted** (implemented: app roles `investor` and `customer` in `packages/common/src/authorization/erp-permissions.ts`). The investor module is built in task M11-4 (IV-1).
 - **Amends:** ADR-0006 (organization roles are the only ERP authorization: the
   `investor` and `customer` roles leave that set), ADR-0017 §8 (login gate),
   ADR-0017 §9 (investor-plus-internal wording).

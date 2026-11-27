@@ -3,6 +3,7 @@
 - **Status:** accepted (business decision, 2026-10-25); implementation updated
   by **ADR-0007** (2026-11-02) — the "one company" decision stands, the
   literal single-organization limit implemented from it was removed.
+- **Status update 2026-11-28 (T-6, recorded by programmer B, reviewed by Oki):** to be **superseded** by the K12 ADR (decision 2026-11-27: the organization layer is removed in stages; the ERP serves one company).
 - **Context:** Better Auth `organization` plugin is installed and generates
   `auth.organizations` / `auth.members` / `auth.invitations`. Nothing in
   committed code demonstrated whether this means one company, several

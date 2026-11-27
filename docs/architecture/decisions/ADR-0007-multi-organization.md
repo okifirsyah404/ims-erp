@@ -5,6 +5,7 @@
   for the `inventory` module by **ADR-0008**. Transaction documents that
   record the issuing organization are covered by **ADR-0012**; the
   `organization_id` reference itself is nullable per **ADR-0014**.
+- **Status update 2026-11-28 (T-6, recorded by programmer B, reviewed by Oki):** to be **superseded** by the K12 ADR (organization layer removed in stages).
 - **Context:** ADR-0001 decided this deployment serves **one company** and that
   Better Auth organizations model *internal* structure. The implemented code
   then went further and enforced a literal single-organization invariant

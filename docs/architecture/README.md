@@ -1,16 +1,20 @@
 # Architecture & Technical Documentation
 
+> **Background, may be stale.** Several pages here predate the 2026-11-27/28 decisions (schema and role counts, organizations, security-and-access). They are corrected through tasks B-28/T-6. The working scope is
+> `docs/adjustment/` (target behaviour approved by the owner) and the code
+> (current behaviour); see `AGENTS.md` "Source of truth".
+
 Technical, evidence-based documentation for the IMS/Entragate ERP. Planning and
 status live in `docs/plan/`; agent skills inventory in `.agents/docs/skills.md`.
 
 ## First session / resume reading order
 
-1. `../AGENTS.md` (repo root) — hard rules and definition of done
-2. `project-audit.md` — what exists, what works, known failures
-3. `stack-compatibility.md` — exact resolved versions and risks
-4. `../plan/progress.md` — latest state; start where the doc says work stopped
-5. `architecture.md` — module boundaries and DI rules
-6. `domain-map.md` — business capability ownership and scope boundaries
+1. `../AGENTS.md` (repo root) — hard rules, source of truth, definition of done
+2. `../adjustment/README.md` — current program (Indonesian): step guide, decisions, implementation rules
+3. `runbook.md` — commands
+4. `stack-compatibility.md` — exact resolved versions and risks
+5. `../plan/progress.md` — official log and next executable task
+6. `architecture.md` — module boundaries and DI rules (background)
 
 ## Reference by need
 
@@ -21,7 +25,6 @@ status live in `docs/plan/`; agent skills inventory in `.agents/docs/skills.md`.
 | `security-and-access.md` | touching auth, permissions, portals, audit |
 | `testing-strategy.md` | writing tests |
 | `runbook.md` | running/verifying commands, environment variables |
-| `modules/` | per-technical-module boundaries, state, data ownership, tests |
 | `decisions/` | architectural decision records (ADRs) |
 
 Database schema documentation lives in `docs/database/` (sibling folder):
@@ -31,10 +34,10 @@ ADR-0024 + ADR-0026), 5 companion MDs
 `data-dictionary`, `logical-references`, `implementation-phases`), and the
 `gen-logical-references.ts` / `validate-dbml.ts` scripts. The schema-less
 `webhook` module (inbound provider edge) is described there too. The
-database-refactor plan is `docs/plan/database-refactor/`.
+database-refactor plan was `docs/plan/database-refactor/` (removed 2026-11-28, see git history).
 
 End-user documentation (how to use the web admin, English and Indonesian,
-with UML flow diagrams) lives in `docs/user-guide/`; update it in the same
+with UML flow diagrams) is planned for step 12 of `docs/adjustment/README.md`; update it in the same
 change when a user-visible flow, label or status changes.
 
 Any backend feature work reads that folder first and runs the `grill-me`

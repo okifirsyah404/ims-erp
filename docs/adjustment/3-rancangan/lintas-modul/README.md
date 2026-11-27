@@ -15,7 +15,7 @@ diturunkan ulang.
   1. ada di kode tetapi **tidak masuk pembagian modul** (tidak ada pemiliknya),
      misalnya modul `document` dan `notification`;
   2. ada di kode tetapi **melewati batas kontrak v5.1**
-     (`docs/plan/erp-plan-id.md`), misalnya banyak gudang atau portal karyawan;
+     (`docs/plan/kontrak/erp-plan-id.md`), misalnya banyak gudang atau portal karyawan;
   3. ada di kontrak tetapi **belum dibangun atau belum tercakup**, misalnya
      portal investor dan backup/restore.
 
@@ -64,7 +64,7 @@ menunggu keputusan / direncanakan).
 ## Catatan lain
 
 - `.agents/docs/erp-plan.md` tidak ada di repo; kontrak versi Inggris ada di
-  `docs/plan/erp-plan-en.md`.
+  `docs/plan/erp-plan-en.md` (dihapus 2026-11-28; acuan `erp-plan-id.md`).
 - Nomor ADR ganda: dua file `ADR-0012-*` (single-organization yang
   digantikan, dan multi-organization), dan tidak ada ADR-0028. Perlu
   diperhatikan saat memesan nomor ADR baru.
