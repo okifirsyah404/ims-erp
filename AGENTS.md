@@ -18,16 +18,26 @@ This file is short on purpose. Detailed, evidence-based answers live in
 Read by need: `docs/architecture/domain-map.md` (business ownership),
 `docs/architecture/data-model.md` (schema), `docs/architecture/api-conventions.md`,
 `docs/architecture/security-and-access.md`, `docs/architecture/testing-strategy.md`,
-`docs/plan/backlog.md` + `docs/plan/phases/` (planning),
+`docs/plan/backlog.md` (ERP ledger), `docs/adjustment/` (current decisions,
+designs, step plan and implementation rules; Indonesian),
 `docs/architecture/modules/` (per-module boundaries and
 state), `docs/architecture/decisions/` (ADR history),
 `.agents/docs/skills.md` (skill inventory).
 
 ## Starting work
 
-- Base every session on `progress.md`'s **"Next executable task"**, claim it
-  against `backlog.md` (stable `ERP-*` IDs), and respect the phase entry/exit
-  criteria in `docs/plan/phases/`. Do not jump forward over failing gates.
+- **Current program: `docs/adjustment/`.** Start every session at
+  `docs/adjustment/README.md` (step guide with statuses) and the plan of the
+  current step (e.g. `docs/adjustment/4-rencana-kerja/rencana-langkah-7.md`).
+  Claim the task against `backlog.md` (stable `ERP-*` IDs) and respect the
+  step order and dependencies. Do not jump forward over failing gates.
+- **Every code task follows `docs/adjustment/5-pengerjaan/README.md`:** open
+  only the files listed in the task entry of `peta-kode-dafrin.md` /
+  `peta-kode-oki.md` (each has a copy-paste AI prompt), write the work UAT
+  file in `docs/adjustment/5-pengerjaan/uat/`, log every failed step as
+  `<task>-F<n>`, and push only when all steps are Valid.
+- `docs/adjustment/` is written in Indonesian by owner decision (exception to
+  the English-docs rule below); code, identifiers and this file stay English.
 - Keep work small and verticals complete: a slice isn't done until backend,
   UI, migration, seed, and tests all reflect the same reality.
 
@@ -79,7 +89,7 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
   contract methods are in `docs/database/module-ownership.md`. Removed modules
   (`accounting`, `aftersales`, `assets`, `catalog`, `code-number`, `crm`,
   `licensing`, `portal`) and the schemas `organization`, `payroll`, `approval`,
-  `budgeting`, `investor`, `commerce` must not be reintroduced; pre-refactor docs that mention them are
+  `budgeting`, `investor`, `commerce` must not be reintroduced; **pending exceptions:** decision IV-1 (M11 investor module, ADR in task M11-4) reintroduces an investor schema and decision PP-8 (B-38) adds a `website` schema, each only through its ADR; pre-refactor docs that mention them are
   historical and say so.
 - **Cross-module references are nullable.** A column that points at another
   module's table (including `auth`) is a plain nullable id column - no
@@ -357,8 +367,9 @@ call sites.
 5. `progress.md` updated with exact commands and results; `backlog.md`
    statuses moved with evidence (and only to `accepted` on real reviewer
    approval); `docs/plan/plans/features.md` updated in the same change.
-6. The phase exit criteria in `docs/plan/phases/<current-phase>.md` that
-   apply to the task are all met, or the task is left explicitly partial.
+6. The task's work UAT (`docs/adjustment/5-pengerjaan/uat/<task>.md`) is all
+   Valid with no open fix, and the step's exit criteria in `docs/adjustment/`
+   that apply to the task are met, or the task is left explicitly partial.
 7. No secrets printed or committed.
 8. The **Feature module lifecycle** gates were respected: `docs/database/` was
    read and the `grill-me` pass (or its documented manual fallback) completed

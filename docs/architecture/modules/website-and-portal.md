@@ -52,7 +52,7 @@ named volume in compose.
 API reference: the backend serves the OpenAPI document at `/docs`
 (`@elysia/openapi`). The portal routes are documented in
 `docs/architecture/modules/customer-portal.md`, the website integration design
-in `docs/plan/plans/website-integration.md`, and the license API spec is
+in `docs/plan/plans/website-integration.md` (removed 2026-11-28, see git history), and the license API spec is
 `docs/architecture/api/licensing.yaml`.
 
 ## Design files

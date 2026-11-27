@@ -2057,3 +2057,61 @@ Temuan dari penyusunan peta kode:
 Pemeriksaan tautan: 269 tautan, 0 rusak.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - AGENTS.md, pembersihan docs, prompt per tugas, seeder, informasi penggunaan
+
+Jawaban programmer B: (1) perbarui AGENTS.md; (2) dokumen usang dihapus
+saja; (3) buat branch baru. Branch yang dipakai:
+`docs/aturan-pengerjaan-dan-pembersihan`, dari `docs/adjustment-langkah-7`.
+
+- **`AGENTS.md`** (tetap bahasa Inggris, lihat catatan token di bawah):
+  - "Starting work" mengarah ke `docs/adjustment/README.md` dan aturan
+    `5-pengerjaan/`.
+  - Pengecualian bahasa untuk `docs/adjustment/`.
+  - Definition of done butir 6 memakai UAT pengerjaan.
+  - Catatan pengecualian schema investor (IV-1) dan `website` (PP-8)
+    lewat ADR.
+- **`docs/plan/progress.md`:** entri 2026-11-28 dan *Next executable task*
+  langkah 7.
+- **Dihapus (33 file; tetap ada di riwayat git):**
+  - `docs/plan/phases/`, `docs/plan/uat/`, `docs/plan/plan.md`;
+  - semua rencana lama di `docs/plan/plans/` kecuali `features.md`;
+  - `docs/user-guide/diagrams.md`, `docs/PANDUAN-DOKUMENTASI.id.md`.
+- **Tautan ke file yang dihapus dibetulkan** di user-guide WhatsApp,
+  `erp-module-plans` (m01, m04, m05), ADR-0022, `architecture/modules`
+  (customer-portal, notification, tax, website-and-portal), dan catatan
+  adjustment.
+- **Tidak dihapus:**
+  - `docs/simple-version/` hanya ada di komputer ini, dikecualikan lewat
+    `.git/info/exclude`, tidak ada di repo atau riwayat git. Menghapusnya
+    tidak bisa dibatalkan, jadi menunggu konfirmasi.
+  - Log lama di `progress.md`, `backlog.md`, dan `features.md` yang menyebut
+    path lama dibiarkan sebagai riwayat.
+  - Komentar kode yang menyebut rencana lama (`dashboard-api.ts`,
+    `warehouse.errors.ts`, `tax-math.ts`, `smoke-warehouse-pic.ts`)
+    dibetulkan di PR kode pertama, bersama komentar Playwright.
+- **Prompt AI siap salin di setiap tugas:** 29 di
+  `peta-kode-dafrin.md`, 54 di `peta-kode-oki.md` (entri penunjuk merujuk
+  entri lain). `prompt-ai.md` menyebut blok ini sebagai cara paling cepat.
+- **`3-rancangan/rancangan-data-seeder.md` (baru):**
+  - kondisi seeder sekarang dan prinsip SD-1 sampai SD-7;
+  - akun uji per orang sesuai K2 (termasuk freelance dan investor
+    samaran);
+  - data per alur dengan semua status;
+  - tugas **L-16** (rombak seeder, setelah P7-4) dan aturan **A-10**.
+- **Informasi penggunaan RF-28 sampai RF-34**
+  (`rancangan-menu-dasbor-dan-form.md` 4.4a): keterangan menu, kalimat
+  halaman dan panel "Cara pakai", tooltip kolom dan legenda status, keadaan
+  kosong, aturan isian sebelum diisi, tooltip status dengan langkah
+  berikutnya, definisi angka di kartu dasbor.
+  - Aturan **A-11** dan UAT **U-9**, **U-10**.
+  - Tugas **L-17**.
+  - Checklist sebelum push diperbarui; setiap prompt menyebut A-10 dan
+    A-11.
+
+**Catatan token:** teks berbahasa Indonesia umumnya memakan **lebih banyak**
+token daripada bahasa Inggris pada model AI. `AGENTS.md`, yang dibaca setiap
+sesi, tetap bahasa Inggris; `docs/adjustment/` tetap bahasa Indonesia sesuai
+arahan.
+
+Tidak ada perubahan kode.

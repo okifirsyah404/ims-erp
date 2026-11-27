@@ -27,6 +27,7 @@ diubah.
 | RD2 | Baris **"Hari ini"** di atas semua dasbor |
 | RD3 | Penjualan melihat angka **semua orang, dengan saringan "milik saya"** |
 | RF-A | Aturan RF-1 sampai RF-26 dan pola pesan 4.5 **disetujui semua** |
+| RF-28–RF-34 | **Informasi penggunaan** di menu, halaman, tabel, form, status, kartu dasbor (bagian 4.4a), permintaan programmer B 28/11 |
 | RF-B | Diterapkan **bertahap**: form utama dulu, form lain saat disentuh |
 | FU-A/FU-B | Rincian form dibahas per form, lalu **FU1–FU13 disetujui** dengan keputusan khusus per form (tanda [27/11] di bagian 5.2). Urutan pengerjaan: alur uang (SPH → SO → Surat Jalan → Faktur → Pembayaran), lalu PO → BPB, lalu sisanya |
 | RF-27 | Kesalahan server menampilkan **nomor referensi**; kesalahan isian tidak |
@@ -335,6 +336,21 @@ yang sama dengan gaya tampilannya sendiri.
 | RF-25 | Menutup form yang sudah diubah tanpa menyimpan: "Perubahan belum disimpan. Tinggalkan halaman?" |
 | RF-26 | Setiap dokumen menampilkan **riwayat**: dibuat, diajukan, disetujui (termasuk "disetujui oleh pembuat" untuk K1), dengan nama dan waktu |
 | RF-27 | **[27/11]** Kesalahan server (bukan kesalahan isian) menampilkan nomor referensi untuk dilaporkan: "Terjadi kesalahan di server (ref: ABC123). Coba lagi atau laporkan nomor ini ke admin." Kesalahan isian tidak menampilkan nomor |
+
+### 4.4a Informasi penggunaan di menu, halaman, tabel, dan form (28/11)
+
+Permintaan programmer B: setiap menu, tabel, dan form menjelaskan **cara
+pakai** dan **aturan validasinya** sebelum pemakai salah.
+
+| No | Aturan |
+|---|---|
+| RF-28 | **Menu:** setiap menu punya keterangan singkat "untuk apa" (tooltip saat diarahkan kursor; di ponsel tampil di bawah nama menu saat grup dibuka). Contoh: "Penerimaan Barang: catat barang yang datang dari pemasok berdasarkan PO" |
+| RF-29 | **Halaman:** di bawah judul ada satu kalimat penjelasan; halaman utama punya panel **"Cara pakai"** (3–5 langkah alur + tautan panduan) yang bisa ditutup dan diingat per pengguna |
+| RF-30 | **Tabel:** judul kolom yang tidak jelas punya ikon (i) dengan artinya (misal "Sisa = jumlah PO belum diterima"); **legenda status** (warna dan arti); **keadaan kosong** berisi penjelasan dan tombol aksi pertama ("Belum ada PO. Buat PO pertama"); saringan menampilkan contoh; jumlah baris dan tanggal dengan format Indonesia |
+| RF-31 | **Form:** setiap isian yang punya aturan menampilkan aturannya **sebelum** diisi (teks bantuan atau ikon (i)): format dan contoh, batas (misal "Lembur maks. 4 jam per hari"), wajib/tidak, nilai bawaan dan asalnya (misal "Tarif PPN dari master pajak tanggal SPH"). Pesan salah tetap mengikuti RF-14–RF-19 |
+| RF-32 | **Status dokumen:** badge status punya tooltip arti dan **langkah berikutnya** (RF-22), misal "Disetujui · Langkah berikutnya: Gudang menerima barang" |
+| RF-33 | **Kartu dasbor:** setiap angka punya ikon (i) dengan definisinya (misal "Basis kas: mutasi kas dan bank yang sudah diposting") dan tautan ke daftar yang tersaring |
+| RF-34 | Semua teks bantuan ada di `packages/locales` (`en` + `id`) dan mengikuti pola kalimat 4.5; tidak ada teks bantuan yang ditulis langsung di kode |
 
 ### 4.5 Pola kalimat pesan
 

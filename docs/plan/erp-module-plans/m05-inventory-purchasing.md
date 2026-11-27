@@ -121,7 +121,7 @@ Common DoD in [README.md](README.md), plus:
   warehouse↔organization links (ERP-0031). Transfers warehouse→warehouse and
   storage→storage, both recorded in the ledger (ERP-0032), replace the earlier
   "no bin-to-bin transfers" interpretation. Tracking views: ERP-0033. OPEN-1
-  and OPEN-3 closed (`plans/inventory.md`). The `beyond-baseline` list below
+  and OPEN-3 closed (`plans/inventory.md` (removed 2026-11-28, see git history)). The `beyond-baseline` list below
   is historical.
 - `beyond-baseline`:
   - Multiple warehouses, `warehouse_addresses` and `warehouse_storages`, all

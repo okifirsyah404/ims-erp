@@ -9,7 +9,7 @@
 Decision records: [ADR-0022](../decisions/ADR-0022-customer-portal-api.md), session transport and role [ADR-0027](../decisions/ADR-0027-portal-session-cookie-and-customer-role.md).
 API reference: Swagger/OpenAPI served by `@elysia/openapi` from the backend at `/docs`.
 Full gap analysis against the website repo (all 51 portal, 9 catalog and 10
-website operations, open owner decisions): `docs/plan/plans/website-integration.md`.
+website operations, open owner decisions): `docs/plan/plans/website-integration.md` (removed 2026-11-28, see git history).
 
 ## Purpose and boundary
 

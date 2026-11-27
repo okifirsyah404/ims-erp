@@ -27,5 +27,4 @@ supaya tidak ada yang rusak saat ditampilkan.
 
 **Status:** diagram "Sesudah" sudah **disetujui Pemilik pada rapat 2026-11-27** (semua keputusan sesuai usulan di [`../lembar-keputusan-rapat.md`](../../2-keputusan/lembar-keputusan-rapat.md)). Oki masih meninjau lewat PR #171.
 
-`docs/user-guide/diagrams.md` (2026-11-06) adalah versi lama dan sebagian
-sudah usang; pakai diagram di folder ini.
+`docs/user-guide/diagrams.md` (2026-11-06) sudah dihapus 2026-11-28 (ada di riwayat git); pakai diagram di folder ini.

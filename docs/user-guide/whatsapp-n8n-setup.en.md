@@ -8,7 +8,7 @@ ADR-0020; this guide is the step-by-step version. Indonesian version:
 > **Status (2026-11-12):** the ERP side is implemented and tested against a
 > local fake receiver and signed test webhooks. It has **not yet been tried
 > against a real WAHA, n8n or AI provider** — the first real run is part of
-> UAT (`docs/plan/uat/`). Use a sandbox WhatsApp number first; WAHA is
+> UAT (`docs/adjustment/1-validasi/uat-modul/`). Use a sandbox WhatsApp number first; WAHA is
 > unofficial and a number can be banned.
 
 > **WAHA is unofficial and numbers can be banned.** For production use the official WhatsApp

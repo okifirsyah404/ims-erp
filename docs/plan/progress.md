@@ -12,6 +12,31 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-28 - Adjustment program: notes done, step 7 next (docs only)
+
+**Scope.** Documentation only; no code, migration or seed change. The
+adjustment notes in `docs/adjustment/` were merged (PR #171) and declared done
+by programmer B on 2026-11-28. The owner approved the decisions (meeting
+2026-11-27 plus later additions). From now on work follows
+`docs/adjustment/README.md` (steps 1–12) and the implementation rules in
+`docs/adjustment/5-pengerjaan/` (code maps per task with copy-paste AI prompts,
+work UAT per task, push only when every step is Valid).
+
+**Docs cleanup (same change).** Removed as superseded by `docs/adjustment/`:
+`docs/plan/phases/` (old phase plan; replaced by the step guide),
+`docs/plan/uat/` (old UAT; replaced by `docs/adjustment/1-validasi/uat-modul/`),
+`docs/plan/plan.md`, the historical plans in `docs/plan/plans/` except
+`features.md`, `docs/user-guide/diagrams.md`, `docs/PANDUAN-DOKUMENTASI.id.md`.
+`AGENTS.md` "Starting work" and Definition of done item 6 now point to
+`docs/adjustment/`. Historical entries below keep their original paths; the
+removed files remain in git history.
+
+Next executable task: **step 7 (code foundation)** per
+`docs/adjustment/4-rencana-kerja/rencana-langkah-7.md`. Programmer B starts
+P7-6 (form foundation) or P7-5 (numbering); Oki starts P7-1 (audit inside the
+transaction) then P7-2 (ADR-0006). Reserve `ERP-*`/ADR numbers when opening
+each PR (last in backlog: ERP-0168).
+
 ## 2026-11-26 - procurement → warehouse re-check; PO document templates (ERP-0165..ERP-0168)
 
 **Scope.** The user asked to re-check the flow from a purchase order until the

@@ -9,7 +9,7 @@ bersamaan).
 > **Status (2026-11-12):** sisi ERP sudah dibangun dan diuji dengan penerima
 > palsu lokal serta webhook uji yang ditandatangani. **Belum pernah dicoba
 > dengan WAHA, n8n, atau penyedia AI sungguhan** — percobaan nyata pertama
-> menjadi bagian UAT (`docs/plan/uat/`). Pakai nomor WhatsApp sandbox dulu;
+> menjadi bagian UAT (`docs/adjustment/1-validasi/uat-modul/`). Pakai nomor WhatsApp sandbox dulu;
 > WAHA tidak resmi dan nomor bisa diblokir.
 
 > **WAHA tidak resmi dan nomor bisa diblokir.** Untuk produksi, pakai WhatsApp Business resmi

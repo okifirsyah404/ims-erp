@@ -11,7 +11,7 @@
 Tax rate master and period working papers for finance review. Output is
 **working papers**, never automatic DJP filing, and not a tax engine for every
 tax type (v5.1 M10, ERP-0016). The tax slice lives in the `tax` schema (was `accounting` before ADR-0024)
-(one schema per module, see `docs/plan/plans/tax.md`, D1 to D18).
+(one schema per module, see `docs/plan/plans/tax.md` (removed 2026-11-28, see git history), D1 to D18).
 
 ## Implemented (backend, Phase 1)
 

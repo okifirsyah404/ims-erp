@@ -82,6 +82,11 @@ Sesuai `AGENTS.md` (Definition of done):
 | Dasar form | Satu form contoh (misalnya Prospek, FU1) memakai komponen baru: label \*, pesan per isian berbahasa Indonesia dari server, ringkasan kesalahan, konfirmasi |
 | Server | PDF SPH, unggah foto, email undangan, dan pengingat terjadwal jalan di lingkungan uji; login dibatasi setelah beberapa kali gagal |
 
+## 4a. Penutup langkah 7
+
+- **L-16 rombak seeder uji** (akun per orang sesuai K2, data per alur) setelah P7-4, supaya langkah 8 dan UAT memakai data yang sama (`../3-rancangan/rancangan-data-seeder.md`).
+- Contoh form P7-6 sudah menerapkan **informasi penggunaan** RF-28–RF-34.
+
 ## 5. Sesudah langkah 7
 
 Langkah 8 dimulai dari halaman **Tinggi** di

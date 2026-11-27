@@ -21,7 +21,7 @@
      unused.
   2. **One login per person, with a role; individuals sign up, businesses
      are invited** (owner decisions D1/D2 of 2026-11-14, taken after the
-     website gap analysis `docs/plan/plans/website-integration.md`; the first
+     website gap analysis `docs/plan/plans/website-integration.md` (removed 2026-11-28, see git history); the first
      choice the same morning — one login per customer, invitation only —
      would have blocked online retail and the website's member screens). The
      identity points at the CRM contact (`contact_id`, unique per contact)

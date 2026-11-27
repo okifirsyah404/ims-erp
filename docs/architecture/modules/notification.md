@@ -20,7 +20,7 @@ WhatsApp AI handoff of M04 stage 2.
 ## Current state (2026-11-14)
 
 **Backend module, REST surface, producers, seeders and the web-admin bell all
-landed.** Phases 0–7 of `docs/plan/plans/ws-notification.md`:
+landed.** Phases 0–7 of `docs/plan/plans/ws-notification.md` (removed 2026-11-28, see git history):
 
 - `docs/database/docs.dbml` — `notification.push_notification_templates` and
   `notification.push_notifications` moved out of the `automation` schema.

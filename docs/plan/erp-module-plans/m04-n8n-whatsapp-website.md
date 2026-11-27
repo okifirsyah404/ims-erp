@@ -88,7 +88,7 @@ The checkout pages are built inside T21 (M02).
 - Public form endpoints are rate-limited and validate input. No lead is
   created on invalid input.
 - No live messages are sent without business authorization. Use a sandbox
-  number until then (`docs/plan/phases/README.md`).
+  number until then (`docs/plan/phases/README.md` (removed 2026-11-28, see git history)).
 
 ## Acceptance
 

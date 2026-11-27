@@ -25,6 +25,8 @@ Salin templat bagian 3.
 | U-5 | Setelah diperbaiki, langkah yang gagal **diuji ulang**; baris perbaikan ditutup dengan tanggal dan commit |
 | U-6 | Bukti: tangkapan layar atau laporan Playwright untuk langkah utama, disimpan di luar repo atau dilampirkan di PR (tanpa data rahasia) |
 | U-7 | **Push hanya bila** semua langkah ✅ dan semua perbaikan berstatus Selesai |
+| U-9 | UAT memeriksa juga **informasi penggunaan** (RF-28–RF-34): keterangan menu, panel cara pakai, tooltip kolom, keadaan kosong, teks aturan di isian, tooltip status |
+| U-10 | UAT memakai **data seeder** (`rancangan-data-seeder.md`); data yang belum ada ditambahkan ke seeder di PR yang sama (A-10) |
 | U-8 | Akun uji per role (Pemilik, Penjualan, Gudang, Keuangan, Manajer Proyek, Teknisi, Pekerja Lepas) dipakai untuk memeriksa hak; jangan memakai data pribadi sungguhan |
 
 ## 3. Templat

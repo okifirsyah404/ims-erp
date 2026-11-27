@@ -108,7 +108,7 @@ Common DoD in [README.md](README.md), plus:
 
 - Schema: none needed. `docs.dbml` has no dashboard schema, which is correct.
 - Code: no backend `dashboard` module, by decision (plan
-  `plans/dashboard-real-data.md`, D3). The dashboard is a **client composition**
+  `plans/dashboard-real-data.md` (removed 2026-11-28, see git history), D3). The dashboard is a **client composition**
   of the owning modules' endpoints: `GET /invoices/summary` (sales),
   `GET /projects/stats` (projects, added 2026-11-15), `GET /cash-bank/accounts`,
   `GET /reports/profit-and-loss`, `GET /items`, `GET /stock/valuation`,

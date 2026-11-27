@@ -80,6 +80,7 @@ tulis entri di [`catatan-progres.md`](catatan-progres.md).
 | [`rancangan-biaya-perjalanan.md`](3-rancangan/rancangan-biaya-perjalanan.md) | Biaya perjalanan teknisi: kasbon, nota, klaim, uang makan harian, batas, kategori (BP-1–BP-6) |
 | [`rancangan-investor-m11.md`](3-rancangan/rancangan-investor-m11.md) | Investor dan suntikan dana: modal, pinjaman, dana per proyek, bagi hasil, portal investor (IV-1–IV-6; mengubah K10) |
 | [`teks-pesan-wa-pelanggan.md`](3-rancangan/teks-pesan-wa-pelanggan.md) | Teks awal pesan WA ke pelanggan dan pemasok (8 jenis) untuk dimasukkan ke n8n; disetujui saat uji di n8n (N8-9) |
+| [`rancangan-data-seeder.md`](3-rancangan/rancangan-data-seeder.md) | Data uji seeder: akun per orang (K2), data per alur dan semua status, prinsip deterministik/idempoten (L-16) |
 | [`kekurangan-fitur.md`](3-rancangan/kekurangan-fitur.md) | Fitur yang belum ada atau setengah jadi di Proyek, Gudang, Pengadaan, Aset, Keuangan, Pajak |
 
 ### 4-rencana-kerja

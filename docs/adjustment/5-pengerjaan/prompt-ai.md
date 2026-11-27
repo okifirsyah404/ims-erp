@@ -25,12 +25,15 @@ yang tepat**, **batas yang jelas**, dan **cara membuktikan selesai**.
 
 ## 2. Templat prompt
 
+**Paling cepat:** setiap tugas di `peta-kode-dafrin.md` dan `peta-kode-oki.md` sudah punya blok **Prompt AI (salin)** yang terisi (ID, file, test, UAT). Salin blok itu apa adanya; templat di bawah untuk keadaan lain.
+
 ### a. Mulai tugas baru
 ```text
 Kerjakan <ID> <judul>.
 Acuan: docs/adjustment/5-pengerjaan/peta-kode-<dafrin|oki>.md bagian <ID>.
 Buka hanya file yang tercantum di bagian itu. Jangan menjelajah folder lain.
 Ikuti AGENTS.md dan docs/adjustment/5-pengerjaan/README.md.
+Tambahkan data seeder fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34).
 Branch: <nama branch> dari origin/main.
 Selesai bila: <test yang harus lulus> dan langkah UAT <nomor> di peta kode terpenuhi.
 Setelah selesai, buat docs/adjustment/5-pengerjaan/uat/<ID>-<slug>.md dari templat uat-pengerjaan.md.

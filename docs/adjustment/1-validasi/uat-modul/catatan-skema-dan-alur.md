@@ -13,7 +13,7 @@ bisa diputuskan: perbaiki, ganti nama, atau terima.
 | Modul pemilik tiap schema | `docs/database/module-ownership.md` |
 | Hubungan antar-modul | `docs/database/logical-references.md` |
 | Diagram alur per role (terbaru) | [diagram-alur-per-role.md](diagram-alur-per-role.md) |
-| Diagram alur lama | `docs/user-guide/diagrams.md` (lihat bagian 4: sebagian usang) |
+| Diagram alur lama | `docs/user-guide/diagrams.md` (dihapus 2026-11-28, ada di riwayat git) |
 | Panduan pemakaian (Indonesia) | `docs/user-guide/id.md`, bagian 4–8 |
 | Panduan n8n dan WhatsApp | `docs/user-guide/n8n-workflows.id.md`, `whatsapp-n8n-setup.id.md`, `whatsapp-business-meta.id.md` |
 | Langkah uji per modul | folder ini (`uat-modul/`) |

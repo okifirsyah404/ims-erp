@@ -95,6 +95,8 @@ flowchart TD
 | A-6 | Setiap perubahan aturan bisnis punya test (otorisasi, kepemilikan, validasi) |
 | A-7 | Tidak ada rahasia di kode, log, commit, atau PR |
 | A-8 | Satu PR fokus satu tugas; perubahan kecil lain yang ketemu dicatat sebagai tugas baru, bukan diselipkan |
+| A-10 | **Data seeder:** fitur baru ikut menambah data ujinya di seeder (rancangan `../3-rancangan/rancangan-data-seeder.md`), deterministik dan idempoten (dijalankan dua kali) |
+| A-11 | **Informasi penggunaan:** menu, halaman, tabel, form, status, dan kartu dasbor yang disentuh diberi keterangan cara pakai dan aturan validasi (RF-28–RF-34) |
 | A-9 | Dokumen yang ikut berubah di PR yang sama: `docs/plan/progress.md`, `docs/plan/backlog.md`, `docs/plan/plans/features.md`, `docs/adjustment/catatan-progres.md`, file UAT tugas, dan `docs/database/` bila skema berubah |
 
 ---
@@ -105,7 +107,8 @@ flowchart TD
 - [ ] Daftar perbaikan tugas ini **kosong** (semua status Selesai)
 - [ ] Typecheck (backend, web-admin, Astro bila disentuh), lint, test **hijau**
 - [ ] Skema: `validate-dbml.ts` `OK`, migrasi dicoba, seed dua kali
-- [ ] Locale `en`/`id` lengkap (test locale parity hijau)
+- [ ] Locale `en`/`id` lengkap (test locale parity hijau), termasuk teks bantuan RF-28–RF-34
+- [ ] Seeder diperbarui untuk fitur ini dan dijalankan dua kali tanpa baris ganda (A-10)
 - [ ] `docs/plan/progress.md`, `backlog.md`, `features.md` diperbarui
 - [ ] `docs/adjustment/catatan-progres.md` diperbarui, status tugas di README
 - [ ] `docs/role-permission.md` dibuat ulang bila rute/role berubah

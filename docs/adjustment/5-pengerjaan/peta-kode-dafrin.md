@@ -142,6 +142,20 @@ masuk P7-5; B-1 = P7-3.
      simpan PO lain → nomor urut tidak melompat.
 - **Bergantung pada:** — (ditinjau Oki, K11).
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan P7-5 Penomoran tanpa celah dan kode pemasok pendek.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian P7-5 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/backend/src/shared/numbering/domain.ts, apps/backend/src/shared/numbering/service-base.ts, apps/backend/src/shared/numbering/controller.ts, apps/backend/src/app/procurement/services/purchase-order.service.ts, apps/web-admin/src/components/settings/numbering-settings.tsx, apps/web-admin/src/lib/code-numbering-api.ts, packages/locales/src/{en,id}/settings.ts, packages/locales/src/{en,id}/api.ts, docs/adjustment/3-rancangan/lintas-modul/penomoran-dokumen.md.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/code-numbering.test.ts, apps/backend/test/unit/procurement.service.test.ts, apps/web-admin/test/unit/code-numbering-api.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri P7-5 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/P7-5.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### P7-6 Dasar form (Tinggi, RF-A, TF-A, TF-1–TF-3, RF-27, L-7)
 
 - **Seharusnya:**
@@ -198,6 +212,20 @@ masuk P7-5; B-1 = P7-3.
      (ref: ...)"; isian yang diketik tidak hilang.
 - **Bergantung pada:** — (ditinjau Oki, K11). Dipakai semua perbaikan form
   langkah 8.
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan P7-6 Dasar form.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian P7-6 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/backend/src/http/plugin.ts, apps/backend/src/http/response.ts, packages/common/src/contracts/api-response.ts, packages/common/src/forms/, packages/common/src/crm/lead.schema.ts, apps/backend/src/app/project/contracts/lead.contract.ts, apps/web-admin/src/lib/api-error.ts, apps/web-admin/src/lib/*-api.ts, lead-api.ts:113, apps/web-admin/src/components/form/field-label.tsx, apps/web-admin/src/components/form/form-error-summary.tsx, apps/web-admin/src/components/form/form-field.tsx.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/http-plugin-unhandled-error.test.ts, apps/backend/test/unit/http-plugin-validation.test.ts, apps/web-admin/test/unit/api-error.test.ts, apps/backend/test/unit/lead.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri P7-6 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/P7-6.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### P7-3 = B-1 Aturan persetujuan K1 (Tinggi, K1, A1, B-1, X-2)
 
@@ -263,6 +291,20 @@ masuk P7-5; B-1 = P7-3.
 
 ---
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan P7-3 Aturan persetujuan K1.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian P7-3 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/backend/src/shared/approval/maker-checker.ts, apps/backend/src/authorization/elysia-auth.ts, apps/backend/src/app/procurement/services/purchase-request.service.ts, purchase-order.service.ts, purchase-return.service.ts, apps/backend/src/app/sale/services/quotation.service.ts, sales-return.service.ts, apps/backend/src/app/human-resource/services/leave.service.ts, apps/backend/src/app/inventory/controllers/adjustment.controller.ts, apps/backend/src/app/inventory/services/adjustment.service.ts, procurement/controllers/purchase-*.controller.ts, sale/controllers/quotation.controller.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/purchase-request.service.test.ts, procurement.service.test.ts, purchase-return.service.test.ts, quotation.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri P7-3 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/P7-3.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ## Langkah 8: Pembelian dan Gudang
 
 ### B-21 Hapus "Tandai terkirim" pada PO (Tinggi, K3 / B1)
@@ -305,6 +347,20 @@ masuk P7-5; B-1 = P7-3.
   2. Buat BPB sebagian → status "diterima sebagian"; sisa tetap bisa diterima.
 - **Bergantung pada:** — (bisa sebelum/bersama P7-3).
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan B-21 Hapus "Tandai terkirim" pada PO.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian B-21 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/backend/src/app/procurement/services/goods-receipt.service.ts, apps/backend/src/app/procurement/repositories/purchase-order.repository.ts, apps/backend/src/app/procurement/services/purchase-order.service.ts, controllers/purchase-order.controller.ts, apps/web-admin/src/routes/_authed/procurement/purchase-orders/$purchaseOrderId/index.tsx, apps/web-admin/src/lib/procurement-api.ts, apps/web-admin/src/routes/_authed/procurement/receipts/new.tsx, packages/locales/src/{en,id}/procurement.ts, docs/role-permission.md.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/goods-receipt.service.test.ts, procurement.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri B-21 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/B-21.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### PH-PO Halaman Pesanan Pembelian: harga beli terakhir dan konfirmasi (Tinggi, FU6, K6)
 
 - **Seharusnya:**
@@ -339,6 +395,20 @@ masuk P7-5; B-1 = P7-3.
      dan langsung muncul di Penerimaan Barang."
 - **Bergantung pada:** B-21, P7-6, P7-3.
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan PH-PO Halaman Pesanan Pembelian: harga beli terakhir dan konfirmasi.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian PH-PO (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/backend/src/app/procurement/repositories/purchase-order.repository.ts, apps/backend/src/app/procurement/services/purchase-order.service.ts, controllers/purchase-order.controller.ts, apps/web-admin/src/components/procurement/purchase-order-form.tsx, apps/web-admin/src/lib/procurement-api.ts, apps/web-admin/src/routes/_authed/procurement/purchase-orders/$purchaseOrderId/index.tsx, packages/locales/src/{en,id}/procurement.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/procurement.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri PH-PO terpenuhi; buat docs/adjustment/5-pengerjaan/uat/PH-PO.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### B-32 Tutup PO kurang kirim (Tinggi, KF-B1)
 
 - **Seharusnya:**
@@ -370,6 +440,20 @@ masuk P7-5; B-1 = P7-3.
      alasan tampil di detail.
   2. PO tertutup tidak muncul di pilihan Penerimaan Barang baru.
 - **Bergantung pada:** B-21.
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan B-32 Tutup PO kurang kirim.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian B-32 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: docs/database/docs.dbml, procurement.purchase_orders, apps/backend/drizzle/schemas/procurement.schema.ts, apps/backend/src/app/procurement/services/purchase-order.service.ts, repositories/purchase-order.repository.ts, controllers/purchase-order.controller.ts, contracts/, apps/backend/src/app/procurement/services/goods-receipt.service.ts, apps/web-admin/src/routes/_authed/procurement/purchase-orders/$purchaseOrderId/index.tsx, apps/web-admin/src/lib/procurement-api.ts, packages/locales/src/{en,id}/procurement.ts, common.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/procurement.service.test.ts, goods-receipt.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri B-32 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/B-32.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### PH-ADJ Halaman Penyesuaian Stok (Tinggi, FU8, K1, TF-9)
 
@@ -405,6 +489,20 @@ masuk P7-5; B-1 = P7-3.
      "Stok akan berubah sesuai selisih...".
   3. Tolak tanpa alasan → tidak bisa.
 - **Bergantung pada:** P7-3, P7-6.
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan PH-ADJ Halaman Penyesuaian Stok.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian PH-ADJ (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/backend/src/app/inventory/services/adjustment.service.ts, apps/backend/src/app/inventory/errors/inventory.errors.ts, apps/web-admin/src/components/inventory/adjustment-form.tsx, apps/web-admin/src/components/inventory/adjustment-detail.tsx, packages/locales/src/{en,id}/inventory.ts, api.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/adjustment.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri PH-ADJ terpenuhi; buat docs/adjustment/5-pengerjaan/uat/PH-ADJ.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### B-29 Layar terima/keluarkan stok manual (Tinggi, KF-G1, KF-1)
 
@@ -443,6 +541,20 @@ masuk P7-5; B-1 = P7-3.
 
 ---
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan B-29 Layar terima/keluarkan stok manual.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian B-29 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/backend/src/app/inventory/contracts/stock.contract.ts, apps/backend/src/app/inventory/services/stock.service.ts, controllers/stock.controller.ts, apps/web-admin/src/routes/_authed/inventory/stock/receive.tsx, apps/web-admin/src/routes/_authed/inventory/stock/issue.tsx, apps/web-admin/src/components/inventory/stock-movement-form.tsx, apps/web-admin/src/components/sidebar/nav-config.ts, apps/web-admin/src/lib/stock-api.ts, packages/locales/src/{en,id}/inventory.ts, nav.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/stock.service.test.ts, apps/backend/test/authorization/stock-authorization.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri B-29 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/B-29.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ## Langkah 8: Penjualan dan Penagihan
 
 ### B-13 Retur penjualan "Rusak" tidak menambah stok jual (Tinggi, M02 E5)
@@ -475,6 +587,20 @@ masuk P7-5; B-1 = P7-3.
   2. Retur kondisi Baik → stok jual bertambah.
   3. Barang rusak terlihat di tempat yang diputuskan (rak rusak / penghapusan).
 - **Bergantung pada:** —.
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan B-13 Retur penjualan "Rusak" tidak menambah stok jual.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian B-13 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/backend/src/app/sale/services/sales-return.service.ts, apps/backend/src/app/inventory/services/stock.service.ts, apps/web-admin/src/routes/_authed/sales/returns/$salesReturnId/index.tsx, packages/locales/src/{en,id}/sales.ts, docs/database/docs.dbml, sale.returns.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/sales-return.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri B-13 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/B-13.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### PH-SPH Halaman Penawaran (SPH) (Tinggi, FU3, OC4, K1)
 
@@ -518,6 +644,20 @@ masuk P7-5; B-1 = P7-3.
   4. SPH lewat Berlaku sampai → label Kedaluwarsa di daftar.
 - **Bergantung pada:** P7-3, P7-6; tarif PPN master dari Oki (OC4).
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan PH-SPH Halaman Penawaran (SPH).
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian PH-SPH (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/backend/src/app/sale/contracts/quotation.contract.ts, apps/backend/src/app/sale/services/quotation.service.ts, apps/backend/src/app/tax/services/exported-tax.service.ts, apps/web-admin/src/components/sales/quotation-form.tsx, apps/web-admin/src/routes/_authed/sales/quotes/$quotationId/index.tsx, apps/web-admin/src/routes/_authed/sales/quotes/index.tsx, packages/locales/src/{en,id}/sales.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/quotation.service.test.ts, apps/web-admin/test/unit/quotation-helpers.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri PH-SPH terpenuhi; buat docs/adjustment/5-pengerjaan/uat/PH-SPH.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### B-33 PPh 23 dipotong pelanggan di kuitansi (Tinggi, KF-K3, KF-T3, bersama Oki M09-17)
 
 - **Seharusnya:**
@@ -551,6 +691,20 @@ masuk P7-5; B-1 = P7-3.
   2. Kuitansi menampilkan potongan PPh 23.
   3. Potongan + bayar melebihi sisa → ditolak dengan pesan.
 - **Bergantung pada:** M09-17 / M10-13 (Oki), P7-6.
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan B-33 PPh 23 dipotong pelanggan di kuitansi.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian B-33 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: docs/database/docs.dbml, sale.receipts, apps/backend/drizzle/schemas/sale.schema.ts, apps/backend/src/app/sale/contracts/invoice.contract.ts, services/invoice.service.ts, apps/backend/src/app/sale/services/receipt-ledger.service.ts, apps/web-admin/src/routes/_authed/sales/invoices/$invoiceId/index.tsx, apps/web-admin/src/lib/invoice-api.ts, packages/locales/src/{en,id}/finance.ts, receipt.*, api.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/invoice-billing.service.test.ts, invoice-summary.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri B-33 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/B-33.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### B-37 Halaman cetak SO, kuitansi, BPB, retur (Tinggi, alur lengkap 6, NM-11)
 
@@ -589,6 +743,20 @@ masuk P7-5; B-1 = P7-3.
   2. Cetak SO, BPB, retur pembelian, retur penjualan dari detailnya.
 - **Bergantung pada:** contoh surat dari Aqim (NM-11).
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan B-37 Halaman cetak SO, kuitansi, BPB, retur.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian B-37 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/web-admin/src/routes/_authed/sales/receipts/$receiptId/print.tsx, apps/web-admin/src/components/sales/receipt-document.tsx, apps/web-admin/src/routes/_authed/sales/orders/$orderId_.print.tsx, components/sales/sales-order-document.tsx, apps/web-admin/src/routes/_authed/procurement/receipts/$receiptId_.print.tsx, components/procurement/goods-receipt-document.tsx, apps/web-admin/src/routes/_authed/procurement/purchase-returns/$purchaseReturnId/print.tsx, apps/web-admin/src/routes/_authed/sales/returns/$salesReturnId/print.tsx, apps/backend/src/app/sale/controllers/invoice.controller.ts, receipt.controller.ts, apps/backend/src/app/sale/controllers/quotation-render.controller.ts, packages/locales/src/{en,id}/sales.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/web-admin/test/unit/ (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri B-37 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/B-37.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### B-40 Riwayat dan saldo pelanggan (Tinggi, KF-S1)
 
 - **Seharusnya:**
@@ -621,6 +789,20 @@ masuk P7-5; B-1 = P7-3.
   3. Pengguna tanpa hak lihat faktur tidak melihat tab faktur.
 - **Bergantung pada:** —.
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan B-40 Riwayat dan saldo pelanggan.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian B-40 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/backend/src/app/project/contracts/project.contract.ts, repositories/project.repository.ts, apps/backend/src/app/ticket/contracts/ticket.contract.ts, apps/backend/src/app/sale/services/invoice.service.ts, invoice-lookup.service.ts, apps/web-admin/src/routes/_authed/crm/customers/$customerId.tsx, apps/web-admin/src/components/crm/customer-history.tsx, packages/locales/src/{en,id}/crm.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/project.service.test.ts, service-ticket.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri B-40 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/B-40.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### B-41 Kirim SPH/faktur tanpa n8n (Tinggi, KF-S2)
 
 - **Seharusnya:**
@@ -648,6 +830,20 @@ masuk P7-5; B-1 = P7-3.
   2. Salin tautan → tautan dibuka di jendela samaran menampilkan PDF.
   3. Tombol WhatsApp membuka `wa.me/62...` dengan teks dan tautan.
 - **Bergantung pada:** Chromium di server (P7-7, Oki).
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan B-41 Kirim SPH/faktur tanpa n8n.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian B-41 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/backend/src/app/sale/services/quotation-delivery.service.ts, controllers/quotation.controller.ts, apps/backend/src/app/sale/controllers/invoice.controller.ts, apps/web-admin/src/routes/_authed/sales/quotes/$quotationId/index.tsx, apps/web-admin/src/routes/_authed/sales/invoices/$invoiceId/index.tsx, apps/web-admin/src/lib/share-links.ts, packages/locales/src/{en,id}/sales.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/quotation-delivery.service.test.ts, apps/web-admin/test/unit/share-links.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri B-41 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/B-41.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### B-42 Faktur tanpa SO (Tinggi, KF-S6)
 
@@ -678,6 +874,20 @@ masuk P7-5; B-1 = P7-3.
 - **Bergantung pada:** P7-6.
 
 ---
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan B-42 Faktur tanpa SO.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian B-42 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/web-admin/src/routes/_authed/sales/invoices/new.tsx, apps/web-admin/src/components/sales/invoice-form.tsx, apps/web-admin/src/routes/_authed/sales/invoices/index.tsx, apps/web-admin/src/lib/invoice-api.ts, apps/backend/src/app/sale/services/invoice.service.ts, packages/locales/src/{en,id}/finance.ts, sales.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/invoice-billing.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri B-42 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/B-42.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ## Langkah 8: Proyek, tiket, portal pelanggan
 
@@ -716,6 +926,20 @@ masuk P7-5; B-1 = P7-3.
   2. Seri tidak dikenal → peringatan kuning, tiket ditandai berbayar.
 - **Bergantung pada:** —.
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan B-30 Cek garansi barang tanpa proyek.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian B-30 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/backend/src/app/project/services/warranty.service.ts, apps/backend/src/app/inventory/services/exported-inventory.service.ts, apps/backend/src/app/sale/services/sales-fulfilment.service.ts, apps/backend/src/app/sale/services/delivery-note.service.ts, docs/database/docs.dbml, product.products, apps/backend/drizzle/schemas/product.schema.ts, apps/web-admin/src/components/inventory/item-form.tsx, apps/web-admin/src/routes/_authed/tickets/new.tsx.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/handover-warranty.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri B-30 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/B-30.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### B-31 Tiket berbayar bisa ditagih (Tinggi, KF-P1)
 
 - **Seharusnya:**
@@ -748,6 +972,20 @@ masuk P7-5; B-1 = P7-3.
   3. Tiket dalam garansi → tombol tidak tampil.
 - **Bergantung pada:** B-42, B-30.
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan B-31 Tiket berbayar bisa ditagih.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian B-31 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: docs/database/docs.dbml, sale.invoices, sale.quotations, apps/backend/drizzle/schemas/sale.schema.ts, apps/backend/src/app/ticket/services/exported-ticket.service.ts, ticket/constants/di.ts, apps/backend/src/app/sale/services/invoice.service.ts, quotation.service.ts, apps/web-admin/src/routes/_authed/tickets/$ticketId.tsx, packages/locales/src/{en,id}/projects.ts, ticket.*.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/service-ticket.service.test.ts, invoice-billing.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri B-31 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/B-31.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### B-35 Notifikasi tugas proyek ke teknisi (Tinggi, alur lengkap 7)
 
 - **Seharusnya:**
@@ -778,6 +1016,20 @@ masuk P7-5; B-1 = P7-3.
   2. Tugas dengan tenggat besok → pengingat muncul.
 - **Bergantung pada:** P7-7 (scheduler aktif).
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan B-35 Notifikasi tugas proyek ke teknisi.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian B-35 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/backend/drizzle/schemas/notification.schema.ts, apps/backend/database/seeders/seed/notification-templates.seeder.ts, apps/backend/src/app/project/services/project.service.ts, project/container.ts, apps/backend/src/app/project/queues/task-due.queue.ts, task-due.worker.ts, packages/locales/src/{en,id}/notifications.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/project.service.test.ts, notification.producers.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri B-35 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/B-35.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### B-36 Tombol konfirmasi tiket di portal pelanggan (Tinggi, alur lengkap 10)
 
 - **Seharusnya:**
@@ -804,6 +1056,20 @@ masuk P7-5; B-1 = P7-3.
      Konfirmasi selesai.
   2. Klik → status Ditutup di portal dan di web-admin.
 - **Bergantung pada:** —.
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan B-36 Tombol konfirmasi tiket di portal pelanggan.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian B-36 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/web-customer-portal/src/services/portal/erp-routes.ts, apps/web-customer-portal/src/api/portal.ts, apps/web-customer-portal/src/services/portal/demo.ts, apps/web-customer-portal/src/actions/index.ts, apps/web-customer-portal/src/pages/support/[id].astro.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/web-customer-portal/src/services/portal/erp-source.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri B-36 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/B-36.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### B-38 Portal pelanggan dan website: pesanan online (Tinggi, PP-1–PP-8, T21, T25)
 
@@ -859,6 +1125,20 @@ Butuh rancangan dulu (Gate 1 + Gate 2 per bagian). Rencana port:
 
 ---
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan B-38 Portal pelanggan dan website: pesanan online.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian B-38 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: docs/database/docs.dbml, AGENTS.md, docs/database/module-ownership.md, docs/architecture/decisions/, apps/backend/drizzle/schemas/website.schema.ts, customer.schema.ts, apps/backend/src/app/website/, container.ts, controllers/, services/, repositories/, contracts/.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/portal-data.test.ts, portal-account.test.ts, quotation.service.test.ts, apps/web-customer-portal/src/services/portal/erp-source.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri B-38 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/B-38.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ## Langkah 8: SDM
 
 ### B-45 Penempatan Kantor/Lapangan, Freelance, dan tarif (Tinggi, KL-1–KL-12)
@@ -909,6 +1189,20 @@ Butuh rancangan dulu (Gate 1 + Gate 2 per bagian). Rencana port:
 - **Bergantung pada:** B-44 (laporan harian untuk hari sah), P7-4 (hak
   Pekerja Lepas, Oki), M09-18 dan PK-10 (Oki).
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan B-45 Penempatan Kantor/Lapangan, Freelance, dan tarif.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian B-45 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: docs/database/docs.dbml, human_resource.employees, project.tasks, apps/backend/drizzle/schemas/human-resource.schema.ts, project.schema.ts, packages/common/src/hr/employment.ts, apps/backend/src/app/human-resource/contracts/hr.contract.ts, services/employee.service.ts, services/leave.service.ts, apps/backend/src/app/human-resource/services/freelance-pay.service.ts, apps/backend/src/app/project/services/project.service.ts, contracts/project.contract.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/hr-records.service.test.ts, site-attendance.service.test.ts, freelance-pay.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri B-45 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/B-45.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### B-39 Gaji memakai absensi dan pengaturan potongan (Tinggi, KF-H1, KF-H2, PG-1–PG-6)
 
 - **Seharusnya:**
@@ -954,6 +1248,20 @@ Butuh rancangan dulu (Gate 1 + Gate 2 per bagian). Rencana port:
   4. Hari check-in di lokasi proyek tanpa jam mulai lapangan → tidak terlambat.
 - **Bergantung pada:** B-45 (hari lapangan, freelance dikecualikan).
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan B-39 Gaji memakai absensi dan pengaturan potongan.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian B-39 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: docs/database/docs.dbml, human_resource.employee_salary_records, apps/backend/drizzle/schemas/human-resource.schema.ts, apps/backend/src/app/human-resource/services/payroll-deduction.service.ts, apps/backend/src/app/human-resource/services/salary.service.ts, payroll-calculation.service.ts, apps/backend/src/app/human-resource/contracts/payroll-settings.contract.ts, controllers/payroll-settings.controller.ts, repositories/hr-settings.repository.ts, apps/backend/src/app/project/services/site-attendance.service.ts, apps/backend/src/app/human-resource/services/payslip.service.ts, apps/web-admin/src/components/hr/payslip-document.tsx.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/payroll-deduction.service.test.ts, hr-salary-period.service.test.ts, hr-payslip.service.test.ts, payroll-statutory.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri B-39 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/B-39.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### B-44 Laporan kerja karyawan (Tinggi, LK-1–LK-7)
 
 - **Seharusnya:**
@@ -992,6 +1300,20 @@ Butuh rancangan dulu (Gate 1 + Gate 2 per bagian). Rencana port:
 - **Bergantung pada:** B-45 (freelance), Oki (layar `web-employee`), P7-7
   (scheduler).
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan B-44 Laporan kerja karyawan.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian B-44 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: docs/database/docs.dbml, apps/backend/drizzle/schemas/human-resource.schema.ts, project.schema.ts, apps/backend/src/app/human-resource/services/work-report.service.ts, repositories/work-report.repository.ts, controllers/work-report.controller.ts, contracts/work-report.contract.ts, apps/backend/src/app/human-resource/controllers/employee-portal.controller.ts, services/employee-portal.service.ts, apps/backend/src/app/human-resource/queues/work-report-reminder.queue.ts, apps/web-employee/src/routes/_authed.reports.tsx, apps/web-employee/src/lib/portal-api.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/work-report.service.test.ts, apps/web-employee/test/unit/ (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri B-44 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/B-44.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### M12-14-D Form ubah karyawan tidak menimpa role (Tinggi, KF-R2, bagian Dafrin)
 
 - **Seharusnya:**
@@ -1016,6 +1338,20 @@ Butuh rancangan dulu (Gate 1 + Gate 2 per bagian). Rencana port:
 - **Bergantung pada:** M12-14 (Oki, halaman Pengguna multi-role).
 
 ---
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan M12-14-D Form ubah karyawan tidak menimpa role.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian M12-14-D (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/web-admin/src/components/hr/employee-edit-form.tsx, packages/locales/src/{en,id}/hr.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/web-admin/test/unit/ (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M12-14-D terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M12-14-D.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ## Langkah 8: Proyek, integrasi, lintas modul
 
@@ -1054,6 +1390,20 @@ Butuh rancangan dulu (Gate 1 + Gate 2 per bagian). Rencana port:
   3. Teknisi check-in sah 3 hari luar kota → uang makan 3 × nominal luar kota
      tampil di biaya per orang.
 - **Bergantung pada:** B-45, M09-19 (Oki, pengaturan dan kasbon).
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan B-48 Biaya perjalanan di proyek.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian B-48 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: docs/database/docs.dbml, project.costs, apps/backend/drizzle/schemas/project.schema.ts, apps/backend/src/app/project/contracts/project.contract.ts, services/project.service.ts, repositories/project.repository.ts, apps/backend/src/app/project/services/meal-allowance.service.ts, apps/web-admin/src/components/projects/project-costs-card.tsx, apps/web-admin/src/lib/project-api.ts, packages/locales/src/{en,id}/projects.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/project.service.test.ts, meal-allowance.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri B-48 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/B-48.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### B-46 n8n dan WhatsApp dijalankan sungguhan (Tinggi, N8-1–N8-10)
 
@@ -1102,6 +1452,20 @@ Butuh rancangan dulu (Gate 1 + Gate 2 per bagian). Rencana port:
 - **Bergantung pada:** P7-3 (titik persetujuan), B-38 (pesanan online), B-44
   (pengingat), Oki (server n8n, X-14), Aqim (nomor WA, penyedia AI).
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan B-46 n8n dan WhatsApp dijalankan sungguhan.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian B-46 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: docs/database/docs.dbml, apps/backend/drizzle/schemas/automation.schema.ts, apps/backend/src/app/automation/contracts/outbox.contract.ts, apps/backend/src/app/automation/services/outbox.service.ts, apps/backend/src/app/automation/services/notification-settings.service.ts, controllers/notification-settings.controller.ts, repositories/, sale/services/sales-order.service.ts, apps/web-admin/src/routes/_authed/settings/whatsapp-notifications/index.tsx, apps/web-admin/src/lib/automation-api.ts, nav-config.ts, apps/web-admin/src/routes/_authed/integrations/webhooks/index.tsx.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: send-test-event.ts, apps/backend/test/unit/outbox.service.test.ts, sales-invoice-events.test.ts, whatsapp-assistant.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri B-46 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/B-46.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### M12-16-D Ekspor daftar utama modul Dafrin (Tinggi, KF-R5, bagian pemilik modul)
 
 - **Seharusnya:**
@@ -1128,6 +1492,20 @@ Butuh rancangan dulu (Gate 1 + Gate 2 per bagian). Rencana port:
   1. Daftar pelanggan → Ekspor → file XLSX berisi kolom yang tampil.
   2. Pengguna tanpa hak export tidak melihat tombol; Log Audit mencatat ekspor.
 - **Bergantung pada:** pola ekspor + audit Oki (M12-16, P7-1).
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan M12-16-D Ekspor daftar utama modul Dafrin.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian M12-16-D (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/backend/src/app/customer/controllers/customer.controller.ts, apps/backend/src/app/sale/controllers/invoice.controller.ts, apps/backend/src/app/human-resource/controllers/employee.controller.ts, apps/web-admin/src/routes/_authed/crm/customers/index.tsx, sales/invoices/index.tsx, hr/employees/index.tsx, apps/web-admin/src/lib/download.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/authorization/permission-matrix.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M12-16-D terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M12-16-D.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### L-12-D Templat impor data awal modul Dafrin (Tinggi, NM-1, NM-2)
 
@@ -1159,6 +1537,20 @@ Butuh rancangan dulu (Gate 1 + Gate 2 per bagian). Rencana port:
 - **Bergantung pada:** P7-6 (pesan per baris), PH-ADJ (stok awal).
 
 ---
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan L-12-D Templat impor data awal modul Dafrin.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian L-12-D (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/backend/src/shared/import/, apps/backend/src/app/customer/, supplier/, product/, inventory/, human-resource/, apps/web-admin/src/components/import-dialog.tsx, components/hr/import-dialog.tsx, packages/locales/src/{en,id}/common.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/customer.service.test.ts, supplier.service.test.ts, product.service.test.ts, hr-records.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri L-12-D terpenuhi; buat docs/adjustment/5-pengerjaan/uat/L-12-D.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ## Sedang (diminta masuk peta)
 
@@ -1196,3 +1588,17 @@ Butuh rancangan dulu (Gate 1 + Gate 2 per bagian). Rencana port:
      sampai periode baru mulai.
   3. Aplikasi yang sudah punya kontrak → kode tidak bisa diubah.
 - **Bergantung pada:** —.
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan B-14 Masa perpanjangan lisensi dan kode aplikasi.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian B-14 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/backend/src/app/project/utils/license.ts, apps/backend/src/app/project/services/licensing.service.ts, queues/license-due.worker.ts, apps/backend/src/app/project/errors/licensing.errors.ts, apps/web-admin/src/routes/_authed/subscription/applications/index.tsx, apps/web-admin/src/routes/_authed/subscription/$contractId/index.tsx, packages/locales/src/{en,id}/licensing.ts, api.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/licensing.service.test.ts, license-api.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri B-14 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/B-14.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```

@@ -147,6 +147,20 @@ portal karyawan ke `apps/web-employee/src/`, kecuali ditulis lengkap.
   3. Paksa audit gagal (test) → perubahan bisnis ikut batal.
 - **Bergantung pada:** — . Dibutuhkan oleh P7-2, P7-3 (Dafrin), M06-2, M12-16.
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan P7-1 Audit di dalam transaksi.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian P7-1 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/app/audit/contracts/audit.repository.interface.ts, src/app/audit/repositories/audit.repository.ts, src/app/audit/services/audit.service.ts, src/shared/audit/audit.writer.ts, drizzle/schemas/audit.schema.ts, src/app/organization/services/organization.service.ts, src/app/user/services/user-admin.service.ts, src/app/{sale,procurement,human-resource,payment}/container.ts, src/app/{sale,procurement,human-resource,payment}/constants/di.ts, docs/database/docs.dbml, audit.audit_logs, docs/architecture/modules/.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/unit/audit-writer.test.ts, test/helpers/audit-writer-double.ts, test/unit/user-admin.service.test.ts, test/unit/multi-organization.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri P7-1 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/P7-1.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### P7-2 Ubah ADR-0006 (Tinggi, K1, K1a, E5)
 
 - **Seharusnya:**
@@ -167,6 +181,20 @@ portal karyawan ke `apps/web-employee/src/`, kecuali ditulis lengkap.
 - **Test:** tidak ada (dokumen).
 - **UAT:** Dafrin membaca butir 6 dan bisa menurunkan aturan P7-3 tanpa bertanya.
 - **Bergantung pada:** P7-1. Dibutuhkan oleh P7-3 (Dafrin), M06-2, M09-7.
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan P7-2 Ubah ADR-0006.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian P7-2 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: docs/architecture/decisions/ADR-0006-two-layer-authorization.md, docs/architecture/security-and-access.md, docs/plan/progress.md, docs/plan/backlog.md.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: tambahkan/jalankan test yang disebut di bagian Test entri ini.
+Selesai bila semua butir UAT di entri P7-2 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/P7-2.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### P7-4 Hak role baru (Tinggi, K2, K2b, K2d, RO1, RO4, OA8, OA12, KL-6, KL-10, B4)
 
@@ -202,6 +230,20 @@ portal karyawan ke `apps/web-employee/src/`, kecuali ditulis lengkap.
   4. Login SDM: tidak ada tombol Undang; Log Audit hanya terbuka untuk Pemilik.
 - **Bergantung pada:** — . Dibutuhkan oleh M09-1, M09-4, M09-7, M12-14, PK-10.
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan P7-4 Hak role baru.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian P7-4 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: packages/common/src/authorization/erp-permissions.ts, src/app/finance/controllers/ledger.controller.ts:205-218, src/authorization/role-assignment.ts, database/seeders/seed/organization-roles.seeder.ts, organization-members.seeder.ts, lib/use-caller-org-roles.ts, components/invite/invite-dialog.tsx, packages/locales/src/{en,id}/admin.ts, docs/role-permission.md, docs/architecture/security-and-access.md.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: packages/common/test/grantable-roles.test.ts, packages/common/test/invite-sheet.test.ts, apps/backend/test/authorization/permission-matrix.test.ts, test/unit/role-assignment.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri P7-4 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/P7-4.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### P7-7 Server siap pakai dan batas login (Tinggi, NM-5, NM-6, L-10, L-11)
 
 - **Seharusnya:**
@@ -236,11 +278,27 @@ portal karyawan ke `apps/web-employee/src/`, kecuali ditulis lengkap.
 
 ---
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan P7-7 Server siap pakai dan batas login.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian P7-7 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: apps/backend/Dockerfile, docker-compose.yml, docker-compose.local.yml, .github/workflows/main-deploy-backend.yml, src/providers/better-auth/auth.options.ts, apps/backend/.env.example, docs/architecture/runbook.md.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/unit/login-rate-limit.auth.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri P7-7 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/P7-7.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ## M12 Laporan & Hak Akses
 
 ### M12-1 Audit peristiwa wajib (Tinggi)
 
 Sama dengan [P7-1](#p7-1-audit-di-dalam-transaksi-tinggi-oa5oa7-l-1). Bagian ekspor (OA6) diselesaikan di M12-16.
+
+**Prompt AI (salin):** tugas ini penunjuk; pakai prompt di entri yang dirujuk.
 
 ### M12-2 K12 tahap 1: sembunyikan Organisasi (Tinggi, OA1, OA2)
 
@@ -272,9 +330,25 @@ Sama dengan [P7-1](#p7-1-audit-di-dalam-transaksi-tinggi-oa5oa7-l-1). Bagian eks
   3. Membuka `/organizations` langsung diarahkan ke halaman Pengguna.
 - **Bergantung pada:** **M12-14 selesai lebih dulu** (rencana langkah 7 bagian 5), P7-4.
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan M12-2 K12 tahap 1: sembunyikan Organisasi.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M12-2 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/providers/better-auth/options/session.auth.ts, src/providers/better-auth/ac/auth-hooks.ts, components/sidebar/main-sidebar.tsx, components/sidebar/organization-switcher.tsx, components/sidebar/nav-config.ts, routes/_authed/organizations/*, lib/organization-store.ts, lib/use-active-organization.ts, apps/web-employee/src/lib/use-organization-switch.ts, apps/web-employee/src/components/organization/, packages/locales/src/{en,id}/nav.ts, apps/web-admin.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/unit/organization-mine.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M12-2 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M12-2.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### M12-5 `erp-permissions.ts` (Tinggi)
 
 Sama dengan [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-10-b4).
+
+**Prompt AI (salin):** tugas ini penunjuk; pakai prompt di entri yang dirujuk.
 
 ### M12-14 Ubah role dari halaman Pengguna + bug form karyawan (Tinggi, KF-R1, KF-R2)
 
@@ -306,6 +380,20 @@ Sama dengan [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-k
   3. Log Audit mencatat perubahan role.
 - **Bergantung pada:** P7-1, P7-4. Harus selesai sebelum M12-2.
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan M12-14 Ubah role dari halaman Pengguna + bug form karyawan.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M12-14 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/app/user/controllers/user-admin.controller.ts, src/app/user/services/user-admin.service.ts, src/app/organization/services/organization.service.ts:553, src/app/user/contracts/admin.contract.ts, routes/_authed/admin/users/index.tsx, components/admin/user-roles-dialog.tsx, components/hr/employee-edit-form.tsx, lib/admin-api.ts, packages/locales/src/{en,id}/admin.ts, hr.ts, docs/role-permission.md.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/unit/user-admin.service.test.ts, test/unit/role-assignment.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M12-14 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M12-14.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### M12-15 Atur ulang kata sandi oleh admin (Tinggi, KF-R3)
 
 - **Seharusnya:**
@@ -332,6 +420,20 @@ Sama dengan [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-k
   2. Fahri login dengan kata sandi sementara, diminta mengganti.
   3. Sesi lama Fahri di perangkat lain keluar.
 - **Bergantung pada:** P7-1.
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan M12-15 Atur ulang kata sandi oleh admin.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M12-15 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/app/user/contracts/user-management-auth.gateway.interface.ts, src/app/user/adapters/better-auth-user-management.ts, src/app/user/services/user-admin.service.ts, src/app/user/controllers/user-admin.controller.ts, drizzle/schemas/audit.schema.ts, routes/_authed/admin/users/index.tsx, components/admin/reset-password-dialog.tsx, packages/locales/src/{en,id}/admin.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/unit/user-admin.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M12-15 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M12-15.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### M12-16 Ekspor daftar utama + PDF laporan berkop (Tinggi, KF-R5, KF-R6)
 
@@ -367,11 +469,27 @@ Sama dengan [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-k
 
 ---
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan M12-16 Ekspor daftar utama + PDF laporan berkop.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M12-16 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/app/audit/controllers/audit.controller.ts, src/app/audit/services/audit-query.service.ts, src/app/finance/controllers/receivables.controller.ts, src/app/finance/controllers/finance-operations.controller.ts, src/providers/pdf/pdf-renderer.ts, src/shared/export/, components/finance/reports-page.tsx, routes/_authed/admin/audit/index.tsx, components/finance/receivables-page.tsx, lib/download.ts, packages/locales/src/{en,id}/finance.ts, admin.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/finance/reports-reconciliation.test.ts, test/unit/report-csv.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M12-16 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M12-16.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ## M09 Keuangan
 
 ### M09-1 Keuangan membaca bagan akun (Tinggi, OB1)
 
 Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-10-b4) (K2d). UAT tambahan: Bella membuka form Kas/Bank dan pilihan akun lawan terisi.
+
+**Prompt AI (salin):** tugas ini penunjuk; pakai prompt di entri yang dirujuk.
 
 ### M09-2 Pemilih akun berpencarian (Tinggi, OB2)
 
@@ -395,6 +513,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
   2. Ketik "kas" di pilihan akun → muncul akun kas yang cocok.
   3. Akun ke-150 (di luar 100 pertama) bisa ditemukan lewat pencarian.
 - **Bergantung pada:** P7-4 (hak bagan akun untuk Keuangan).
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan M09-2 Pemilih akun berpencarian.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M09-2 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: components/finance/account-combobox.tsx, components/finance/reconciliation-page.tsx, fixed-assets-page.tsx, advances-panel.tsx, project-budgets-page.tsx, cash-bank-form-dialog.tsx, bills-table.tsx, packages/locales/src/{en,id}/finance.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: *.test.tsx (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M09-2 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M09-2.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### M09-3 Layar pembayaran pemasok (Tinggi, OB3)
 
@@ -422,6 +554,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
   3. Jurnal: Utang usaha (D), Kas/Bank (K), Utang PPh 23 (K).
 - **Bergantung pada:** M09-2 (pemilih akun), P7-1 (audit). Terkait M10-9.
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan M09-3 Layar pembayaran pemasok.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M09-3 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: components/finance/supplier-payment-dialog.tsx, components/finance/payables-page.tsx, components/finance/payments-table.tsx, lib/finance-api.ts, src/app/payment/services/payment.service.ts, packages/locales/src/{en,id}/finance.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/finance/ap-flows.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M09-3 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M09-3.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### M09-4 Siapkan dan buka kembali periode (Tinggi, OB4, OB6, RO1, RO4)
 
 - **Seharusnya:**
@@ -442,6 +588,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
   1. Bella → Tutup periode → Siapkan periode Desember → berhasil.
   2. Bella tidak melihat "Buka kembali" pada periode terkunci; Aqim bisa, dan Log Audit mencatat.
 - **Bergantung pada:** P7-4, P7-1.
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan M09-4 Siapkan dan buka kembali periode.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M09-4 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/app/finance/controllers/ledger.controller.ts:205-218, src/app/finance/services/period.service.ts:108.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/finance/month-end-close.test.ts, test/authorization/permission-matrix.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M09-4 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M09-4.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### M09-7 Kasbon dan pertanggungjawaban satu langkah (Tinggi, OB9, OB13, RO5, RO6, KL-10)
 
@@ -470,6 +630,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
   3. Karyawan tanpa tugas proyek aktif ditolak dengan pesan KL (portal).
 - **Bergantung pada:** P7-1, P7-2, P7-3 (helper K1), P7-4 (hak `advance` untuk freelancer).
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan M09-7 Kasbon dan pertanggungjawaban satu langkah.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M09-7 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/app/finance/services/employee-advance.service.ts, src/app/finance/controllers/employee-advance.controller.ts, src/app/finance/contracts/employee-advance.contract.ts, src/app/finance/errors/advance.errors.ts, components/finance/advances-panel.tsx, packages/locales/src/{en,id}/finance.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/finance/employee-advances.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M09-7 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M09-7.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### M09-8 Write-off langsung ke beban (Tinggi, OB10)
 
 - **Seharusnya:** write-off piutang mendebit **Beban Kerugian Piutang (6-2600)**, bukan cadangan 1-1390 (OB10); laba rugi memuat kerugian.
@@ -491,6 +665,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
   1. Ajukan dan setujui write-off faktur Rp 1.000.000 → jurnal Beban Kerugian Piutang (D) / Piutang (K).
   2. Laba rugi periode itu memuat beban Rp 1.000.000.
 - **Bergantung pada:** — .
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan M09-8 Write-off langsung ke beban.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M09-8 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/app/finance/constants/posting-roles.ts, src/app/finance/services/receivable-adjustment.service.ts:220, database/seeders/seed/chart-of-accounts.seeder.ts, components/finance/posting-rules-page.tsx, lib/finance-api.ts, packages/locales/src/{en,id}/finance.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/finance/ar-postings.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M09-8 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M09-8.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### M09-15 Pindah dana antar kas/bank (Tinggi, KF-K1)
 
@@ -515,6 +703,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
   2. Mutasi tampil di kedua akun dengan keterangan yang sama.
 - **Bergantung pada:** M09-2.
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan M09-15 Pindah dana antar kas/bank.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M09-15 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: docs/database/docs.dbml, drizzle/schemas/finance.schema.ts, src/app/finance/contracts/cash-bank.repository.interface.ts, src/app/finance/repositories/cash-bank.repository.ts, src/app/finance/services/cash-bank.service.ts, src/app/finance/controllers/finance-operations.controller.ts, components/finance/cash-transfer-dialog.tsx, components/finance/cash-bank-page.tsx, packages/locales/src/{en,id}/finance.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/finance/finance-flows.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M09-15 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M09-15.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### M09-16 Batalkan transaksi kas/bank (Tinggi, KF-K2)
 
 - **Seharusnya:** transaksi kas/bank yang salah bisa **dibatalkan dengan alasan**; status `reversed`, jurnal pembalik otomatis, saldo kembali; diaudit.
@@ -535,6 +737,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
   1. Batalkan mutasi salah → wajib isi alasan → status Dibatalkan, saldo kembali.
   2. Transaksi dari pembayaran/kuitansi tidak bisa dibatalkan di sini (diarahkan ke sumbernya; dicek saat desain).
 - **Bergantung pada:** P7-1.
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan M09-16 Batalkan transaksi kas/bank.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M09-16 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: docs.dbml, finance.schema.ts, src/app/finance/services/cash-bank.service.ts, src/app/finance/repositories/cash-bank.repository.ts, components/finance/cash-bank-page.tsx, components/finance/reason-dialog.tsx.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/finance/finance-flows.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M09-16 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M09-16.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### M09-17 + M10-13 PPh 23 dipotong pelanggan (Tinggi, KF-K3, KF-T3)
 
@@ -564,6 +780,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
   3. Pemotongan PPh → saringan "dari pelanggan" menampilkan bupotnya.
 - **Bergantung pada:** B-33 (Dafrin, kuitansi). Terkait M10-11.
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan M09-17 + M10-13 PPh 23 dipotong pelanggan.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M09-17 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: docs.dbml, drizzle/schemas/tax.schema.ts, src/app/finance/constants/posting-roles.ts, src/app/sale/services/receipt-ledger.service.ts, src/app/finance/services/posting.service.ts, src/app/tax/services/exported-tax.service.ts, src/app/tax/services/tax.service.ts, components/tax/withholding-list.tsx, packages/locales/src/{en,id}/tax.ts, finance.ts, docs/database/logical-references.md.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/finance/ar-postings.test.ts, test/tax/tax.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M09-17 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M09-17.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### M09-18 Pembayaran upah freelance (Tinggi, KL-4)
 
 - **Seharusnya:**
@@ -588,6 +818,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
   2. Detail proyek → Biaya bertambah sebesar upah.
   3. Ade melihat status Dibayar di portal Rekap upah.
 - **Bergantung pada:** B-45 (Dafrin: data tarif + rekap), M09-3 (pola pembayaran).
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan M09-18 Pembayaran upah freelance.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M09-18 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: docs.dbml, drizzle/schemas/payment.schema.ts, src/app/payment/services/payment.service.ts, src/app/finance/constants/posting-roles.ts, src/app/finance/services/posting.service.ts, components/finance/freelance-wage-payment-dialog.tsx, packages/locales/src/{en,id}/finance.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/unit/payment-gateway.test.ts, test/finance/expense-flows.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M09-18 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M09-18.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### M09-19 Biaya perjalanan: kasbon, nota, klaim, batas (Tinggi, BP-1–BP-6)
 
@@ -620,6 +864,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
 
 ---
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan M09-19 Biaya perjalanan: kasbon, nota, klaim, batas.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M09-19 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: docs.dbml, drizzle/schemas/finance.schema.ts, src/app/finance/services/employee-advance.service.ts, src/app/finance/services/expense-claim.service.ts, src/app/finance/controllers/employee-portal-finance.controller.ts, src/app/finance/controllers/finance-setup.controller.ts, routes/_authed/settings/, routes/_authed.advances.tsx, routes/_authed.claims.tsx, lib/finance-portal-api.ts, packages/locales/src/{en,id}/employee.ts, finance.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/finance/employee-advances.test.ts, test/finance/expense-flows.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M09-19 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M09-19.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ## M10 Pajak
 
 ### M10-1 Jenis pajak memakai kosakata server (Tinggi, OC1)
@@ -642,6 +900,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
   2. Ubah tarifnya → tersimpan.
 - **Bergantung pada:** — .
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan M10-1 Jenis pajak memakai kosakata server.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M10-1 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: components/tax/tax-type-list.tsx, lib/tax-api.ts, packages/locales/src/{en,id}/tax.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/authorization/tax-authorization.test.ts, test/tax/tax.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M10-1 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M10-1.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### M10-2 Hitung ulang catatan pajak draf (Tinggi, OC2)
 
 - **Seharusnya:** saat DPP catatan draf diubah, **service** menghitung ulang pajak = DPP × tarif (half-up rupiah) (OC2 a).
@@ -658,6 +930,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
 - **Test:** di atas.
 - **UAT:** ubah DPP draf dari 10.000.000 ke 12.000.000 (PPN 11%) → pajak menjadi 1.320.000 setelah simpan.
 - **Bergantung pada:** M10-1.
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan M10-2 Hitung ulang catatan pajak draf.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M10-2 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/app/tax/services/tax.service.ts, components/tax/tax-record-edit-dialog.tsx.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/tax/tax.service.test.ts, test/tax/tax-math.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M10-2 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M10-2.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### M10-3 Masa Bupot otomatis (Tinggi, OC3)
 
@@ -676,6 +962,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
 - **UAT:** catat pemotongan bertanggal 15/12 tanpa mengisi masa → masa Desember; muncul di ekspor Coretax Desember.
 - **Bergantung pada:** — .
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan M10-3 Masa Bupot otomatis.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M10-3 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/app/tax/services/tax.service.ts, components/tax/withholding-list.tsx, withholding-edit-dialog.tsx.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/tax/tax.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M10-3 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M10-3.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### M10-9 Gerbang sebelum lapor (Tinggi sebelum lapor, OC8)
 
 - **Seharusnya:** gerbang D12/D14/D18 ditutup bersama Bella + Pemilik; **uji impor Coretax** sebelum dipakai lapor; potongan PPh saat bayar pemasok lewat M09-3. Tabel TER **tidak** diperlukan sekarang (OC8).
@@ -692,6 +992,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
 - **Test:** di atas.
 - **UAT:** Bella mengunggah XML Bupot satu masa ke Coretax (lingkungan uji DJP) tanpa galat.
 - **Bergantung pada:** M09-3, M10-3, keputusan Bella.
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan M10-9 Gerbang sebelum lapor.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M10-9 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/app/tax/utils/coretax-xml.ts, tax-csv.ts, docs/plan/backlog.md, docs/adjustment/catatan-progres.md.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/tax/tax-xlsx.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M10-9 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M10-9.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### M10-11 Terutang / dibayar / sisa per masa (Tinggi, KF-T1)
 
@@ -716,6 +1030,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
   2. Keuangan → Setor pajak Rp 600.000 → rekap: dibayar 600.000, sisa 0; pemotongan terkait berstatus Dibayar.
 - **Bergantung pada:** M09-17 (kredit PPh 23), M10-3.
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan M10-11 Terutang / dibayar / sisa per masa.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M10-11 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: docs.dbml, drizzle/schemas/tax.schema.ts, src/app/tax/services/exported-tax.service.ts, src/app/finance/services/tax-ledger.service.ts, src/app/tax/services/tax.service.ts, components/tax/tax-recap.tsx, packages/locales/src/{en,id}/tax.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/finance/tax-postings.test.ts, test/tax/tax.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M10-11 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M10-11.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### M10-12 Pengaturan rezim pajak (Sedang, Tinggi bila UMKM, KF-T2)
 
 - **Seharusnya:** pengaturan rezim (normal / PPh Final 0,5% UMKM) dan status PKP; bila UMKM, rekap PPh Final 0,5% omzet per bulan. **Menunggu pilihan Bella.**
@@ -726,6 +1054,8 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
 - **Bergantung pada:** keputusan Bella.
 
 ---
+
+**Prompt AI (salin):** tugas ini penunjuk; pakai prompt di entri yang dirujuk.
 
 ## M06 Aset & Peralatan
 
@@ -751,6 +1081,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
   2. Unit yang sedang dipinjam tidak muncul.
 - **Bergantung pada:** P7-4 (hak freelancer untuk peminjaman).
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan M06-1 Daftar unit yang bisa dipinjam.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M06-1 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/app/inventory/controllers/borrowing.controller.ts, src/app/inventory/services/borrowing-request.service.ts, src/app/inventory/repositories/, components/assets/borrowing-form.tsx, lib/borrowing-api.ts, docs/role-permission.md.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/unit/borrowing.service.test.ts, test/authorization/inventory-authorization.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M06-1 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M06-1.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### M06-2 Persetujuan sendiri peminjaman ikut K1 (Tinggi, OD2)
 
 - **Seharusnya:** pembuat pengajuan tidak bisa menyetujui sendiri **kecuali Pemilik**, dan itu dicatat audit `meta.self_approved` (OD2 a, K1); pesan pembatalan diperbaiki.
@@ -770,6 +1114,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
   1. Agus (PM) membuat pengajuan lalu menekan Setujui → ditolak dengan pesan K1.
   2. Aqim membuat dan menyetujui pengajuannya → berhasil; Log Audit "disetujui oleh pembuat".
 - **Bergantung pada:** P7-1, P7-2, P7-3 (helper K1).
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan M06-2 Persetujuan sendiri peminjaman ikut K1.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M06-2 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/app/inventory/services/borrowing-request.service.ts, src/app/inventory/controllers/borrowing.controller.ts, src/app/inventory/errors/borrowing.errors.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/unit/borrowing.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M06-2 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M06-2.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### M06-3 Sen di penyimpanan, rupiah di layar (Tinggi, OD3)
 
@@ -791,6 +1149,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
   2. Penghapusan dengan hasil jual Rp 500.000 → tampil Rp 500.000; jurnal di Keuangan sama.
 - **Bergantung pada:** — .
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan M06-3 Sen di penyimpanan, rupiah di layar.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M06-3 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: lib/asset-api.ts, components/assets/asset-disposal-list.tsx, asset-detail.tsx, asset-service-record-list.tsx, database/seeders/seed/inventory.seeder.ts, lib/asset-api.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/inventory-seeder.data.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M06-3 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M06-3.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### M06-6 Tolak hapus/nonaktif aset yang dipinjam (Tinggi, OD6)
 
 - **Seharusnya:** pengajuan penghapusan dan nonaktif ditolak selama status `borrowed` (OD6 a), dengan pesan jelas.
@@ -808,6 +1180,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
 - **Test:** di atas.
 - **UAT:** aset berstatus Dipinjam → Nonaktifkan atau Ajukan penghapusan → pesan "Aset sedang dipinjam".
 - **Bergantung pada:** — .
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan M06-6 Tolak hapus/nonaktif aset yang dipinjam.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M06-6 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/app/inventory/services/disposal.service.ts, src/app/inventory/services/item.service.ts, src/app/inventory/errors/item.errors.ts, packages/locales/src/{en,id}/api.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/unit/serial-status-matrix.test.ts, test/unit/item-operations.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M06-6 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M06-6.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### M06-14 Satu jalur penyusutan (Tinggi, KF-A1)
 
@@ -830,6 +1216,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
   1. Detail aset tidak lagi punya form penyusutan manual.
   2. Keuangan → Jalankan penyusutan November → semua aset aktif tersusutkan dan jurnal terbentuk.
 - **Bergantung pada:** M06-3.
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan M06-14 Satu jalur penyusutan.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M06-14 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/app/finance/controllers/depreciation.controller.ts, src/app/finance/services/depreciation.service.ts, src/app/finance/services/fixed-asset.service.ts, components/assets/asset-detail.tsx, components/assets/asset-depreciation-list.tsx, lib/asset-api.ts, packages/locales/src/{en,id}/assets.ts, docs/role-permission.md.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/finance/fixed-assets.test.ts, test/unit/finance-depreciation-gateway.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M06-14 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M06-14.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### PH-PINJAM Halaman Peminjaman Aset (Tinggi, OD4, C13, OD7, FU13)
 
@@ -858,6 +1258,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
 
 ---
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan PH-PINJAM Halaman Peminjaman Aset.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian PH-PINJAM (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/app/inventory/services/borrowing.service.ts, src/app/inventory/services/borrowing-request.service.ts, components/assets/borrowing-detail.tsx, borrowing-list.tsx, lib/borrowing-api.ts, packages/locales/src/{en,id}/assets.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/unit/borrowing.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri PH-PINJAM terpenuhi; buat docs/adjustment/5-pengerjaan/uat/PH-PINJAM.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ## M11 Bonus & Investor
 
 ### M11-4 ADR dan schema investor (Tinggi, IV-1)
@@ -881,6 +1295,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
 - **Test:** `test/unit/module-seams.test.ts` (batas modul), seeder test **(baru)**.
 - **UAT:** Dafrin/Oki meninjau ADR; `validate-dbml.ts` OK.
 - **Bergantung pada:** Gate 1–2; jawaban Aqim untuk rincian dana per proyek (IV-5).
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan M11-4 ADR dan schema investor.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M11-4 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: docs/architecture/decisions/ADR-00xx-investor-module.md, docs/database/docs.dbml, docs/database/module-ownership.md, AGENTS.md, drizzle/schemas/investor.schema.ts, finance.schema.ts, database/migrations/, database/seeders/seed/investor.seeder.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: tambahkan/jalankan test yang disebut di bagian Test entri ini.
+Selesai bila semua butir UAT di entri M11-4 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M11-4.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### M11-5 Daftar investor dan dana (Tinggi, IV-2–IV-4, IV-7, IV-8)
 
@@ -912,6 +1340,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
   4. Role selain Pemilik/Keuangan tidak bisa membuka `/finance/investors`.
 - **Bergantung pada:** M11-4, P7-1.
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan M11-5 Daftar investor dan dana.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M11-5 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/app/investor/, container.ts, index.ts, constants/di.ts, contracts/, repositories/, services/investor.service.ts, services/investor-funding.service.ts, controllers/investor.controller.ts, errors/investor.errors.ts, queues/installment-due.queue.ts, src/index.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/unit/investor.service.test.ts, test/authorization/investor-authorization.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M11-5 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M11-5.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### M11-6 Bagi hasil tahunan (Tinggi, IV-5)
 
 - **Seharusnya:**
@@ -936,6 +1378,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
   1. Laba sesudah pajak 2026 Rp 500.000.000, cadangan 20%, porsi Budi 10% → bagian Rp 40.000.000 dengan rincian langkah.
   2. Aqim menyetujui, Bella membayar → status Dibayar, jurnal Prive/Dividen 3-4000.
 - **Bergantung pada:** M11-5; kontrak margin proyek dari Dafrin; aturan rinci dari Aqim.
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan M11-6 Bagi hasil tahunan.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M11-6 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/app/investor/services/profit-sharing.service.ts, src/app/finance/services/exported-profit.service.ts, src/app/project/services/, routes/_authed/finance/investors/profit-sharing/index.tsx, components/investor/profit-sharing-*.tsx.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/unit/profit-sharing.service.test.ts, test/finance/exported-profit.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M11-6 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M11-6.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### M11-7 Portal investor (Tinggi, IV-6, IV-9, IV-10)
 
@@ -967,6 +1423,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
 
 ---
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan M11-7 Portal investor.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M11-7 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/app/investor/controllers/investor-portal.controller.ts, src/providers/better-auth/plugins/email-otp.auth.ts, src/app/user/services/invitation.service.ts, src/app/investor/services/investor-dashboard.service.ts, apps/web-investor/src/, routes/login, routes/index, apps/web-investor/Dockerfile, docker-compose.yml, packages/locales/src/{en,id}/investor.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: .github/workflows/main-{test-and-build,deploy}-web-investor.yml, test/unit/investor-portal.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri M11-7 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M11-7.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ## Portal karyawan
 
 ### PK-9 Layar admin kunjungan lokasi (Tinggi, KF-E1)
@@ -992,6 +1462,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
   2. Saring proyek tertentu → hanya kunjungan proyek itu.
   3. Teknisi tidak bisa membuka halaman ini.
 - **Bergantung pada:** persetujuan Dafrin (modul `project`).
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan PK-9 Layar admin kunjungan lokasi.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian PK-9 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/app/project/controllers/project.controller.ts, src/app/project/services/site-attendance.service.ts, routes/_authed/hr/site-visits/index.tsx, components/hr/site-visit-list.tsx, lib/project-api.ts, components/sidebar/nav-config.ts, packages/locales/src/{en,id}/hr.ts, docs/role-permission.md.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/unit/site-attendance.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri PK-9 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/PK-9.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### PK-10 Menu portal per penempatan dan freelance (Tinggi, KL-2, KL-5, KL-10)
 
@@ -1019,6 +1503,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
   2. Bilal (Kantor) yang punya tugas proyek hari ini → kartu "Tugas lapangan: {proyek}" + tombol Check-in di lokasi; menu Kasbon tampil.
   3. Karyawan kantor tanpa tugas → kartu Absen kantor Masuk/Pulang; menu Kasbon tidak tampil.
 - **Bergantung pada:** B-45 (Dafrin), P7-4, M09-18.
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan PK-10 Menu portal per penempatan dan freelance.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian PK-10 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/app/human-resource/services/employee-portal.service.ts, src/app/human-resource/controllers/employee-portal.controller.ts, components/sidebar/portal-nav.ts, components/sidebar/portal-sidebar.tsx, portal-bottom-bar.tsx, routes/_authed.index.tsx, routes/_authed.wages.tsx, lib/portal-api.ts, lib/portal-guard.ts, packages/locales/src/{en,id}/employee.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/unit/employee-portal.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri PK-10 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/PK-10.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ### PH-PORTAL Portal karyawan: kasbon, riwayat lokasi, lupa sandi, radius (Tinggi, OB13, OG1–OG3, PK-1)
 
@@ -1049,6 +1547,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
 
 ---
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan PH-PORTAL Portal karyawan: kasbon, riwayat lokasi, lupa sandi, radius.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian PH-PORTAL (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: src/app/finance/controllers/employee-portal-finance.controller.ts, src/app/project/services/site-attendance.service.ts, routes/_authed.advances.tsx, routes/forgot-password.tsx, routes/reset-password.tsx, routes/_authed.projects.$projectId.tsx, routes/_authed.attendance.tsx, components/sidebar/portal-nav.ts, lib/portal-api.ts, lib/auth-client.ts, packages/locales/src/{en,id}/employee.ts, api.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/unit/site-attendance.service.test.ts, test/finance/employee-advances.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri PH-PORTAL terpenuhi; buat docs/adjustment/5-pengerjaan/uat/PH-PORTAL.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ## Halaman lain dari peta halaman (Oki)
 
 ### PH-MASUK Halaman Masuk tanpa Google, pesan nonaktif (Tinggi, K13, OA3, OA14)
@@ -1069,6 +1581,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
 - **UAT:** halaman Masuk tanpa tombol Google (kedua aplikasi); akun nonaktif → "Akun dinonaktifkan, hubungi Pemilik"; akun undangan belum diklaim → "Selesaikan undangan dari email".
 - **Bergantung pada:** — .
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan PH-MASUK Halaman Masuk tanpa Google, pesan nonaktif.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian PH-MASUK (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: components/form/login-form.tsx, lib/last-login.ts, apps/web-employee/src/components/form/login-form.tsx, src/providers/better-auth/ac/login-gate.ts, options/session.auth.ts, packages/locales/src/{en,id}/api.ts, auth.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/unit/login-gate.test.ts, test/authorization/login-gate.guard.test.ts, test/unit/google-login-hardening.auth.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri PH-MASUK terpenuhi; buat docs/adjustment/5-pengerjaan/uat/PH-MASUK.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### PH-UNDANG Pengguna / Undang (Tinggi, OA12, OA13, K12)
 
 - **Seharusnya:** hanya Pemilik mengundang (OA12, hak di P7-4); isian organisasi dihapus dari dialog (K12); dialog konfirmasi untuk hapus undangan dan nonaktifkan pengguna (OA13).
@@ -1087,6 +1613,20 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
 - **UAT:** SDM tidak melihat tombol Undang; Aqim mengundang tanpa memilih organisasi; Hapus undangan dan Nonaktifkan meminta konfirmasi.
 - **Bergantung pada:** P7-4, M12-2.
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan PH-UNDANG Pengguna / Undang.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian PH-UNDANG (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: components/invite/invite-dialog.tsx, components/admin/pending-invitations-panel.tsx, routes/_authed/admin/users/index.tsx, src/app/user/services/invitation.service.ts, packages/locales/src/{en,id}/admin.ts.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: test/unit/invitation.service.test.ts (jalankan hanya ini saat iterasi).
+Selesai bila semua butir UAT di entri PH-UNDANG terpenuhi; buat docs/adjustment/5-pengerjaan/uat/PH-UNDANG.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### PH-IMPOR Impor data awal, modul Oki (Tinggi, L-12, NM-1, NM-2)
 
 - **Seharusnya:** templat Excel, unggah, **semua baris diperiksa**, semua-atau-tidak, kesalahan per baris (NM-1). Bagian Oki: daftar akun + saldo awal + piutang/utang awal, aset (NM-2). Pelanggan/pemasok/barang/karyawan oleh Dafrin.
@@ -1095,6 +1635,8 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
 - **Skema/migrasi:** tidak.
 - **UAT:** unggah templat akun dengan satu baris salah → tidak ada yang masuk, kesalahan menyebut baris; perbaiki → semua masuk.
 - **Bergantung pada:** P7-6 (komponen form/kesalahan bersama), P7-3 untuk stok awal (Dafrin).
+
+**Prompt AI (salin):** tugas ini penunjuk; pakai prompt di entri yang dirujuk.
 
 ### PH-LAPHARIAN Portal: laporan harian (Tinggi, B-44 Dafrin + Oki)
 
@@ -1105,6 +1647,8 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
 - **UAT:** isi laporan hari ini → kartu Beranda "Sudah diisi pukul …"; laporan 3 hari lalu tidak bisa disusul.
 - **Bergantung pada:** B-44 (Dafrin).
 
+**Prompt AI (salin):** tugas ini penunjuk; pakai prompt di entri yang dirujuk.
+
 ### PH-WA Profil pengguna: nomor WA staf (Tinggi, B-46)
 
 - **Seharusnya:** staf mengisi nomor WhatsApp di profil sebagai penerima pesan n8n (B-46, N8-3).
@@ -1113,6 +1657,8 @@ Tercakup [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-1
 - **Skema/migrasi:** tidak (kolom ada).
 - **UAT:** Bella mengisi 0812… di profil → tersimpan dalam format E.164; pesan uji n8n masuk.
 - **Bergantung pada:** B-46 (Dafrin), X-14.
+
+**Prompt AI (salin):** tugas ini penunjuk; pakai prompt di entri yang dirujuk.
 
 ### PH-DASBOR Dasbor (Sedang, RD1–RD3, OF1–OF3)
 
@@ -1127,31 +1673,45 @@ Bukan Tinggi; dicatat karena baris O di peta halaman. M01-1..M01-4 semuanya Rend
 
 ---
 
+**Prompt AI (salin):** tugas ini penunjuk; pakai prompt di entri yang dirujuk.
+
 ## Lintas modul
 
 ### X-1 Autentikasi dan organisasi (Tinggi)
 
 Pecah ke [M12-2](#m12-2-k12-tahap-1-sembunyikan-organisasi-tinggi-oa1-oa2), [PH-MASUK](#ph-masuk-halaman-masuk-tanpa-google-pesan-nonaktif-tinggi-k13-oa3-oa14), [PH-UNDANG](#ph-undang-pengguna--undang-tinggi-oa12-oa13-k12), [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-10-b4). Portal pelanggan (OA4) di Dafrin.
 
+**Prompt AI (salin):** tugas ini penunjuk; pakai prompt di entri yang dirujuk.
+
 ### X-2 Aturan persetujuan K1 bersama (Tinggi)
 
 Dikerjakan Dafrin sebagai P7-3 (lihat `peta-kode-dafrin.md`). Bagian Oki: `AuditWriter.recordInTx` + `meta.self_approved` (P7-1), ADR-0006 (P7-2), dan meninjau PR. Helper K1 diusulkan di `apps/backend/src/shared/approval/` **(baru, bagian bersama K11)**; dipakai juga M06-2 dan M09-7.
+
+**Prompt AI (salin):** tugas ini penunjuk; pakai prompt di entri yang dirujuk.
 
 ### X-3 Penomoran bersama (Tinggi)
 
 Dikerjakan Dafrin sebagai P7-5 (`src/shared/numbering`, `CODE_MAX_LENGTH`, nomor di dalam transaksi). Bagian Oki: meninjau PR, dan memastikan `FinanceNumberingService` (`src/app/finance/services/finance-numbering.service.ts`), `TaxNumberingService`, `PaymentNumberingService`, `InventoryNumberingService` (aset) ikut pola baru setelah P7-5 masuk.
 
+**Prompt AI (salin):** tugas ini penunjuk; pakai prompt di entri yang dirujuk.
+
 ### X-4 Audit sebagai aktivitas bisnis (Tinggi)
 
 Sama dengan [P7-1](#p7-1-audit-di-dalam-transaksi-tinggi-oa5oa7-l-1).
+
+**Prompt AI (salin):** tugas ini penunjuk; pakai prompt di entri yang dirujuk.
 
 ### X-5 Chromium untuk PDF (Tinggi untuk produksi)
 
 Bagian dari [P7-7](#p7-7-server-siap-pakai-dan-batas-login-tinggi-nm-5-nm-6-l-10-l-11). Pelebaran `document.documents.code` hanya bila opsi 3 penomoran dipilih di P7-5 (dicek saat P7-5).
 
+**Prompt AI (salin):** tugas ini penunjuk; pakai prompt di entri yang dirujuk.
+
 ### X-7 Deploy: S3, SMTP, scheduler, web-investor, backup (Tinggi untuk produksi)
 
 S3/SMTP/scheduler di [P7-7](#p7-7-server-siap-pakai-dan-batas-login-tinggi-nm-5-nm-6-l-10-l-11); `web-investor` di [M11-7](#m11-7-portal-investor-tinggi-iv-6-iv-9-iv-10); backup di [X-13](#x-13-backup-harian-dan-panduan-deploy-tinggi-nm-3-nm-10-l-13).
+
+**Prompt AI (salin):** tugas ini penunjuk; pakai prompt di entri yang dirujuk.
 
 ### X-13 Backup harian dan panduan deploy (Tinggi, NM-3, NM-10, L-13)
 
@@ -1177,6 +1737,20 @@ S3/SMTP/scheduler di [P7-7](#p7-7-server-siap-pakai-dan-batas-login-tinggi-nm-5-
   3. Dafrin bisa mengikuti panduan rollback tanpa bertanya.
 - **Bergantung pada:** P7-7, akses server (NM-4) dan lokasi penyimpanan luar dari Aqim.
 
+**Prompt AI (salin):**
+
+```text
+Kerjakan X-13 Backup harian dan panduan deploy.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian X-13 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: docker-compose.yml, apps/backend/scripts/backup/, deploy/backup/, docs/architecture/runbook.md, docs/adjustment/catatan-progres.md.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: tambahkan/jalankan test yang disebut di bagian Test entri ini.
+Selesai bila semua butir UAT di entri X-13 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/X-13.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
+
 ### X-14 n8n dan WAHA self-host (Tinggi, N8-1, N8-2)
 
 - **Seharusnya:** n8n Community di Docker pada server perusahaan dengan **HTTPS publik**, ikut backup harian (N8-1); WAHA di server yang sama dengan nomor khusus perusahaan, pindah ke Meta Cloud API nanti (N8-2).
@@ -1199,6 +1773,20 @@ S3/SMTP/scheduler di [P7-7](#p7-7-server-siap-pakai-dan-batas-login-tinggi-nm-5-
 - **Bergantung pada:** P7-7, X-13, B-46 (Dafrin: sakelar pesan).
 
 ---
+
+**Prompt AI (salin):**
+
+```text
+Kerjakan X-14 n8n dan WAHA self-host.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian X-14 (Seharusnya, File yang diubah, Test, UAT).
+Buka hanya file ini: docker-compose.yml, docker-compose.automation.yml, apps/backend/.env.example, docs/architecture/runbook.md.
+Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
+Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
+Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
+Test: tambahkan/jalankan test yang disebut di bagian Test entri ini.
+Selesai bila semua butir UAT di entri X-14 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/X-14.md dari templat uat-pengerjaan.md.
+Laporkan hanya: file yang diubah dan hasil test.
+```
 
 ## Tugas yang tidak dirinci di sini
 

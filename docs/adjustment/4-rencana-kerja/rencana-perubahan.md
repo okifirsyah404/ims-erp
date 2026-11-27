@@ -133,6 +133,8 @@ OA1–OA7, OB7/OB8, OD1/OD2, OE1, OG1) ada di
 | L-13 | **Backup harian** database + berkas, disalin ke luar server, simpan 30 hari, uji restore bulanan (mengisi L-9); panduan deploy/rollback/backup ditulis Oki, ditinjau Dafrin | NM-3, NM-10 (T17, T32) | Bersama (Oki menulis) | Tinggi (Diputuskan 28/11) |
 | L-14 | **UAT resmi U01–U32** disalin ke `1-validasi/uat-resmi.md` dan dipetakan ke checklist; hasil dan bukti di sheet UjiTerima. **Menunggu file Excel kontrak** | NM-9 (T31) | Bersama | Tinggi sebelum rilis (Diputuskan 28/11) |
 | L-15 | **Pelatihan tatap muka** per kelompok role; **panduan lengkap per modul** dan **panduan penggunaan dari awal sampai akhir** | NM-7, NM-8 (T18, T32) | Bersama | Sebelum rilis (Diputuskan 28/11) |
+| L-16 | **Rombak seeder uji** mengikuti susunan role K2 dan akun per orang; data uji per alur (penjualan, pembelian, proyek, tiket, lisensi, aset, SDM kantor/lapangan/freelance, keuangan, investor); deterministik dan idempoten. Rincian `3-rancangan/rancangan-data-seeder.md` | Permintaan programmer B 28/11 | Bersama (role: Oki; data modul: pemilik modul) | Tinggi, akhir langkah 7 setelah P7-4 |
+| L-17 | **Informasi penggunaan** (RF-28–RF-34) diterapkan bertahap pada menu, halaman, tabel, dan form yang disentuh setiap tugas; menu baru (RM1) sekaligus dengan keterangan | Permintaan programmer B 28/11 | Bersama | Ikut setiap tugas (A-11) |
 
 ## 5. Dokumen yang perlu dirapikan (setelah izin pemiliknya)
 
