@@ -13,6 +13,26 @@ Kode **RM** (menu), **RD** (dasbor), **RF** (aturan form), dan **FU** (form
 utama) dipakai untuk menandai butir yang perlu diputuskan. Belum ada kode yang
 diubah.
 
+**Keputusan programmer B (tanya-jawab 2026-11-27):**
+
+| No | Keputusan |
+|---|---|
+| RM1 | Menu disusun **per pekerjaan** (susunan 2.2) |
+| RM2 | **Nama usulan** dipakai di menu, judul halaman, tombol, dan pesan |
+| RM3 | Halaman **Perlu Tindakan** dibuat, dengan lencana jumlah di menu |
+| RM4 | Halaman "Segera hadir" **disembunyikan** sampai jadi |
+| RD1 | Kartu dasbor per role (3.2) disetujui; disesuaikan bersama pemakainya saat UAT |
+| RD2 | Baris **"Hari ini"** di atas semua dasbor |
+| RD3 | Penjualan melihat angka **semua orang, dengan saringan "milik saya"** |
+| RF-A | Aturan RF-1 sampai RF-26 dan pola pesan 4.5 **disetujui semua** |
+| RF-B | Diterapkan **bertahap**: form utama dulu, form lain saat disentuh |
+| FU-A/FU-B | **Rincian form dibahas per form dulu** sebelum disetujui (status per form di bagian 5.2) |
+| TF-A/TF-B | **TanStack Form + skema zod bersama**; dasar teknis TF-1 sampai TF-3 dikerjakan setelah audit dan K1, sebelum perbaikan form |
+
+Menu, dasbor, dan pembaruan form ini menyentuh wilayah Oki (M01 dasbor,
+`nav-config.ts` bersama, M06, M09, M12); dikerjakan lewat PR dan ditinjau Oki
+(K11).
+
 ---
 
 ## 1. Masalah yang ingin diselesaikan
