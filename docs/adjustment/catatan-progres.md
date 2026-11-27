@@ -2238,3 +2238,20 @@ tidak dipakai.
   tersisa.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - PR #175
+
+PR #175 dibuat ke `main` dari `docs/aturan-pengerjaan-dan-pembersihan`.
+PR ini juga membawa isi branch `docs/adjustment-langkah-7`.
+
+Isinya:
+- aturan pengerjaan, peta kode dengan prompt, UAT pengerjaan;
+- rencana langkah 7;
+- lingkup AI di `AGENTS.md`;
+- pembaruan status ADR;
+- penghapusan dokumen usang;
+- rancangan seeder, informasi penggunaan, dan dokumentasi API (L-18).
+
+Deskripsi PR memuat panduan tinjauan untuk Oki.
+
+Tidak ada perubahan kode.
