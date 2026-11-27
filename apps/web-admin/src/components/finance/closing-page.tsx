@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getRouteApi } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -8,6 +7,7 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Card,
+	CardAction,
 	CardContent,
 	CardHeader,
 	CardTitle,
@@ -23,15 +23,12 @@ import {
 	runDeferredRevenue,
 	settlePpn,
 	closeChecklistQueryOptions,
-	ensurePeriod,
 	periodsQueryOptions,
 	transitionPeriod,
 	type TPeriod,
 } from '@/lib/finance-api';
 import { usePermission } from '@/lib/use-permission';
-
-/** The route API for `/finance/closing` (validated search params). */
-const routeApi = getRouteApi('/_authed/finance/closing/');
+import { PeriodDialog } from './period-dialog';
 
 const currentYear = () => new Date().getFullYear();
 const currentMonth = () => new Date().getMonth() + 1;
@@ -42,20 +39,17 @@ const statusKey = (status: string) =>
 /** Period closing: advisory checklist + close/lock transitions (F2/F7). */
 export function ClosingPage() {
 	const { t } = useTranslation(['finance', 'common']);
-	const navigate = routeApi.useNavigate();
 	const queryClient = useQueryClient();
-	const search = routeApi.useSearch();
 	const canRead = usePermission('accounting_period.read');
 	// ERP-0167: opening a month needs `accounting_period:create` (owner, accountant).
 	const canCreatePeriod = usePermission('accounting_period.create');
 	const canClose = usePermission('accounting_period.close');
 	const canReopen = usePermission('accounting_period.reopen');
 
-	const year = search.year ?? currentYear();
-	const month = search.month ?? currentMonth();
-	const [yearInput, setYearInput] = useState(String(year));
-	const [monthInput, setMonthInput] = useState(String(month));
-	const [applied, setApplied] = useState({ year, month });
+	const [yearInput, setYearInput] = useState(String(currentYear()));
+	const [monthInput, setMonthInput] = useState(String(currentMonth()));
+	const [applied, setApplied] = useState({ year: currentYear(), month: currentMonth() });
+	const [creatingPeriod, setCreatingPeriod] = useState(false);
 
 	const { data: checklist } = useQuery({
 		...closeChecklistQueryOptions(applied.year, applied.month),
@@ -71,15 +65,6 @@ export function ClosingPage() {
 		void queryClient.invalidateQueries({ queryKey: ['periods'] });
 		void queryClient.invalidateQueries({ queryKey: ['close-checklist'] });
 	};
-
-	const ensure = useMutation({
-		mutationFn: () => ensurePeriod(applied.year, applied.month),
-		onSuccess: async () => {
-			toast.success(t('finance:periods.created'));
-			invalidate();
-		},
-		onError: (mutationError: Error) => toast.error(mutationError.message),
-	});
 
 	const canAmortise = usePermission('journal.post');
 	const amortise = useMutation({
@@ -125,7 +110,6 @@ export function ClosingPage() {
 		const nextYear = Number(yearInput) || currentYear();
 		const nextMonth = Math.min(12, Math.max(1, Number(monthInput) || currentMonth()));
 		setApplied({ year: nextYear, month: nextMonth });
-		void navigate({ search: { year: nextYear, month: nextMonth } });
 	};
 
 	const nextAction = (
@@ -232,6 +216,13 @@ export function ClosingPage() {
 				<Card>
 					<CardHeader>
 						<CardTitle>{t('finance:closing.checklist')}</CardTitle>
+						{canCreatePeriod ? (
+							<CardAction>
+								<Button size='sm' onClick={() => setCreatingPeriod(true)}>
+									{t('finance:periods.create')}
+								</Button>
+							</CardAction>
+						) : null}
 					</CardHeader>
 					<CardContent className='space-y-3'>
 						<div className='flex flex-wrap items-center gap-2'>
@@ -250,16 +241,6 @@ export function ClosingPage() {
 							<Button size='sm' variant='outline' onClick={apply}>
 								{t('finance:aging.apply')}
 							</Button>
-							{canCreatePeriod && (
-								<Button
-									size='sm'
-									variant='ghost'
-									disabled={ensure.isPending}
-									onClick={() => void ensure.mutateAsync()}
-								>
-									{t('finance:periods.create')}
-								</Button>
-							)}
 							{canAmortise ? (
 								<Button
 									size='sm'
@@ -292,7 +273,7 @@ export function ClosingPage() {
 									{checklist.items.map((item) => (
 										<div
 											key={item.key}
-											className='flex items-center justify-between rounded-md border px-3 py-2 text-sm'
+											className='bg-muted/40 flex items-center justify-between rounded-md px-3 py-2 text-sm'
 										>
 											<span className='flex items-center gap-2'>
 												{item.pass ? (
@@ -325,6 +306,13 @@ export function ClosingPage() {
 					bordered
 				/>
 			)}
+			{creatingPeriod ? (
+				<PeriodDialog
+					defaultYear={applied.year}
+					defaultMonth={applied.month}
+					onClose={() => setCreatingPeriod(false)}
+				/>
+			) : null}
 		</div>
 	);
 }

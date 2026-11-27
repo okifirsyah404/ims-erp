@@ -11,7 +11,7 @@ beres.
 
 Satu paket = satu PR ke `main`. Nomor `ERP-*` dan ADR **dipesan saat PR
 dibuat**, setelah mengecek `main`, semua branch, dan PR terbuka (nomor
-terakhir di backlog: ERP-0168).
+terakhir di backlog: ERP-0178).
 
 | Paket | Isi | Pemegang | Sumber keputusan | Butuh lebih dulu | Skema / migrasi |
 |---|---|---|---|---|---|

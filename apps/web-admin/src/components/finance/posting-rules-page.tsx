@@ -164,12 +164,6 @@ export function PostingRulesPage() {
 					<h1 className='text-xl font-semibold'>{t('finance:postingRules.title')}</h1>
 					<p className='text-muted-foreground text-sm'>{t('finance:postingRules.description')}</p>
 				</div>
-				{canUpdate ? (
-					<Button size='sm' onClick={() => setDialog({ rule: null })}>
-						<Plus className='size-4' data-icon='inline-start' />
-						{t('finance:postingRules.create')}
-					</Button>
-				) : null}
 			</div>
 			<div className='flex items-center gap-2'>
 				<Checkbox
@@ -179,7 +173,17 @@ export function PostingRulesPage() {
 				/>
 				<FieldLabel htmlFor='posting-rules-inactive'>{t('finance:postingRules.showInactive')}</FieldLabel>
 			</div>
-			<DataTableCard>
+			<DataTableCard
+				title={t('finance:postingRules.title')}
+				action={
+					canUpdate ? (
+						<Button size='sm' onClick={() => setDialog({ rule: null })}>
+							<Plus className='size-4' data-icon='inline-start' />
+							{t('finance:postingRules.create')}
+						</Button>
+					) : null
+				}
+			>
 				{isError ? (
 					<ErrorState error={error} />
 				) : !isPending && (data?.length ?? 0) === 0 ? (

@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { getRouteApi } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -35,7 +34,6 @@ import {
 import { usePermission } from '@/lib/use-permission';
 
 /** The route API for `/finance/tax/recap` (validated search params). */
-const routeApi = getRouteApi('/_authed/finance/tax/recap/');
 
 const MONTHS = Array.from({ length: 12 }, (_, index) => index + 1);
 
@@ -61,21 +59,15 @@ const statusTone = (status: TFilingStatus) =>
  */
 export function TaxRecap() {
 	const { t } = useTranslation(['tax', 'common']);
-	const navigate = routeApi.useNavigate();
-	const search = routeApi.useSearch();
 	const canExport = usePermission('tax.export');
 
-	const [year, setYear] = useState(search.year ?? CURRENT_YEAR);
-	const [month, setMonth] = useState(search.month ?? CURRENT_MONTH);
+	const [year, setYear] = useState(CURRENT_YEAR);
+	const [month, setMonth] = useState(CURRENT_MONTH);
 
 	const { data, isPending, isError, error } = useQuery({
 		...recapQueryOptions(year, month),
 		placeholderData: (previous) => previous,
 	});
-
-	const applyPeriod = () => {
-		void navigate({ search: { year, month } });
-	};
 
 	return (
 		<div className='space-y-4'>
@@ -111,9 +103,6 @@ export function TaxRecap() {
 						))}
 					</SelectContent>
 				</Select>
-				<Button variant='outline' onClick={applyPeriod}>
-					{t('tax:period.apply')}
-				</Button>
 				{canExport ? (
 					<Button
 						variant='outline'

@@ -4,7 +4,6 @@ import {
 	useQuery,
 	useQueryClient,
 } from '@tanstack/react-query';
-import { getRouteApi } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -39,7 +38,6 @@ import { usePermission } from '@/lib/use-permission';
 import { WithholdingEditDialog } from '@/components/tax/withholding-edit-dialog';
 
 /** The route API for `/finance/tax/withholding` (validated search params). */
-const routeApi = getRouteApi('/_authed/finance/tax/withholding/');
 
 const PAGE_SIZE = 20;
 
@@ -61,9 +59,7 @@ const statusTone = (status: TWithholdingStatus) =>
  */
 export function WithholdingList() {
 	const { t } = useTranslation(['tax', 'common']);
-	const navigate = routeApi.useNavigate();
 	const queryClient = useQueryClient();
-	const search = routeApi.useSearch();
 	const canUpdate = usePermission('tax.update');
 	const canVerify = usePermission('tax.verify');
 
@@ -75,7 +71,7 @@ export function WithholdingList() {
 	const [editing, setEditing] = useState<TWithholdingRecord | null>(null);
 	const [coretaxRecord, setCoretaxRecord] = useState<TWithholdingRecord | null>(null);
 
-	const page = search.page ?? 1;
+	const [page, setPage] = useState(1);
 	const { data, isPending, isError, error } = useQuery({
 		...withholdingQueryOptions({ page, limit: PAGE_SIZE }),
 		placeholderData: (previous) => previous,
@@ -315,9 +311,7 @@ export function WithholdingList() {
 							<PaginationControls
 								page={page}
 								totalPages={data.pagination.totalPages}
-								onPageChange={(next) =>
-									void navigate({ search: (prev) => ({ ...prev, page: next }) })
-								}
+								onPageChange={setPage}
 							/>
 						) : null}
 					</>

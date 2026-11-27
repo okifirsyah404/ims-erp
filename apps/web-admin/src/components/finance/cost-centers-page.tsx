@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getRouteApi } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -42,7 +41,6 @@ import {
 } from '@/lib/finance-api';
 import { usePermission } from '@/lib/use-permission';
 
-const routeApi = getRouteApi('/_authed/finance/cost-centers/');
 const PAGE_SIZE = 50;
 const NONE = 'none';
 
@@ -50,19 +48,17 @@ const NONE = 'none';
 export function CostCentersPage() {
 	const { t } = useTranslation(['finance', 'common']);
 	const confirm = useConfirm();
-	const navigate = routeApi.useNavigate();
-	const search = routeApi.useSearch();
 	const queryClient = useQueryClient();
 	const canRead = usePermission('cost_center.read');
 	const canCreate = usePermission('cost_center.create');
 	const canUpdate = usePermission('cost_center.update');
 	const canArchive = usePermission('cost_center.archive');
 	const [dialog, setDialog] = useState<{ center: TCostCenter | null } | null>(null);
-	const [term, setTerm] = useState(search.search ?? '');
-
-	const page = search.page ?? 1;
+	const [term, setTerm] = useState('');
+	const [applied, setApplied] = useState<string | undefined>(undefined);
+	const [page, setPage] = useState(1);
 	const { data, isPending, isError, error } = useQuery({
-		...costCentersQueryOptions({ page, limit: PAGE_SIZE, search: search.search }),
+		...costCentersQueryOptions({ page, limit: PAGE_SIZE, search: applied }),
 		placeholderData: (previous) => previous,
 		enabled: canRead,
 	});
@@ -150,17 +146,12 @@ export function CostCentersPage() {
 					<h1 className='text-xl font-semibold'>{t('finance:costCenters.title')}</h1>
 					<p className='text-muted-foreground text-sm'>{t('finance:costCenters.description')}</p>
 				</div>
-				{canCreate ? (
-					<Button size='sm' onClick={() => setDialog({ center: null })}>
-						<Plus className='size-4' data-icon='inline-start' />
-						{t('finance:costCenters.create')}
-					</Button>
-				) : null}
 			</div>
 			<form
 				onSubmit={(event) => {
 					event.preventDefault();
-					void navigate({ search: (prev) => ({ ...prev, page: undefined, search: term.trim() || undefined }) });
+					setApplied(term.trim() || undefined);
+					setPage(1);
 				}}
 			>
 				<Input
@@ -170,7 +161,17 @@ export function CostCentersPage() {
 					onChange={(event) => setTerm(event.target.value)}
 				/>
 			</form>
-			<DataTableCard>
+			<DataTableCard
+				title={t('finance:costCenters.title')}
+				action={
+					canCreate ? (
+						<Button size='sm' onClick={() => setDialog({ center: null })}>
+							<Plus className='size-4' data-icon='inline-start' />
+							{t('finance:costCenters.create')}
+						</Button>
+					) : null
+				}
+			>
 				{isError ? (
 					<ErrorState error={error} />
 				) : !isPending && (data?.rows.length ?? 0) === 0 ? (
@@ -181,7 +182,7 @@ export function CostCentersPage() {
 				<PaginationControls
 					page={page}
 					totalPages={data?.pagination.totalPages ?? 1}
-					onPageChange={(next) => void navigate({ search: (prev) => ({ ...prev, page: next }) })}
+					onPageChange={setPage}
 				/>
 			</DataTableCard>
 			{dialog ? (

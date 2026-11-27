@@ -1,24 +1,13 @@
-import { MoneyInput } from '@/components/money-input';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getRouteApi } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { DatePicker } from '@ims-erp/ui/components/date-picker';
-import { Input } from '@ims-erp/ui/components/input';
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@ims-erp/ui/components/select';
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
-import { Landmark, Pencil, Plus } from 'lucide-react';
+import { ArrowLeftRight, Landmark, Pencil, Plus, Receipt, Users } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
-import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { RowActions } from '@/components/data-table/row-actions';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
@@ -33,22 +22,17 @@ import {
 	cashBankAccountsQueryOptions,
 	cashBankTransactionsQueryOptions,
 	createCashBankAccount,
-	postCashBankMovement,
-	toMinor,
 	type TCashBankAccount,
 	type TCashBankTransaction,
 	updateCashBankAccount,
 } from '@/lib/finance-api';
 import { usePermission } from '@/lib/use-permission';
+import { CashBankMovementDialog } from './cash-bank-movement-dialog';
 import { GatewaySettlementDialog } from './gateway-settlement-dialog';
 import { TaxPaymentDialog } from './tax-payment-dialog';
 
-/** The route API for `/finance/cash-bank` (validated search params). */
-const routeApi = getRouteApi('/_authed/finance/cash-bank/');
-
 const PAGE_SIZE = 20;
-
-const today = () => new Date().toISOString().slice(0, 10);
+const ACCOUNT_PAGE_SIZE = 20;
 
 const formatMoney = (minor: number) => (minor / 100).toLocaleString();
 
@@ -63,9 +47,7 @@ const CASH_TYPE_KEYS = {
 /** Cash & bank: accounts with GL links + movement ledger (F3). */
 export function CashBankPage() {
 	const { t } = useTranslation(['finance', 'common']);
-	const navigate = routeApi.useNavigate();
 	const queryClient = useQueryClient();
-	const search = routeApi.useSearch();
 	const canRead = usePermission('cash_bank.read');
 	const canCreate = usePermission('cash_bank.create');
 	const canUpdate = usePermission('cash_bank.update');
@@ -75,15 +57,9 @@ export function CashBankPage() {
 
 	const [creating, setCreating] = useState(false);
 	const [editing, setEditing] = useState<TCashBankAccount | null>(null);
-
-	const [movementAccountId, setMovementAccountId] = useState('none');
-	const [movementDate, setMovementDate] = useState(today());
-	const [movementDirection, setMovementDirection] = useState<'in' | 'out'>('in');
-	const [movementAmount, setMovementAmount] = useState('');
-	const [movementDescription, setMovementDescription] = useState('');
-	const [counterpartAccountId, setCounterpartAccountId] = useState('none');
-
-	const page = search.page ?? 1;
+	const [movementOpen, setMovementOpen] = useState(false);
+	const [page, setPage] = useState(1);
+	const [accountPage, setAccountPage] = useState(1);
 	const {
 		data: accounts,
 		isPending: accountsPending,
@@ -108,6 +84,20 @@ export function CashBankPage() {
 	const glById = useMemo(
 		() => new Map((glAccounts?.rows ?? []).map((gl) => [gl.id, gl])),
 		[glAccounts],
+	);
+
+	const accountTotalPages = Math.max(
+		1,
+		Math.ceil((accounts?.length ?? 0) / ACCOUNT_PAGE_SIZE),
+	);
+	const safeAccountPage = Math.min(accountPage, accountTotalPages);
+	const pagedAccounts = useMemo(
+		() =>
+			(accounts ?? []).slice(
+				(safeAccountPage - 1) * ACCOUNT_PAGE_SIZE,
+				safeAccountPage * ACCOUNT_PAGE_SIZE,
+			),
+		[accounts, safeAccountPage],
 	);
 
 	const invalidate = () => {
@@ -151,25 +141,6 @@ export function CashBankPage() {
 		onSuccess: async () => {
 			toast.success(t('finance:cashBank.updated'));
 			setEditing(null);
-			invalidate();
-		},
-		onError: (mutationError: Error) => toast.error(mutationError.message),
-	});
-
-	const postMovement = useMutation({
-		mutationFn: () =>
-			postCashBankMovement({
-				cashBankAccountId: movementAccountId,
-				transactionDate: movementDate,
-				direction: movementDirection,
-				amount: toMinor(movementAmount),
-				description: movementDescription || null,
-				counterpartAccountId,
-			}),
-		onSuccess: async () => {
-			toast.success(t('finance:cashBank.movementCreated'));
-			setMovementAmount('');
-			setMovementDescription('');
 			invalidate();
 		},
 		onError: (mutationError: Error) => toast.error(mutationError.message),
@@ -310,9 +281,6 @@ export function CashBankPage() {
 		);
 	}
 
-	// A movement needs a GL-linked account; the backend rejects it otherwise.
-	const canPostMovement = canCreate && movementAccountId !== 'none';
-
 	return (
 		<div className='space-y-4'>
 			<div className='flex items-start justify-between gap-4'>
@@ -322,161 +290,119 @@ export function CashBankPage() {
 						{t('finance:cashBank.description')}
 					</p>
 				</div>
-				{canCreate ? (
-					<div className='flex gap-2'>
-						<Button size='sm' variant='outline' onClick={() => setPayingTax(true)}>
-							{t('finance:taxPayment.title')}
-						</Button>
-						<Button size='sm' variant='outline' onClick={() => setPayingPayroll(true)}>
-							{t('finance:payrollPayment.title')}
-						</Button>
-						<Button size='sm' variant='outline' onClick={() => setSettling(true)}>
-							{t('finance:gatewaySettlement.title')}
-						</Button>
-						<Button size='sm' variant='outline' onClick={() => setCreating(true)}>
-							<Plus className='size-4' data-icon='inline-start' />
-							{t('finance:cashBank.create')}
-						</Button>
-					</div>
-				) : null}
 			</div>
 			{settling ? <GatewaySettlementDialog accounts={accounts ?? []} onClose={() => setSettling(false)} /> : null}
 			{payingTax ? <TaxPaymentDialog accounts={accounts ?? []} onClose={() => setPayingTax(false)} /> : null}
 			{payingPayroll ? <TaxPaymentDialog mode='payroll' accounts={accounts ?? []} onClose={() => setPayingPayroll(false)} /> : null}
-
-			{accountsError ? (
-				<ErrorState error={accountsErr} bordered />
-			) : !accountsPending && (accounts?.length ?? 0) === 0 ? (
-				<EmptyState
-					icon={Landmark}
-					title={t('finance:cashBank.accountsEmpty')}
-					bordered
+			{movementOpen ? (
+				<CashBankMovementDialog
+					accounts={accounts ?? []}
+					glAccounts={glAccounts?.rows ?? []}
+					onClose={() => setMovementOpen(false)}
 				/>
-			) : (
-				<DataTableCard>
-					<DataTable
-						columns={accountColumns}
-						data={accounts ?? []}
-						loading={accountsPending}
-						getRowId={(row) => row.id}
-					/>
-				</DataTableCard>
-			)}
-
-			{canCreate ? (
-				<p className='text-muted-foreground text-xs'>{t('finance:cashBank.glLinkRequired')}</p>
 			) : null}
 
+			<Card>
+				<CardHeader>
+					<CardTitle>{t('finance:cashBank.title')}</CardTitle>
+					{canCreate ? (
+						<CardAction>
+							<Button size='sm' onClick={() => setCreating(true)}>
+								<Plus className='size-4' data-icon='inline-start' />
+								{t('finance:cashBank.create')}
+							</Button>
+						</CardAction>
+					) : null}
+				</CardHeader>
+				<CardContent>
+					{accountsError ? (
+						<ErrorState error={accountsErr} />
+					) : !accountsPending && (accounts?.length ?? 0) === 0 ? (
+						<EmptyState icon={Landmark} title={t('finance:cashBank.accountsEmpty')} />
+					) : (
+						<>
+							<DataTable
+								columns={accountColumns}
+								data={pagedAccounts}
+								loading={accountsPending}
+								getRowId={(row) => row.id}
+							/>
+							<PaginationControls
+								page={safeAccountPage}
+								totalPages={accountTotalPages}
+								onPageChange={setAccountPage}
+							/>
+						</>
+					)}
+				</CardContent>
+			</Card>
+
 			{canCreate ? (
-				<div className='flex flex-wrap items-center gap-2 rounded-md border p-4'>
-					<Select value={movementAccountId} onValueChange={(value: string | null) => setMovementAccountId(value ?? 'none')}>
-						<SelectTrigger className='w-56'>
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value='none'>{t('finance:payments.cashAccount')}</SelectItem>
-							{accounts?.map((account) => (
-								<SelectItem key={account.id} value={account.id}>
-									{account.code} — {account.name}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-					<DatePicker
-						className='w-40'
-						value={movementDate}
-						onChange={setMovementDate}
-					/>
-					<Select
-						value={movementDirection}
-						onValueChange={(value) =>
-							setMovementDirection(value as 'in' | 'out')
-						}
-					>
-						<SelectTrigger className='w-28'>
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value='in'>
-								{t('finance:cashBank.direction.in')}
-							</SelectItem>
-							<SelectItem value='out'>
-								{t('finance:cashBank.direction.out')}
-							</SelectItem>
-						</SelectContent>
-					</Select>
-					<MoneyInput
-						className='w-36'
-						placeholder={t('finance:common.amount')}
-						value={movementAmount}
-						onValueChange={setMovementAmount}
-					/>
-					<Select value={counterpartAccountId} onValueChange={(value: string | null) => setCounterpartAccountId(value ?? 'none')}>
-						<SelectTrigger className='w-64'>
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value='none'>{t('finance:cashBank.counterpart')}</SelectItem>
-							{glAccounts?.rows
-								.filter(
-									(account) =>
-										account.isActive &&
-										account.isPostable &&
-										!account.code.startsWith('1-1'),
-								)
-								.map((account) => (
-									<SelectItem key={account.id} value={account.id}>
-										{account.code} — {account.name}
-									</SelectItem>
-								))}
-						</SelectContent>
-					</Select>
-					<Input
-						className='w-56'
-						placeholder={t('finance:common.description')}
-						value={movementDescription}
-						onChange={(event) => setMovementDescription(event.target.value)}
-					/>
+				<div className='flex flex-col gap-3 sm:flex-row'>
 					<Button
-						size='sm'
-						disabled={
-							!canPostMovement ||
-							postMovement.isPending ||
-							!movementAmount ||
-							counterpartAccountId === 'none'
-						}
-						onClick={() => void postMovement.mutateAsync()}
+						variant='outline'
+						className='h-auto flex-1 flex-col gap-2 px-5 py-4'
+						onClick={() => setPayingTax(true)}
 					>
-						{t('finance:cashBank.newMovement')}
+						<Receipt className='size-5' />
+						{t('finance:taxPayment.title')}
+					</Button>
+					<Button
+						variant='outline'
+						className='h-auto flex-1 flex-col gap-2 px-5 py-4'
+						onClick={() => setPayingPayroll(true)}
+					>
+						<Users className='size-5' />
+						{t('finance:payrollPayment.title')}
+					</Button>
+					<Button
+						variant='outline'
+						className='h-auto flex-1 flex-col gap-2 px-5 py-4'
+						onClick={() => setSettling(true)}
+					>
+						<ArrowLeftRight className='size-5' />
+						{t('finance:gatewaySettlement.title')}
 					</Button>
 				</div>
 			) : null}
 
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && (movements?.rows.length ?? 0) === 0 ? (
-				<EmptyState
-					icon={Landmark}
-					title={t('finance:cashBank.movementsEmpty')}
-					bordered
-				/>
-			) : (
-				<DataTableCard title={t('finance:cashBank.movements')}>
-					<DataTable
-						columns={movementColumns}
-						data={movements?.rows ?? []}
-						loading={isPending}
-						getRowId={(row) => row.id}
-					/>
-					<PaginationControls
-						page={page}
-						totalPages={movements?.pagination.totalPages ?? 1}
-						onPageChange={(next) =>
-							void navigate({ search: (prev) => ({ ...prev, page: next }) })
-						}
-					/>
-				</DataTableCard>
-			)}
+
+
+			<Card>
+				<CardHeader>
+					<CardTitle>{t('finance:cashBank.movements')}</CardTitle>
+					<CardDescription>{t('finance:cashBank.glLinkRequired')}</CardDescription>
+					{canCreate ? (
+						<CardAction>
+							<Button size='sm' onClick={() => setMovementOpen(true)}>
+								<Plus className='size-4' data-icon='inline-start' />
+								{t('finance:cashBank.newMovement')}
+							</Button>
+						</CardAction>
+					) : null}
+				</CardHeader>
+				<CardContent>
+					{isError ? (
+						<ErrorState error={error} />
+					) : !isPending && (movements?.rows.length ?? 0) === 0 ? (
+						<EmptyState icon={Landmark} title={t('finance:cashBank.movementsEmpty')} />
+					) : (
+						<>
+							<DataTable
+								columns={movementColumns}
+								data={movements?.rows ?? []}
+								loading={isPending}
+								getRowId={(row) => row.id}
+							/>
+							<PaginationControls
+								page={page}
+								totalPages={movements?.pagination.totalPages ?? 1}
+								onPageChange={setPage}
+							/>
+						</>
+					)}
+				</CardContent>
+			</Card>
 
 			{creating ? (
 				<CashBankFormDialog

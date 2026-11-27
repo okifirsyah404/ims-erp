@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
+import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Input } from '@ims-erp/ui/components/input';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { toast } from '@/components/toast';
@@ -84,10 +85,12 @@ export function ManagementPackReport() {
 
 					<div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
 						{headline.map(([label, value]) => (
-							<div key={label} className='rounded-md border p-3'>
-								<p className='text-muted-foreground text-xs'>{label}</p>
-								<p className='text-lg font-semibold tabular-nums'>{money(value)}</p>
-							</div>
+							<Card key={label} size='sm' className='gap-0 py-3'>
+								<CardContent>
+									<p className='text-muted-foreground text-xs'>{label}</p>
+									<p className='text-lg font-semibold tabular-nums'>{money(value)}</p>
+								</CardContent>
+							</Card>
 						))}
 					</div>
 
@@ -95,10 +98,12 @@ export function ManagementPackReport() {
 						<h3 className='mb-2 font-medium'>{t('finance:reports.tab.ratios')}</h3>
 						<div className='grid gap-2 text-sm sm:grid-cols-3 lg:grid-cols-6'>
 							{ratios.map(([label, value]) => (
-								<div key={label} className='rounded-md border p-2'>
-									<p className='text-muted-foreground text-xs'>{label}</p>
-									<p className='font-medium tabular-nums'>{value}</p>
-								</div>
+								<Card key={label} size='sm' className='gap-0 py-2'>
+									<CardContent>
+										<p className='text-muted-foreground text-xs'>{label}</p>
+										<p className='font-medium tabular-nums'>{value}</p>
+									</CardContent>
+								</Card>
 							))}
 						</div>
 					</div>

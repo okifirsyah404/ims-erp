@@ -112,6 +112,7 @@ export function GeneralLedgerReport({ startDate, endDate }: { startDate: string;
 	const cell = 'px-2 py-1 text-right tabular-nums';
 	return (
 		<div className='space-y-3'>
+			<h3 className='text-sm font-medium'>{t('finance:reports.tab.generalLedger')}</h3>
 			<Select value={accountId === '' ? NONE : accountId} onValueChange={(v: string | null) => setAccountId(v == null || v === NONE ? '' : v)}>
 				<SelectTrigger className='w-80'>
 					<SelectValue />

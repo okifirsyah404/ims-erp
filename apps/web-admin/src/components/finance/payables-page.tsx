@@ -1,4 +1,4 @@
-import { getRouteApi } from '@tanstack/react-router';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { AgingTable } from '@/components/finance/aging-table';
@@ -7,15 +7,11 @@ import { PaymentsTable } from '@/components/finance/payments-table';
 import { apAgingQueryOptions } from '@/lib/finance-api';
 import { usePermission } from '@/lib/use-permission';
 
-/** The route API for `/finance/payables` (validated search params). */
-const routeApi = getRouteApi('/_authed/finance/payables/');
-
 /** `/finance/payables` - AP aging + supplier bills + payments (F5). */
 export function PayablesPage() {
 	const { t } = useTranslation(['finance', 'common']);
-	const navigate = routeApi.useNavigate();
-	const search = routeApi.useSearch();
 	const canRead = usePermission('bill.read');
+	const [asOf, setAsOf] = useState<string | undefined>(undefined);
 
 	return (
 		<div className='space-y-6'>
@@ -26,8 +22,8 @@ export function PayablesPage() {
 				partyKey='supplierCompanyId'
 				queryFor={apAgingQueryOptions}
 				enabled={canRead}
-				asOfDate={search.asOf}
-				onAsOfChange={(asOf) => void navigate({ search: { asOf } })}
+				asOfDate={asOf}
+				onAsOfChange={setAsOf}
 			/>
 			<BillsTable />
 			<PaymentsTable

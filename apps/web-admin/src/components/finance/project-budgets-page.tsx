@@ -5,6 +5,7 @@ import { Plus, Trash2 } from 'lucide-react';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
@@ -98,8 +99,11 @@ export function ProjectBudgetsPage() {
 					</div>
 
 					{draft && canManage ? (
-						<div className='space-y-2 rounded-md border p-4'>
-							<h2 className='font-semibold'>{t('finance:budgets.draftTitle', { version: draft.version })}</h2>
+						<Card>
+							<CardHeader>
+								<CardTitle>{t('finance:budgets.draftTitle', { version: draft.version })}</CardTitle>
+							</CardHeader>
+							<CardContent className='space-y-2'>
 							{editing.map((line) => (
 								<div key={line.key} className='grid items-center gap-2 sm:grid-cols-[1fr_9rem_10rem_auto]'>
 									<Select value={line.accountId || 'none'} onValueChange={(value: string | null) => update(line.key, { accountId: value && value !== 'none' ? value : '' })}>
@@ -138,19 +142,22 @@ export function ProjectBudgetsPage() {
 									{t('finance:budgets.activate')}
 								</Button>
 							</div>
-						</div>
+							</CardContent>
+						</Card>
 					) : null}
 
 					{report.data ? (
 						<div className='space-y-3'>
 							<div className='grid gap-3 sm:grid-cols-4'>
 								{(['budget', 'actual', 'commitment', 'available'] as const).map((key) => (
-									<div key={key} className='rounded-md border p-3'>
+									<Card key={key} size='sm' className='gap-0 py-3'>
+										<CardContent>
 										<p className='text-muted-foreground text-xs'>{t(`finance:budgets.total.${key}`)}</p>
 										<p className={`text-lg font-semibold tabular-nums ${key === 'available' && report.data.totals.available < 0 ? 'text-destructive' : ''}`}>
 											Rp {money(report.data.totals[key])}
 										</p>
-									</div>
+										</CardContent>
+									</Card>
 								))}
 							</div>
 							<Table>

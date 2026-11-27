@@ -4,7 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { Download, Upload } from 'lucide-react';
 
 import { Badge } from '@ims-erp/ui/components/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Button } from '@ims-erp/ui/components/button';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { toast } from '@/components/toast';
 import { downloadFile } from '@/lib/download';
@@ -26,10 +28,11 @@ type TImportErrorCode = 'partyUnknown' | 'documentInvalid' | 'dateInvalid' | 'af
  * its total against the control account's opening row. The batch cannot be
  * posted until every ledger ties.
  */
-export function OpeningSubledgerCard({ asOfDate, canEdit }: { asOfDate: string; canEdit: boolean }) {
+export function OpeningSubledgerCard({ canEdit }: { canEdit: boolean }) {
 	const { t } = useTranslation(['finance', 'common']);
 	const queryClient = useQueryClient();
 	const query = useQuery(openingSubledgerQueryOptions());
+	const [asOfDate, setAsOfDate] = useState(() => new Date().toISOString().slice(0, 10));
 	const inputs = { ar: useRef<HTMLInputElement>(null), ap: useRef<HTMLInputElement>(null) };
 	const [busy, setBusy] = useState(false);
 	const [result, setResult] = useState<{ ledger: TSubledger; outcome: TOpeningSubledgerImportResult } | null>(null);
@@ -55,10 +58,21 @@ export function OpeningSubledgerCard({ asOfDate, canEdit }: { asOfDate: string; 
 
 	if (!query.data) return null;
 	return (
-		<div className='space-y-3 rounded-md border p-4'>
-			<div>
-				<h2 className='font-medium'>{t('finance:openingSubledger.title')}</h2>
-				<p className='text-muted-foreground text-sm'>{t('finance:openingSubledger.hint')}</p>
+		<Card>
+			<CardHeader>
+				<CardTitle>{t('finance:openingSubledger.title')}</CardTitle>
+			</CardHeader>
+			<CardContent className='space-y-3'>
+			<div className='flex flex-wrap items-end justify-between gap-3'>
+				<div>
+					<p className='text-muted-foreground text-sm'>{t('finance:openingSubledger.hint')}</p>
+				</div>
+				<DatePicker
+					className='w-40'
+					value={asOfDate}
+					onChange={setAsOfDate}
+					disabled={!canEdit}
+				/>
 			</div>
 			<Table>
 				<TableHeader>
@@ -155,6 +169,7 @@ export function OpeningSubledgerCard({ asOfDate, canEdit }: { asOfDate: string; 
 				</div>
 			) : null}
 			<p className='text-muted-foreground text-xs'>{t('finance:openingSubledger.scopeNote')}</p>
-		</div>
+			</CardContent>
+		</Card>
 	);
 }

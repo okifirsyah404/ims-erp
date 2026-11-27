@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';
 
 import { Button } from '@ims-erp/ui/components/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
@@ -78,9 +79,12 @@ export function CashForecastReport() {
 				</Table>
 			</div>
 
-			<div className='space-y-2 rounded-md border p-4'>
-				<h3 className='font-medium'>{t('finance:forecast.manualTitle')}</h3>
-				{canEdit ? (
+			<Card>
+				<CardHeader>
+					<CardTitle>{t('finance:forecast.manualTitle')}</CardTitle>
+				</CardHeader>
+				<CardContent className='space-y-2'>
+					{canEdit ? (
 					<div className='flex flex-wrap items-center gap-2'>
 						<DatePicker className='w-40' value={date} onChange={setDate} />
 						<Select value={direction} onValueChange={(value: string | null) => value && setDirection(value as 'in' | 'out')}>
@@ -99,31 +103,36 @@ export function CashForecastReport() {
 						</Button>
 					</div>
 				) : null}
-				{(lines.data ?? []).map((line) => (
-					<div key={line.id} className='flex items-center justify-between text-sm'>
-						<span>
-							{line.expectedDate} · {line.direction === 'in' ? '+' : '−'}
-							{money(line.amount)} · {line.description}
-						</span>
-						{canEdit ? (
-							<Button size='icon' variant='ghost' aria-label={t('finance:forecast.remove')} onClick={() => remove.mutate(line.id)}>
-								<Trash2 className='size-4' />
-							</Button>
-						) : null}
-					</div>
-				))}
-			</div>
+					{(lines.data ?? []).map((line) => (
+						<div key={line.id} className='flex items-center justify-between text-sm'>
+							<span>
+								{line.expectedDate} · {line.direction === 'in' ? '+' : '−'}
+								{money(line.amount)} · {line.description}
+							</span>
+							{canEdit ? (
+								<Button size='icon' variant='ghost' aria-label={t('finance:forecast.remove')} onClick={() => remove.mutate(line.id)}>
+									<Trash2 className='size-4' />
+								</Button>
+							) : null}
+						</div>
+					))}
+				</CardContent>
+			</Card>
 
 			{data.renewalsDue.length > 0 ? (
-				<div className='space-y-1 rounded-md border p-4 text-sm'>
-					<h3 className='font-medium'>{t('finance:forecast.renewalsTitle')}</h3>
-					<p className='text-muted-foreground text-xs'>{t('finance:forecast.renewalsHint')}</p>
-					{data.renewalsDue.map((contract) => (
-						<p key={contract.id}>
-							<span className='font-mono text-xs'>{contract.code}</span> {contract.customerName} · {contract.endDate ?? '—'}
-						</p>
-					))}
-				</div>
+				<Card>
+					<CardHeader>
+						<CardTitle>{t('finance:forecast.renewalsTitle')}</CardTitle>
+					</CardHeader>
+					<CardContent className='space-y-1 text-sm'>
+						<p className='text-muted-foreground text-xs'>{t('finance:forecast.renewalsHint')}</p>
+						{data.renewalsDue.map((contract) => (
+							<p key={contract.id}>
+								<span className='font-mono text-xs'>{contract.code}</span> {contract.customerName} · {contract.endDate ?? '—'}
+							</p>
+						))}
+					</CardContent>
+				</Card>
 			) : null}
 		</div>
 	);
