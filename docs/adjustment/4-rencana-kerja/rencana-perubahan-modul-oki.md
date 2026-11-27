@@ -116,7 +116,7 @@ risiko OA2 (diganti 27/11: kolom dihapus di tahap 3), OD8 diputuskan.
 | M10-9 | Gerbang D12/D14/D18, uji impor Coretax, form potongan PPh saat bayar (ERP-0140, lewat M09-3). Tabel TER resmi **tidak perlu sekarang** (OC8) | OC8; M09-3 | Tinggi sebelum lapor | Ya (Bella + Pemilik) |
 | M10-10 | PPh 21 otomatis dimatikan: setelan PPh 21 di pengaturan penggajian dalam posisi mati, tombol hitung ulang PPh 21 di rekap gaji tidak dipakai; PPh 21 dihitung di luar aplikasi. Tabel `pph21_*` tetap, tidak dihapus | OC8 | Sedang | Diputuskan programmer B 27/11 (Bersama: gaji milik Dafrin M08) |
 | M10-11 | **Status terutang / dibayar / sisa per masa pajak**: setor pajak di Keuangan tersambung ke catatan pajak dan pemotongan | KF-T1 | Tinggi | Diputuskan 27/11 (KF-1) |
-| M10-12 | **Rezim pajak dipastikan Bella** (PPh Final UMKM 0,5% atau normal); bila UMKM, rekap 0,5% omzet per bulan | KF-T2 | Sedang (Tinggi bila UMKM) | Diputuskan 27/11 (KF-1) |
+| M10-12 | **Rezim pajak dan status PKP dipilih Bella (dengan konsultan bila perlu)**; aplikasi menyediakan **pengaturan** agar tidak terkunci pada satu rezim. Opsi di `3-rancangan/kekurangan-fitur.md` bagian "Opsi pajak". Bila UMKM: rekap PPh Final 0,5% omzet per bulan | KF-T2 | Sedang (Tinggi bila UMKM) | Opsi disiapkan 28/11; menunggu pilihan Bella |
 | M10-13 | Bupot PPh 23 dari pelanggan sebagai kredit pajak | KF-T3 | Tinggi | Diputuskan 27/11 (KF-1) (satu paket M09-17) |
 
 ### M06 Aset & Peralatan

@@ -1788,3 +1788,26 @@ Saran disetujui, lalu diminta dicatat juga untuk bahan tampilan.
   - `diagram-alur/alur-teknisi.md`.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - Persetujuan Pemilik atas keputusan tambahan; opsi pajak; panduan tinjauan PR
+
+- **Pemilik menyetujui keputusan tambahan** sesudah rapat 27/11 (dilaporkan
+  programmer B). Yang disetujui: potongan gaji, laporan kerja dan penilaian,
+  kantor/lapangan, freelance, pesanan online, dan pemangkasan menu.
+  - `ringkasan-untuk-pemilik.md`: bagian C baru (butir 20–25, ☑ Ya) dan
+    baris tanda tangan 28/11.
+  - `lembar-keputusan-rapat.md`: bagian 8d, 8e, 8f ditandai disetujui
+    Pemilik.
+  - Rancangan portal, laporan kerja, dan kantor/lapangan: status
+    disetujui Pemilik.
+- **Opsi pajak untuk Bella** di `kekurangan-fitur.md` ("Opsi pajak"): rezim
+  PPh (UMKM 0,5% atau normal), status PKP, tarif dan pembulatan.
+  - Rekomendasi: aplikasi menyediakan pengaturan rezim PPh dan status PKP
+    yang dipilih Bella.
+  - Ditulis sebagai ringkasan umum yang harus dikonfirmasi Bella atau
+    konsultan.
+  - M10-12 diperbarui.
+- **Deskripsi PR #171** ditulis ulang sebagai ringkasan dan panduan tinjauan
+  untuk Oki, mengikuti hasil diskusi.
+
+Tidak ada perubahan kode.

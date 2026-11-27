@@ -3,6 +3,7 @@
 Disusun 2026-11-28. Kembali ke [catatan penyesuaian](../README.md).
 
 **Status: klarifikasi dan keputusan programmer B lewat tanya-jawab
+**Disetujui Pemilik 28/11 (dilaporkan programmer B).**
 2026-11-28.** Belum ada kode.
 
 ## 1. Aplikasi mana dipakai siapa

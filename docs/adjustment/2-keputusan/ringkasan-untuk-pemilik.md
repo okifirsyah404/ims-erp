@@ -57,8 +57,23 @@ bisa disetujui sendiri.
 - **K11:** siapa yang memegang bagian bersama (dokumen, notifikasi, profil perusahaan, penomoran, server dan pemasangan). **Hasil:** dipegang bersama; setiap perubahan wajib diberitahukan ke programmer lain lewat PR.
 - **OB11:** rincian laporan arus kas (transaksi tanpa uang tunai, misalnya aset yang dimasukkan sebagai modal). **Hasil:** jurnal yang tidak menyentuh kas diabaikan dalam laporan arus kas.
 
+## C. Keputusan tambahan sesudah rapat (disetujui 28/11)
+
+Keputusan baru sesudah rapat 27/11 yang menyangkut uang, karyawan, dan
+pelanggan. **Disetujui Pak Aqim 2026-11-28** (dilaporkan programmer B).
+
+| No | Yang diputuskan | Keputusan | Setuju? |
+|---|---|---|---|
+| 20 | Potongan gaji | Diatur di Pengaturan → Gaji: potongan per hari = gaji pokok ÷ hari kerja; dipotong untuk alpa, izin tanpa gaji, terlambat (ada toleransi, lalu nominal per kejadian), dan pro-rata karyawan masuk/keluar di tengah bulan. Hari tugas lapangan: check-in di lokasi dihitung hadir, tidak dihitung terlambat kecuali ada jam mulai lapangan | ☑ Ya |
+| 21 | Laporan kerja karyawan | Semua karyawan wajib mengisi laporan harian di portal karyawan; laporan mingguan dan bulanan dirangkum otomatis; **Pak Aqim menilai** skor 1–5 per aspek + komentar; PDF per karyawan untuk evaluasi | ☑ Ya |
+| 22 | Karyawan kantor dan lapangan | Data karyawan punya penempatan Kantor/Lapangan; karyawan kantor yang ditugaskan ke proyek bekerja dengan cara lapangan hari itu; kasbon untuk siapa pun yang punya tugas proyek | ☑ Ya |
+| 23 | Teknisi freelance | Dicatat sebagai karyawan jenis Freelance, memakai portal karyawan untuk tugas proyek, absen lokasi, laporan; dibayar **harian atau borongan** lewat Keuangan; boleh pinjam alat dan kasbon; tidak mengerjakan tiket servis | ☑ Ya |
+| 24 | Pesanan online | Pelanggan memesan di portal/website → jadi SPH yang diperiksa Penjualan → pelanggan menyetujui di portal → SO → faktur → **pelanggan membayar sendiri di portal** per termin | ☑ Ya |
+| 25 | Menu aplikasi | Menu dipangkas (84 → ±33 untuk Pemilik); menu harian Pak Aqim: Dasbor, Perlu Tindakan, Laporan, SDM; lainnya di "Lainnya", bisa dicari | ☑ Ya |
+
 ## Tanda tangan
 
 | Pemilik | Tanggal | Tanda tangan |
 |---|---|---|
 | Aqim | 2026-11-27 | disetujui di rapat (dilaporkan programmer B) |
+| Aqim | 2026-11-28 | keputusan tambahan bagian C disetujui (dilaporkan programmer B) |

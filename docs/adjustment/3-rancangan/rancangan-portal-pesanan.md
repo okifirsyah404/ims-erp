@@ -3,6 +3,7 @@
 Disusun 2026-11-28. Kembali ke [catatan penyesuaian](../README.md).
 
 **Status: keputusan programmer B 2026-11-28** (tanya-jawab, menegaskan dan
+**Disetujui Pemilik 28/11 (dilaporkan programmer B).**
 menyesuaikan keputusan Pemilik 14/11, 19/11, 20/11, 23/11). Belum ada kode.
 Pengerjaannya mengikuti rencana port `docs/plan/port-portal-onto-main.md`
 (P1 sudah masuk `main` lewat PR #139); dokumen ini mencatat apa yang

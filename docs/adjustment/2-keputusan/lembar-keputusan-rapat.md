@@ -300,7 +300,7 @@ Hal teknis yang tidak masuk ringkasan Pemilik, diputuskan setelah rapat.
 
 ### 8d. Portal pelanggan dan pesanan online (B-38, tanya-jawab programmer B 28/11)
 
-Rincian di `3-rancangan/rancangan-portal-pesanan.md`.
+Rincian di `3-rancangan/rancangan-portal-pesanan.md`. **Disetujui Pemilik 28/11 (dilaporkan programmer B).**
 
 | No | Keputusan |
 |---|---|
@@ -315,7 +315,7 @@ Rincian di `3-rancangan/rancangan-portal-pesanan.md`.
 
 ### 8e. Tambahan programmer B: laporan kerja dan potongan gaji (28/11)
 
-Rincian di `3-rancangan/rancangan-laporan-kerja-dan-potongan-gaji.md`. Keduanya prioritas Tinggi.
+Rincian di `3-rancangan/rancangan-laporan-kerja-dan-potongan-gaji.md`. Keduanya prioritas Tinggi. **Disetujui Pemilik 28/11 (dilaporkan programmer B).**
 
 | No | Keputusan |
 |---|---|
@@ -326,7 +326,7 @@ Rincian di `3-rancangan/rancangan-laporan-kerja-dan-potongan-gaji.md`. Keduanya 
 
 ### 8f. Karyawan kantor, lapangan, dan teknisi freelance (tanya-jawab programmer B 28/11)
 
-Rincian di `3-rancangan/rancangan-karyawan-kantor-lapangan-freelance.md`.
+Rincian di `3-rancangan/rancangan-karyawan-kantor-lapangan-freelance.md`. **Disetujui Pemilik 28/11 (dilaporkan programmer B).**
 
 | No | Keputusan |
 |---|---|

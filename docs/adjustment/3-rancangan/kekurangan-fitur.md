@@ -147,6 +147,36 @@ rencana tidak diulang; nomornya disebut di bagian "Sudah direncanakan".
 
 **Keputusan 27/11:** KF-1 (a) semua 10 butir masuk rencana; KF-2 (a) daftar tunggu; KF-3 (a) menunggu permintaan Pemilik; KF-4 ditanyakan ke Bella.
 
+### Opsi pajak untuk Bella (KF-T2, T-5)
+
+Programmer B tidak mendalami perpajakan, jadi disiapkan pilihan. **Aturan
+pajak harus dikonfirmasi Bella atau konsultan pajak sebelum dipakai**; isi
+di bawah adalah ringkasan umum, bukan nasihat pajak.
+
+**1. Rezim PPh penghasilan usaha**
+
+| Opsi | Ringkasan | Akibat di aplikasi |
+|---|---|---|
+| (a) **PPh Final UMKM 0,5%** (PP 55/2022) | Untuk badan usaha dengan omzet sampai Rp4,8 miliar per tahun, dalam jangka waktu terbatas sejak terdaftar | Rekap omzet bulanan × 0,5% dan setoran per bulan (KF-T2) |
+| (b) **PPh Badan normal** | Pajak dari laba bersih akhir tahun, dengan fasilitas pengurangan tarif untuk omzet tertentu | Laporan laba rugi dan rekonsiliasi fiskal; tidak perlu rekap 0,5% |
+
+**2. Status PKP (PPN)**
+
+| Opsi | Akibat di aplikasi |
+|---|---|
+| (a) **PKP** (wajib bila omzet di atas Rp4,8 miliar setahun, atau memilih dikukuhkan) | Faktur memuat PPN, faktur pajak keluaran (Coretax), PPN masukan dikreditkan, tutup PPN masa (sudah ada di kode) |
+| (b) **Non-PKP** | Faktur tanpa PPN; fitur PPN dimatikan lewat pengaturan |
+
+**3. Tarif dan pembulatan (T-5):** tarif PPN dan cara menghitung dasar
+pengenaan pajak berubah mengikuti peraturan terbaru; isi lewat master pajak
+bertanggal berlaku (OC4), dan pembulatan ke rupiah penuh per dokumen sesuai
+arahan Bella.
+
+**Rekomendasi:** aplikasi menyediakan **pengaturan rezim PPh dan status
+PKP** (dipilih Bella sekali, bisa diubah bila status perusahaan berubah),
+sehingga programmer tidak perlu menebak. Bella mengisi pilihan dan tarif
+sebelum UAT Pajak.
+
 ---
 
 ## Bagian kedua: modul yang diperiksa 2026-11-28
