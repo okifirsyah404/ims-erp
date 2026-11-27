@@ -22,7 +22,7 @@ Tidak, dan tulis catatan bila ingin diubah.
 | 9 | Persetujuan tanpa pemeriksa kedua: gaji, pembayaran, klaim biaya, klaim garansi | Diterima. Diawasi Pak Aqim lewat laporan bulanan dan riwayat aktivitas | ☐ Ya ☐ Tidak, catatan: |
 | 10 | Bella memegang satu role keuangan gabungan | Diterima, dengan akibat: Bella **melihat semua gaji dan rekening karyawan**, aset tetap, dan anggaran proyek | ☐ Ya ☐ Tidak, catatan: |
 | 11 | Absen di lokasi proyek di luar radius | Ditolak, baik saat datang maupun saat pulang | ☐ Ya ☐ Tidak, catatan: |
-| 12 | Pilihan "organisasi" di aplikasi | Dihapus, karena aplikasi hanya untuk satu perusahaan. Risiko: programmer B ingin langsung membuang datanya di tahap pertama, padahal rencana awal bertahap; ini membuat pekerjaan pertama jauh lebih besar | ☐ Ya ☐ Tidak, catatan: |
+| 12 | Pilihan "organisasi" di aplikasi | Dihapus bertahap, karena aplikasi hanya untuk satu perusahaan. Tampilan disembunyikan dulu; data lamanya dibersihkan paling akhir supaya aman | ☐ Ya ☐ Tidak, catatan: |
 | 13 | Cara masuk aplikasi | Karyawan diundang, lalu masuk dengan nama pengguna/email dan kata sandi (tanpa Google). Pelanggan masuk dengan Google, satu jenis akun; data perusahaan diisi belakangan di profil | ☐ Ya ☐ Tidak, catatan: |
 | 14 | Layar pembayaran ke pemasok | Dibuat, termasuk potongan PPh, supaya utang ke pemasok bisa dilunasi di aplikasi | ☐ Ya ☐ Tidak, catatan: |
 | 15 | Tarif PPN | Diambil dari daftar tarif pajak yang punya tanggal mulai berlaku. Setiap dokumen menyimpan tarifnya; tarif berbeda per dokumen boleh dengan alasan | ☐ Ya ☐ Tidak, catatan: |

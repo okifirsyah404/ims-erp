@@ -27,7 +27,7 @@ Sumber menyebut nomornya) dan di checklist
 | RO5 | Pertanggungjawaban kasbon teknisi cukup **satu langkah oleh Aqim**; aturan verifikator ≠ penyetuju dihapus | OB9, OB13; lembar X2 | Pemilik + Oki | Diputuskan programmer B 27/11, menunggu konfirmasi Pemilik/Oki |
 | K2 / K2b / K2d | Susunan role per orang; Penjualan digabung (K2b); Akuntan **digabung** ke Keuangan di kode (K2d, Bella); Anggota dihapus (Dafrin, Oki hanya Pekerja Lepas); role organisasi Admin dihapus, tanda admin aplikasi Aqim tetap; Auditor "hapus" | OA9, OA10, OA11, OA8 | Pemilik + Oki | Diputuskan programmer B 27/11, menunggu konfirmasi Pemilik/Oki |
 | RO1 / RO4 | Periode akuntansi dibuat Pemilik dan Keuangan (`accounting_period:create`); buka kembali periode hanya Pemilik (route memeriksa `reopen`) | OB4, OB6 | Pemilik + Oki | Diputuskan programmer B 27/11, menunggu konfirmasi Pemilik/Oki |
-| K12 | Hapus lapisan organisasi **bertahap**: 1 sembunyikan pemilih organisasi, 2 role ke tingkat pengguna, 3 hapus `organization_id` (ADR baru). OA2 (27/11): kolom `organization_id` **langsung dihapus di tahap 1**. ⚠️ Risiko: migrasi besar di semua modul sejak awal, bertentangan dengan urutan bertahap | OA1, OA2 | Pemilik + Oki (+ Dafrin untuk modulnya) | Diputuskan programmer B 27/11, menunggu konfirmasi Pemilik/Oki; OA2 perlu dikonfirmasi ulang Oki dan Dafrin |
+| K12 | Hapus lapisan organisasi **bertahap**: 1 sembunyikan pemilih organisasi, 2 role ke tingkat pengguna, 3 hapus `organization_id` (ADR baru). OA2 (27/11, diganti): kolom `organization_id` tetap diisi perusahaan tunggal sampai tahap 3 | OA1, OA2 | Pemilik + Oki (+ Dafrin untuk modulnya) | Diputuskan programmer B 27/11, menunggu konfirmasi Pemilik/Oki |
 | K13 / OA4 | Web-admin dan portal karyawan: username/email + kata sandi, tanpa Google; karyawan diundang lalu mengganti kata sandi. Portal pelanggan: Google, **satu jenis akun**, data perusahaan diisi di profil | OA3, OA4 | Pemilik + Oki + Dafrin (portal M07) | Diputuskan programmer B 27/11, menunggu konfirmasi Pemilik/Oki |
 | OA5–OA7 | Audit wajib ikut transaksi; perubahan role, hapus anggota, persetujuan sendiri wajib tercatat; **sebelum K1** | OA5, OA6, OA7, L-1 | Oki | Diputuskan programmer B 27/11, menunggu konfirmasi Oki |
 | K7a / OB7 / OB8 | Pembayaran, gaji, klaim biaya tanpa pemeriksa kedua diterima, diawasi lewat laporan dan audit | OB7, OB8 | Pemilik | Diputuskan programmer B 27/11, menunggu konfirmasi Pemilik |
@@ -52,7 +52,7 @@ Sumber menyebut nomornya) dan di checklist
 Status tabel ini diperbarui 2026-11-27 sesuai keputusan tanya-jawab
 (`lembar-keputusan-rapat.md` bagian 0). Diperbarui lagi 2026-11-27 sesudah
 tanya-jawab ketiga: baris OA8 sampai OG2–OG6 ditambahkan, K12 diberi catatan
-risiko OA2, OD8 diputuskan.
+risiko OA2 (diganti 27/11: kolom dihapus di tahap 3), OD8 diputuskan.
 
 ## 2. Perubahan per modul Oki
 
@@ -61,8 +61,8 @@ risiko OA2, OD8 diputuskan.
 | No | Perubahan | Sumber | Prioritas | Perlu keputusan |
 |---|---|---|---|---|
 | M12-1 | Audit ditulis di transaksi bisnis untuk peristiwa wajib; tambah audit perubahan role, pengeluaran anggota, ekspor, persetujuan sendiri (`meta.self_approved`) (OA5–OA7 diputuskan 27/11; **sebelum** K1) | OA5–OA7; `skema-database/audit.md` | Tinggi | Diputuskan programmer B 27/11 |
-| M12-2 | K12 tahap 1: sembunyikan pemilih dan halaman Organisasi, sesi selalu ke organisasi tunggal; ADR baru. OA2 (27/11): kolom `organization_id` ikut dibuang di tahap ini (`docs.dbml`, migrasi append-only semua modul, seed, test). ⚠️ Risiko: pekerjaan tahap 3 maju ke tahap 1 | OA1, OA2 | Tinggi | Diputuskan programmer B 27/11 (K12, OA2 ⚠️ konfirmasi ulang) |
-| M12-3 | K12 tahap 2: role ke tingkat pengguna (kolom `organization_id` sudah dibuang di tahap 1 menurut OA2; bila OA2 dibatalkan, tahap 3 membuangnya per modul) | OA1, OA2 | Sedang | Diputuskan programmer B 27/11 (K12) |
+| M12-2 | K12 tahap 1: sembunyikan pemilih dan halaman Organisasi, sesi selalu ke organisasi tunggal; ADR baru. Kolom `organization_id` tetap, diisi perusahaan tunggal (OA2, 27/11) | OA1, OA2 | Tinggi | Diputuskan programmer B 27/11 (K12, OA2) |
+| M12-3 | K12 tahap 2: role ke tingkat pengguna (kolom `organization_id` masih ada; dibuang di tahap 3 per modul dengan migrasi append-only) | OA1, OA2 | Sedang | Diputuskan programmer B 27/11 (K12) |
 | M12-4 | K13: hapus tombol Google di `login-form.tsx`; konfigurasi Google untuk portal pelanggan → 27/11: tombol Google juga dihapus di portal karyawan; karyawan diundang lalu mengganti kata sandi; pelanggan satu jenis akun (OA4) | OA3, OA4 | Sedang | Diputuskan programmer B 27/11 (K13) |
 | M12-5 | `erp-permissions.ts`: label Penjualan (K2b), role tidak ditawarkan (Admin, Anggota, Auditor, `sales`), hak baru dari OB1, OB4, OB5, OB13, OD1; lalu `bun docs/gen-role-permission.ts` → 27/11: Akuntan digabung ke Keuangan (`finance` mendapat hak `accountant`, K2d) termasuk `asset:read` dan `project:read` (OB5); role Anggota dihapus; role organisasi Admin dihapus, tanda admin aplikasi Aqim tetap; `accounting_period:create` untuk Pemilik + Keuangan (RO1); `invitation:create` dicabut dari SDM (OA12); `audit_log:read` hanya Pemilik (OA8). OF1 tidak menambah hak (tautan disembunyikan) | OA8–OA12, OB5, OF1 | Tinggi | Diputuskan programmer B 27/11 (K2, OA8, OA12, OB5) |
 | M12-6 | Label anggota multi-role tampil sebagai kode mentah (`organization-member-card.tsx:68`, `admin/users/index.tsx:526`) | UAT M12 | Sedang | Tidak |

@@ -1188,3 +1188,16 @@ dan Oki. Tidak ada perubahan kode, konfigurasi, atau database; belum di-commit.
 - `ringkasan-untuk-pemilik.md` (baru): satu halaman untuk Pak Aqim, 19 butir bisnis + susunan role + "Dibahas di rapat" + tanda tangan.
 - `README.md`: baris `ringkasan-untuk-pemilik.md` (**Untuk Pemilik**) di tabel Dokumen bersama.
 - `catatan-progres.md`: entri ini.
+- 2026-11-27: tiga jawaban penutup programmer B:
+  - **OA2 diganti:** kolom `organization_id` tetap diisi perusahaan tunggal
+    dan baru dihapus di tahap 3, selaras dengan K12 bertahap. Catatan risiko
+    dicabut.
+  - **RO16:** tidak perlu Manajer Operasional kedua.
+  - **OE3:** `apps/web-investor` dibiarkan, ditandai "belum dimulai".
+
+  Diperbarui: `lembar-keputusan-rapat.md` (bagian 0),
+  `bahan-keputusan-modul-oki.md`, `rencana-perubahan-modul-oki.md`
+  (K12, M12-2, M12-3), dan `ringkasan-untuk-pemilik.md` (butir 12).
+
+  Semua butir keputusan sudah terjawab, kecuali K8, K9, K11, dan OB11 yang
+  dibawa ke rapat.

@@ -55,7 +55,9 @@ dan diagram sudah disesuaikan dengan daftar ini.
 | C13 | Unit pinjaman **wajib disetujui dulu** sebelum diserahkan Gudang | Sekarang Gudang bisa menyerahkan tanpa persetujuan |
 | PK-1 | Check-out lokasi proyek **juga dicek radius** (di luar radius ditolak) | Konsisten dengan OG1 |
 | Lembar 6 | Matriks PO dan Surat Jalan **disetujui**: PO dibuat, disetujui, dan dibatalkan Aqim; Gudang menerima dan boleh melihat PO. Surat jalan disiapkan, dikirim, dan ditandai diterima oleh Gudang; Penjualan melihat | |
-| OA2 | `organization_id` **langsung dihapus** di tahap pertama K12 | ⚠️ Risiko: migrasi besar sejak awal; bertentangan dengan rekomendasi bertahap |
+| OA2 | ~~`organization_id` langsung dihapus di tahap pertama~~ → **diganti 27/11: kolom tetap diisi perusahaan tunggal dan baru dihapus di tahap 3** (selaras dengan K12 bertahap) | |
+| RO16 | **Tidak perlu** Manajer Operasional kedua; persetujuan operasional oleh Aqim (dengan K1 dan audit) | |
+| OE3 | `apps/web-investor` **dibiarkan**, ditandai "belum dimulai" | Ikut K10 |
 | OA8 | Log Audit **hanya dibaca Pemilik** | |
 | OA12 | Hak mengundang **dihapus dari role SDM** (mengundang lewat Pemilik) | |
 | OA13 | Hapus undangan dan nonaktifkan pengguna **pakai dialog konfirmasi** | |
