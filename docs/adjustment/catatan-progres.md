@@ -1984,3 +1984,27 @@ langsung di n8n.
   `lembar-keputusan-rapat.md` bagian 8h, `README.md`.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - PR #171 di-merge; rencana rinci langkah 7
+
+- **PR #171 di-merge** ke `main` (c5ad64b7). Semua commit masuk; tidak ada
+  yang tertinggal di branch. Pekerjaan lanjut di branch baru
+  `docs/adjustment-langkah-7` dari `main`.
+- **N8-10:** nama perusahaan di pesan WA "CV Inti Multi Solusi".
+  Diperbarui di `teks-pesan-wa-pelanggan.md`, `rancangan-n8n-whatsapp.md`,
+  dan `lembar-keputusan-rapat.md`.
+- **`4-rencana-kerja/rencana-langkah-7.md` (baru):**
+  - Paket P7-1 sampai P7-7: audit dalam transaksi, ADR-0006, aturan K1 di
+    7 service, hak role baru, penomoran tanpa celah, dasar form, server
+    siap pakai dan batas login.
+  - Untuk tiap paket: pemegang, sumber keputusan, ketergantungan,
+    skema/migrasi.
+  - Jalur paralel Oki dan Dafrin.
+  - Aturan setiap PR (Definition of done AGENTS.md, nomor ERP-* dipesan
+    saat PR).
+  - Kriteria selesai dan hal yang didahulukan di langkah 8.
+  - Pemeriksa Mermaid: 1 blok, 0 error.
+- `README.md`: posisi sekarang, langkah 6 ✅, langkah 7 🔄 (rencana rinci),
+  tautan rencana.
+
+Tidak ada perubahan kode.

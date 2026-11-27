@@ -13,7 +13,7 @@ merapikan teks itu: sapaan seragam, nama perusahaan, tautan portal (PP-5),
 dan penutup yang sama.
 
 **Tanda isian:** `{pelanggan}` nama pelanggan, `{perusahaan}` nama
-perusahaan (pengaturan workflow, sekarang "Entragate"), `{nomor}` nomor
+perusahaan (pengaturan workflow: **CV Inti Multi Solusi**, N8-10), `{nomor}` nomor
 dokumen, `{jumlah}` rupiah, `{tanggal}`, `{tautan}` tautan portal.
 
 ---
@@ -158,7 +158,7 @@ Mohon konfirmasi penerimaan dan jadwal penggantian. Terima kasih.
 
 | Hal | Keterangan |
 |---|---|
-| Nama perusahaan | Sekarang "Entragate" di pengaturan workflow; ganti bila ingin "CV Inti Multi Solusi" atau gabungan |
+| Nama perusahaan | **Diputuskan 28/11 (N8-10): "CV Inti Multi Solusi"** (mengganti "Entragate" di pengaturan workflow `CONFIG.companyName`) |
 | Tautan portal | Bergantung pada portal pelanggan (B-38); sebelum portal siap, kalimat tautan dihilangkan |
 | Meta Cloud API | Saat pindah ke Meta (B-47), teks yang disetujui menjadi **template** yang diajukan ke Meta (`docs/integrations/n8n/meta-templates.json`) |
 | Pesan staf | Tidak perlu persetujuan Aqim; daftar penerima di `rancangan-n8n-whatsapp.md` bagian 3 |
