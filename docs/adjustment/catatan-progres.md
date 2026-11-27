@@ -1457,3 +1457,23 @@ sesuai Gate 1.
 
 Commit lokal saja: push ditahan karena PR #171 sedang ditahan.
 Tidak ada perubahan kode.
+
+## 2026-11-27 - Pemangkasan menu
+
+Push tiga commit rancangan ke PR #171 atas permintaan programmer B (9ff9b205),
+supaya Oki bisa meninjau dan me-merge.
+
+Programmer B bertanya apakah menu, terutama untuk Pemilik, bisa dipangkas.
+Saat ini Aqim melihat **84 menu** (dihitung dari `nav-config.ts`).
+
+Bagian 2.2a baru di `rancangan-menu-dasbor-dan-form.md`:
+- **PM-1 disetujui:** halaman sejenis digabung menjadi satu halaman dengan
+  tab. Menu Pemilik turun dari 84 ke sekitar 33.
+- **PM-2 disetujui:** data induk pindah ke satu halaman Pengaturan.
+- **PM-3 dan PM-4 disetujui:** pencarian cepat (Ctrl+K) dan menu favorit.
+- **PM-5 tidak dipakai:** grup tidak ditutup otomatis.
+- **PM-6, menu harian Aqim:** Dasbor, Perlu Tindakan, Laporan, dan SDM tampil
+  di atas; grup lain masuk ke "Lainnya". PO yang dibuat Aqim sendiri dibuka
+  lewat favorit atau Ctrl+K.
+
+Tidak ada perubahan kode.

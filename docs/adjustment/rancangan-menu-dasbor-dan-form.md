@@ -140,6 +140,80 @@ Contoh:
 | Keuangan (Bella) | Dasbor, Perlu Tindakan, Penagihan, Keuangan, Pajak, Laporan, Karyawan & Penggajian (lihat) |
 | Pekerja Lepas (Dafrin, Oki) | Dasbor, Perlu Tindakan, Tugas, Tanda Tangan Saya |
 
+### 2.2a Pemangkasan menu (usulan 2026-11-27)
+
+**Masalah:** Aqim memegang Pemilik + SDM + admin aplikasi, jadi melihat
+**84 menu** (dihitung dari `nav-config.ts`). Susunan per pekerjaan (RM1)
+masih menyisakan sekitar 70. Grup Keuangan (14), Pajak (6), Aset (7),
+Barang (6), Pengadaan (5), dan Lisensi (4) paling panjang.
+
+**Cara memangkas (tanpa menghapus fitur):**
+
+| No | Cara | Contoh |
+|---|---|---|
+| PM-1 | **Satu halaman dengan tab** untuk hal yang sejenis | Barang: tab Produk / Komponen / Material. Stok: tab Stok / Mutasi / Penyesuaian / Nilai. Aset: tab Daftar / Peminjaman / Servis / Penghapusan. Pajak: tab Catatan / Pemotongan / Rekap / Koreksi. Lisensi: tab Kontrak / Aktivasi. Faktur: tab Semua / Uang Muka / Kuitansi |
+| PM-2 | **Data induk dan pengaturan yang jarang dibuka pindah ke Pengaturan** (satu halaman dengan bagian) | Kategori barang, kategori aset, gudang & rak, daftar akun, saldo awal, aturan posting, pusat biaya, tarif pajak, tabel PPh 21, aplikasi lisensi, kunci API, gateway pembayaran, nomor dokumen, pengguna, log audit |
+| PM-3 | **Pencarian cepat** (Ctrl+K atau kotak cari di atas menu): ketik "PO", "stok", "jurnal" → langsung membuka halaman | Untuk halaman yang jarang dipakai, tidak perlu mencari di menu |
+| PM-4 | **Menu favorit**: orang menyematkan menu yang sering ia pakai di bagian atas | Aqim menyematkan Perlu Tindakan, PO, Kas & Bank |
+| PM-5 | **Grup tertutup** secara bawaan, kecuali grup halaman yang sedang dibuka | Menu terlihat pendek saat pertama masuk |
+
+**Menu Pemilik sesudah dipangkas (usulan): 84 → ±33**
+
+| Grup | Menu | Isi tab |
+|---|---|---|
+| — | Dasbor | |
+| — | Perlu Tindakan | |
+| Penjualan (4) | Prospek, Pelanggan, Penawaran (SPH), Pesanan Penjualan (SO) | SO: tab Retur Penjualan |
+| Penagihan (2) | Faktur, Piutang | Faktur: Semua / Uang Muka / Kuitansi |
+| Pembelian (2) | Pesanan Pembelian (PO), Pemasok | PO: tab Permintaan (PR) / PO / Retur Pembelian |
+| Gudang (3) | Stok, Penerimaan Barang (BPB), Surat Jalan | Stok: Stok / Mutasi / Penyesuaian / Nilai Persediaan |
+| Barang (1) | Barang | Produk / Komponen / Material |
+| Proyek & Layanan (3) | Proyek, Tiket Servis, Lisensi | Tiket: tab Garansi. Lisensi: Kontrak / Aktivasi |
+| Aset (1) | Aset | Daftar / Peminjaman / Servis & Kondisi / Penghapusan |
+| Keuangan (5) | Kas & Bank, Utang & Pembayaran Pemasok, Klaim & Kasbon, Pembukuan, Pajak | Kas: tab Rekonsiliasi. Pembukuan: Jurnal / Aset Tetap & Penyusutan / Anggaran Proyek / Tutup Periode. Pajak: Catatan / Pemotongan / Rekap / Koreksi |
+| Laporan (1) | Laporan | Laporan Keuangan / Arsip Bulanan |
+| SDM (5) | Karyawan, Absensi, Cuti & Lembur, Penggajian, Tugas | Absensi: tab Jadwal Kerja |
+| Dokumen (2) | Berkas, Tanda Tangan | Tanda Tangan: Minta / Milik Saya / Daftar |
+| Website & WhatsApp (2) | Katalog Website, WhatsApp | WhatsApp: Percakapan / FAQ / Log Otomasi |
+| — | Pengaturan | Bagian: Perusahaan, Pengguna & Log Audit, Nomor Dokumen, Dokumen, Gaji, Keuangan (akun, saldo awal, aturan posting, pusat biaya), Pajak (tarif, PPh 21), Barang & Gudang (kategori, gudang & rak), Aset (kategori), Lisensi (aplikasi, kunci API), Gateway Pembayaran |
+
+Role lain ikut terpangkas karena memakai halaman yang sama. Contoh: Gudang
+±8 menu, Keuangan ±12, Teknisi ±6.
+
+Tab mengikuti hak: tab yang tidak boleh dibuka tidak tampil (misalnya Gudang
+tidak melihat tab Nilai Persediaan).
+
+**Keputusan programmer B (27/11):**
+
+| No | Keputusan |
+|---|---|
+| PM-1 | **Disetujui**: halaman sejenis digabung menjadi satu halaman dengan tab (daftar di atas) |
+| PM-2 | **Disetujui**: data induk dan pengaturan pindah ke satu halaman Pengaturan, bagian tampil sesuai hak |
+| PM-3 | **Disetujui**: pencarian cepat (Ctrl+K) untuk halaman dan nomor dokumen |
+| PM-4 | **Disetujui**: menu favorit per orang |
+| PM-5 | **Tidak dipakai**: grup tidak ditutup otomatis |
+| PM-6 | **Menu harian Aqim**: Dasbor, Perlu Tindakan, Laporan, dan SDM (Karyawan, Absensi, Cuti & Lembur, Penggajian, Tugas) tampil di atas. Grup lain (Penjualan, Penagihan, Pembelian, Gudang, Barang, Proyek & Layanan, Aset, Keuangan, Pajak, Dokumen, Website & WhatsApp) masuk ke **Lainnya** (bisa dibuka, dicari dengan Ctrl+K, atau disematkan sebagai favorit) |
+
+Menu Aqim yang terlihat saat masuk (PM-6):
+
+| Urutan | Menu |
+|---|---|
+| 1 | Dasbor |
+| 2 | Perlu Tindakan (semua persetujuan, dengan angka) |
+| 3 | Laporan |
+| 4 | SDM: Karyawan, Absensi, Cuti & Lembur, Penggajian, Tugas |
+| 5 | Favorit (yang ia sematkan sendiri) |
+| 6 | Lainnya (tertutup): semua grup lain |
+| 7 | Pengaturan |
+
+Catatan: Aqim juga membuat PO sendiri (K2c). Karena Pembelian tidak dipilih
+sebagai menu harian, PO dibuka lewat Lainnya, Ctrl+K, atau favorit. Bila PO
+sering dibuat, cukup disematkan sebagai favorit.
+
+Cara kerja "menu harian": daftar grup harian disimpan per role (Pemilik)
+sebagai bawaan; favorit disimpan per orang. Role lain tidak memakai Lainnya
+karena menunya sudah pendek.
+
 ### 2.3 Halaman Perlu Tindakan (usulan)
 
 Satu halaman berisi daftar dokumen yang menunggu orang yang sedang masuk,
