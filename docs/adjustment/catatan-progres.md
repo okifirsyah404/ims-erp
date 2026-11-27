@@ -2210,3 +2210,31 @@ semuanya dan tidak salah arah.
   masing-masing ditautkan ke L-16, B-35, P7-7, dan PK.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - Pemeriksaan docs/plan dan docs/user-guide; hapus yang tidak dipakai
+
+Arahan programmer B: periksa `docs/plan/` dan `docs/user-guide/`, hapus yang
+tidak dipakai.
+
+- **Dipertahankan (masih dipakai):**
+  - `progress.md`, `backlog.md`, `plans/features.md`: buku resmi yang
+    diwajibkan AGENTS.
+  - `erp-plan-id.md`: kontrak v5.1.
+  - `erp-module-plans/`: batas kontrak per modul, 14 rujukan.
+  - `port-portal-onto-main.md`: dipakai di B-38.
+  - Panduan `n8n-workflows`, `whatsapp-n8n-setup`, `whatsapp-business-meta`:
+    dipakai di B-46 dan B-47.
+- **Dihapus (ada di riwayat git):**
+  - `docs/plan/erp-plan-en.md`: terjemahan kontrak; acuannya
+    `erp-plan-id.md`.
+  - `docs/plan/database-refactor/`: riwayat ADR-0024 yang sudah selesai.
+  - `docs/user-guide/en.md` dan `id.md`: panduan lama, diganti panduan
+    langkah 12.
+- Rujukan dibetulkan di `docs/database/logical-references.md`,
+  `implementation-phases.md`, `architecture/README.md`, ADR-0024,
+  `erp-module-plans/README.md`, `.agents/docs/README.md`, `lintas-modul/`,
+  `catatan-skema-dan-alur.md`, dan peta dokumen `5-pengerjaan/README.md`.
+- `docs/user-guide/README.md` ditulis ulang menjadi indeks panduan yang
+  tersisa.
+
+Tidak ada perubahan kode.

@@ -10,7 +10,7 @@ This page records what each phase of that refactor did, in what order, and
 what proves it done — including the numbers as they stood at the time. The design record is
 `docs/architecture/decisions/ADR-0024-database-normalization-baseline-v2.md`;
 the working plan (decisions Q1-Q39, per-module files) is
-`docs/plan/database-refactor/`; the dated evidence is `docs/plan/progress.md`.
+`docs/plan/database-refactor/` (removed 2026-11-28, see git history); the dated evidence is `docs/plan/progress.md`.
 
 Status words follow `AGENTS.md`: nothing below is `accepted`. ERP-0070..0091
 are `in-progress` (code done, verified by the commands listed, no reviewer
@@ -152,7 +152,7 @@ longer read as "one folder per schema". 2026-11-24 squashed it back:
   chain cannot be upgraded in place — rebuild with
   `bun run drizzle:migrate-reset`. No production server exists yet.
 
-## Decisions worth knowing (full list: `docs/plan/database-refactor/00-overview.md`)
+## Decisions worth knowing (full list: `docs/plan/database-refactor/00-overview.md` (removed 2026-11-28, see git history))
 
 - Q2: squashed per-schema baseline instead of an append chain (ADR-0019 naming).
 - Q10: addresses store only `village_id`; the rest of the path is derived

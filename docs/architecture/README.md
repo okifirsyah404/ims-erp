@@ -34,7 +34,7 @@ ADR-0024 + ADR-0026), 5 companion MDs
 `data-dictionary`, `logical-references`, `implementation-phases`), and the
 `gen-logical-references.ts` / `validate-dbml.ts` scripts. The schema-less
 `webhook` module (inbound provider edge) is described there too. The
-database-refactor plan is `docs/plan/database-refactor/`.
+database-refactor plan was `docs/plan/database-refactor/` (removed 2026-11-28, see git history).
 
 End-user documentation (how to use the web admin, English and Indonesian,
 with UML flow diagrams) lives in `docs/user-guide/`; update it in the same

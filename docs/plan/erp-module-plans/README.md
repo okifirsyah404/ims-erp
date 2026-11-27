@@ -4,7 +4,7 @@
 
 # ERP Module Plans — v5.1 Baseline
 
-Detailed per-module breakdown of `docs/plan/erp-plan-en.md` (v5.1, 2026-10-21,
+Detailed per-module breakdown of `docs/plan/erp-plan-id.md` (the English copy `erp-plan-en.md` was removed 2026-11-28) (v5.1, 2026-10-21,
 IDR 15,000,000). One file per plan module M01–M12. The six Stage 2 add-on
 features live inside the module they extend.
 

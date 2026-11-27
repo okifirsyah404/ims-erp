@@ -64,7 +64,7 @@ menunggu keputusan / direncanakan).
 ## Catatan lain
 
 - `.agents/docs/erp-plan.md` tidak ada di repo; kontrak versi Inggris ada di
-  `docs/plan/erp-plan-en.md`.
+  `docs/plan/erp-plan-en.md` (dihapus 2026-11-28; acuan `erp-plan-id.md`).
 - Nomor ADR ganda: dua file `ADR-0012-*` (single-organization yang
   digantikan, dan multi-organization), dan tidak ada ADR-0028. Perlu
   diperhatikan saat memesan nomor ADR baru.

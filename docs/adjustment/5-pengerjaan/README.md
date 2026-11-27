@@ -39,17 +39,17 @@ dokumen usang (`AGENTS.md`, "Source of truth").
 | `docs/architecture/architecture.md`, `domain-map.md`, `data-model.md` | Latar belakang | Tidak, kecuali entri peta kode menunjuk |
 | `docs/architecture/security-and-access.md` | **Ditahan** | Tidak (A-13) |
 | `docs/role-permission.md` | Hasil generator dari kode sekarang | Tidak sebagai acuan role target; dibuat ulang di P7-4 |
-| `docs/plan/erp-plan-*.md`, `erp-module-plans/` | Batas kontrak | Hanya untuk cek kontrak |
+| `docs/plan/erp-plan-id.md` (kontrak v5.1), `erp-module-plans/` | Batas kontrak | Hanya untuk cek kontrak |
 | `docs/plan/port-portal-onto-main.md` | Rencana port portal (akan diperbarui di B-38) | Hanya saat B-38 |
-| `docs/plan/database-refactor/`, `docs/database/implementation-phases.md` | Riwayat ADR-0024 | Tidak |
-| `docs/user-guide/` | Panduan lama (diganti di langkah 12); panduan n8n/WA diperbarui di B-46 | Hanya saat B-46 / langkah 12 |
+| `docs/database/implementation-phases.md` | Riwayat ADR-0024 | Tidak |
+| `docs/user-guide/` (panduan n8n, WAHA, Meta) | Dipakai di B-46 dan saat pindah ke Meta | Hanya saat B-46 / B-47 |
 | `docs/integrations/n8n/` | Workflow n8n | Hanya saat B-46 |
 | `docs/found-bugs/` | Laporan bug 26/11; bug terbuka dipindah ke daftar perbaikan lintas tugas (FB-1–FB-4) | Tidak |
 
 **Dihapus 2026-11-28** (ada di riwayat git): `docs/plan/phases/`,
 `docs/plan/uat/`, `docs/plan/plan.md`, rencana lama di `docs/plan/plans/`,
 `docs/user-guide/diagrams.md`, `docs/PANDUAN-DOKUMENTASI.id.md`,
-`docs/architecture/project-audit.md`, `docs/architecture/modules/`;
+`docs/architecture/project-audit.md`, `docs/architecture/modules/`, `docs/plan/erp-plan-en.md` (terjemahan kontrak; acuan `erp-plan-id.md`), `docs/plan/database-refactor/`, `docs/user-guide/en.md` dan `id.md` (panduan lama; diganti panduan langkah 12);
 `docs/simple-version/` (lokal saja).
 
 ## 1. Alur satu tugas
