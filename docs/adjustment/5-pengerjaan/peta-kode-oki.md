@@ -54,7 +54,7 @@ yang menunggu Dafrin, Aqim, atau Bella ditulis dengan nama orangnya.
 | 3 | [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-10-b4) | Hak role baru | Tinggi | — |
 | 4 | [P7-7](#p7-7-server-siap-pakai-dan-batas-login-tinggi-nm-5-nm-6-l-10-l-11) | Server siap pakai + batas login | Tinggi | — (bagian dev); Aqim: server dan SMTP untuk produksi |
 | 5 | [M12-14](#m12-14-ubah-role-dari-halaman-pengguna--bug-form-karyawan-tinggi-kf-r1-kf-r2) | Ubah role dari halaman Pengguna + bug form karyawan | Tinggi | P7-1, P7-4 |
-| 6 | [M12-2](#m12-2-k12-tahap-1-sembunyikan-organisasi-tinggi-oa1-oa2) | K12 tahap 1: sembunyikan Organisasi | Tinggi | M12-14, P7-4 |
+| 6 | [M12-2](#m12-2-k12-satu-organisasi-tambah-organisasi-dimatikan-tinggi-oa1-oa2) | K12: satu organisasi, tambah organisasi dimatikan | Tinggi | P7-4 |
 | 7 | [PH-UNDANG](#ph-undang-pengguna--undang-tinggi-oa12-oa13-k12) | Pengguna / Undang | Tinggi | M12-2, P7-4 |
 | 8 | [M12-15](#m12-15-atur-ulang-kata-sandi-oleh-admin-tinggi-kf-r3) | Atur ulang kata sandi oleh admin | Tinggi | P7-1 |
 | 9 | [PH-MASUK](#ph-masuk-halaman-masuk-tanpa-google-pesan-nonaktif-tinggi-k13-oa3-oa14) | Masuk tanpa Google, pesan nonaktif | Tinggi | — |
@@ -96,7 +96,7 @@ yang menunggu Dafrin, Aqim, atau Bella ditulis dengan nama orangnya.
 | 45 | [M10-12](#m10-12-pengaturan-rezim-pajak-sedang-tinggi-bila-umkm-kf-t2) | Pengaturan rezim pajak | Sedang (Tinggi bila UMKM) | Bella: rezim pajak |
 | 46 | [PH-DASBOR](#ph-dasbor-dasbor-sedang-rd1rd3-of1of3) | Dasbor (M01-1..M01-4) | Sedang | P7-4; kartu modul Dafrin (langkah 9) |
 
-**Tanpa nomor sendiri** (dikerjakan di tugas lain; entrinya tetap ada di bawah sebagai rincian): M12-1 = P7-1, M12-5 = P7-4, M09-1 = P7-4, X-1 = M12-2 + P7-4, X-2 = P7-3 (Dafrin), X-3 = P7-5 (Dafrin), X-4 = P7-1, X-5 = P7-7.
+**Tanpa nomor sendiri** (dikerjakan di tugas lain; entrinya tetap ada di bawah sebagai rincian): M12-1 = P7-1, M12-5 = P7-4, M09-1 = P7-4, X-1 = M12-2 + P7-4 (satu organisasi), X-2 = P7-3 (Dafrin), X-3 = P7-5 (Dafrin), X-4 = P7-1, X-5 = P7-7.
 
 
 ---
@@ -304,46 +304,84 @@ Sama dengan [P7-1](#p7-1-audit-di-dalam-transaksi-tinggi-oa5oa7-l-1). Bagian eks
 
 **Prompt AI (salin):** tugas ini penunjuk; pakai prompt di entri yang dirujuk.
 
-### M12-2 K12 tahap 1: sembunyikan Organisasi (Tinggi, OA1, OA2)
+### M12-2 K12: satu organisasi, tambah organisasi dimatikan (Tinggi, OA1, OA2)
+
+> **Diubah 2026-11-28 (programmer B):** organisasi **tidak dihapus**.
+> Menghapusnya berdampak ke role, undangan, dan sesi yang dikelola plugin
+> organisasi Better Auth, dan merombaknya makan waktu lama. ERP tetap
+> memakai **satu organisasi** (perusahaan). M12-3 (role ke tingkat pengguna)
+> gugur.
+>
+> **Dokumen yang ikut diperbarui (A-14):** ADR singkat "satu organisasi"
+> (mengubah ADR-0001, ADR-0007, dan ADR-0012 multi-organisasi; nomor dipesan
+> saat PR); `docs/architecture/role-permission.md` (generator) bila rute
+> atau hak berubah.
 
 - **Seharusnya:**
-  - Pemilih organisasi dan halaman Organisasi **disembunyikan**; sesi selalu ke organisasi tunggal (OA1 b, tahap 1).
-  - Kolom `organization_id` tetap diisi perusahaan tunggal sampai tahap 3 (OA2 a).
-  - ADR baru menggantikan ADR-0001/0007/0012 dan mengubah ADR-0006/0008.
-  - Isian organisasi di dialog undang dihapus (lihat PH-UNDANG).
-- **Sekarang:** `OrganizationSwitcher` di sidebar (`components/sidebar/main-sidebar.tsx:61`); menu Organisasi di `components/sidebar/nav-config.ts:653-654`; header `x-organization-id` dikirim dari 9 file `lib/*-api.ts`; organisasi aktif diatur di `src/providers/better-auth/options/session.auth.ts` dan `ac/auth-hooks.ts`.
+  - Server **menolak membuat organisasi kedua**: bila sudah ada satu
+    organisasi, `POST /organizations` dan jalur plugin Better Auth
+    mengembalikan galat dengan kunci terjemahan ("Aplikasi hanya memakai
+    satu perusahaan"). Pembuatan organisasi pertama (instalasi baru, seed)
+    tetap bisa.
+  - Tombol **Tambah organisasi** dan dialognya hilang dari halaman Organisasi
+    dan pemilih organisasi.
+  - **Pemilih organisasi disembunyikan** di web-admin dan portal karyawan;
+    sesi otomatis ke organisasi tunggal.
+  - Halaman **Organisasi tetap ada** untuk Pemilik: ubah profil, anggota,
+    dan role.
+  - Isian organisasi di form Undang disembunyikan; undangan otomatis ke
+    organisasi tunggal (PH-UNDANG).
+  - **Tidak berubah:** database, undangan (`auth.user_invitations`), role di
+    `auth.members.role`, header `x-organization-id`, dan kolom
+    `organization_id` (tetap diisi organisasi tunggal, OA2).
+- **Sekarang:**
+  - Semua pengguna dengan tanda admin aplikasi boleh membuat organisasi
+    (`apps/backend/src/providers/better-auth/plugins/organization.auth.ts:28`,
+    `allowUserToCreateOrganization`); rute buat organisasi di
+    `src/app/organization/controllers/organization-bootstrap.controller.ts:46`
+    (`POST /organizations`, memanggil `organizationService.createOrganization`).
+  - Tombol Tambah: `apps/web-admin/src/routes/_authed/organizations/index.tsx:247`
+    dan `components/sidebar/organization-switcher.tsx:264`
+    (`CreateOrganizationDialog`).
+  - Pemilih organisasi: `components/sidebar/main-sidebar.tsx:61`; web-employee
+    `src/lib/use-active-organization.ts`,
+    `src/components/organization/organization-context-sync.tsx`.
 - **File yang diubah:**
 
 | Lapisan | Path | Perubahan |
 |---|---|---|
-| backend | `src/providers/better-auth/options/session.auth.ts`, `src/providers/better-auth/ac/auth-hooks.ts` | Sesi baru selalu `activeOrganizationId` = organisasi tunggal |
-| web-admin | `components/sidebar/main-sidebar.tsx`, `components/sidebar/organization-switcher.tsx` | Pemilih tidak dirender |
-| web-admin | `components/sidebar/nav-config.ts` | Daun Organisasi disembunyikan |
-| web-admin | `routes/_authed/organizations/*` | Redirect ke `/admin/users` (rute tetap untuk tahap 2) |
-| web-admin | `lib/organization-store.ts`, `lib/use-active-organization.ts` | Nilai tetap organisasi tunggal |
-| portal | `apps/web-employee/src/lib/use-organization-switch.ts`, `apps/web-employee/src/components/organization/` | Sama untuk portal karyawan |
-| locale | `packages/locales/src/{en,id}/nav.ts` | Hapus kunci yang mati (dead-key test) |
-| test | `apps/web-admin` test sidebar (dicek saat desain), `test/unit/organization-mine.test.ts` | Pemilih tidak muncul, sesi ke organisasi tunggal |
-| docs | `docs/architecture/decisions/ADR-00xx-single-company-stage-1.md` **(baru)** | ADR K12 (nomor dipesan saat PR) |
+| backend | `src/providers/better-auth/plugins/organization.auth.ts` | `allowUserToCreateOrganization` menolak bila sudah ada organisasi |
+| backend | `src/app/organization/services/organization.service.ts` (`createOrganization`), `src/app/organization/errors/` | Cek "sudah ada organisasi" → galat domain baru dengan kunci terjemahan |
+| backend | `src/providers/better-auth/options/session.auth.ts`, `ac/auth-hooks.ts` | Sesi baru selalu `activeOrganizationId` = organisasi tunggal |
+| web-admin | `routes/_authed/organizations/index.tsx`, `components/sidebar/organization-switcher.tsx`, `components/organization/create-organization-dialog.tsx` | Tombol dan dialog Tambah organisasi dihapus |
+| web-admin | `components/sidebar/main-sidebar.tsx` | Pemilih organisasi tidak dirender |
+| web-employee | `src/lib/use-active-organization.ts`, `src/components/organization/` | Pemilih disembunyikan; organisasi tunggal otomatis |
+| locale | `packages/locales/src/{en,id}/api.ts`, `admin.ts` / `nav.ts` | Pesan galat baru; kunci tombol Tambah yang mati dihapus (dead-key test) |
+| test | `apps/backend/test/unit/organization*.test.ts`, test sidebar web-admin | Organisasi kedua ditolak; organisasi pertama bisa; pemilih tidak muncul |
+| docs | `docs/architecture/decisions/ADR-00xx-single-organization.md` **(baru)** | ADR singkat satu organisasi |
 
-- **Skema/migrasi:** tidak (tahap 1).
-- **Test:** di atas.
+- **Skema/migrasi:** tidak.
+- **Test:** di atas; `bun run test` untuk locale parity.
 - **UAT:**
-  1. Login semua role → tidak ada pemilih organisasi dan menu Organisasi.
-  2. Data dan hak sama seperti sebelum perubahan.
-  3. Membuka `/organizations` langsung diarahkan ke halaman Pengguna.
-- **Bergantung pada:** **M12-14 selesai lebih dulu** (rencana langkah 7 bagian 5), P7-4.
+  1. Login Aqim → halaman Organisasi tampil tanpa tombol Tambah organisasi;
+     profil, anggota, dan role tetap bisa diubah.
+  2. Sidebar web-admin dan portal karyawan tidak menampilkan pemilih
+     organisasi; data tampil seperti biasa.
+  3. Panggil `POST /organizations` saat sudah ada organisasi → ditolak
+     dengan pesan Indonesia.
+  4. Undang pengguna tanpa isian organisasi → pengguna klaim dan masuk ke
+     organisasi tunggal dengan role yang dipilih.
+- **Bergantung pada:** P7-4.
 
 **Prompt AI (salin):**
 
 ```text
-Kerjakan M12-2 K12 tahap 1: sembunyikan Organisasi.
-Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M12-2 (Seharusnya, File yang diubah, Test, UAT).
-Buka hanya file ini: src/providers/better-auth/options/session.auth.ts, src/providers/better-auth/ac/auth-hooks.ts, components/sidebar/main-sidebar.tsx, components/sidebar/organization-switcher.tsx, components/sidebar/nav-config.ts, routes/_authed/organizations/*, lib/organization-store.ts, lib/use-active-organization.ts, apps/web-employee/src/lib/use-organization-switch.ts, apps/web-employee/src/components/organization/, packages/locales/src/{en,id}/nav.ts, apps/web-admin.
+Kerjakan M12-2 K12: satu organisasi, tambah organisasi dimatikan.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M12-2 (Seharusnya, File yang diubah, Test, UAT). Organisasi TIDAK dihapus; database, undangan, role, dan organization_id tidak diubah.
+Buka hanya file ini: apps/backend/src/providers/better-auth/plugins/organization.auth.ts, src/app/organization/services/organization.service.ts, src/app/organization/errors/, src/app/organization/controllers/organization-bootstrap.controller.ts, src/providers/better-auth/options/session.auth.ts, src/providers/better-auth/ac/auth-hooks.ts, apps/web-admin/src/routes/_authed/organizations/index.tsx, components/sidebar/organization-switcher.tsx, components/sidebar/main-sidebar.tsx, components/organization/create-organization-dialog.tsx, apps/web-employee/src/lib/use-active-organization.ts, apps/web-employee/src/components/organization/, packages/locales/src/{en,id}/api.ts.
 Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
-Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
-Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
-Test: test/unit/organization-mine.test.ts (jalankan hanya ini saat iterasi).
+Tambahkan teks bantuan bila menyentuh halaman (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/organization*.test.ts (jalankan hanya ini saat iterasi), lalu bun run test.
 Selesai bila semua butir UAT di entri M12-2 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M12-2.md dari templat uat-pengerjaan.md.
 Laporkan hanya: file yang diubah dan hasil test.
 ```
@@ -382,7 +420,7 @@ Sama dengan [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-k
   1. Aqim membuka Pengguna → Ubah role Bilal → centang Penjualan + Gudang → simpan → kolom role menampilkan keduanya (setelah F5 tetap).
   2. Ubah data karyawan Bilal (jabatan) → role tambahan tidak hilang.
   3. Log Audit mencatat perubahan role.
-- **Bergantung pada:** P7-1, P7-4. Harus selesai sebelum M12-2.
+- **Bergantung pada:** P7-1, P7-4. (Halaman Organisasi tetap ada; K12 diubah 28/11.)
 
 **Prompt AI (salin):**
 
@@ -1683,7 +1721,7 @@ Bukan Tinggi; dicatat karena baris O di peta halaman. M01-1..M01-4 semuanya Rend
 
 ### X-1 Autentikasi dan organisasi (Tinggi)
 
-Pecah ke [M12-2](#m12-2-k12-tahap-1-sembunyikan-organisasi-tinggi-oa1-oa2), [PH-MASUK](#ph-masuk-halaman-masuk-tanpa-google-pesan-nonaktif-tinggi-k13-oa3-oa14), [PH-UNDANG](#ph-undang-pengguna--undang-tinggi-oa12-oa13-k12), [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-10-b4). Portal pelanggan (OA4) di Dafrin.
+Pecah ke [M12-2](#m12-2-k12-satu-organisasi-tambah-organisasi-dimatikan-tinggi-oa1-oa2), [PH-MASUK](#ph-masuk-halaman-masuk-tanpa-google-pesan-nonaktif-tinggi-k13-oa3-oa14), [PH-UNDANG](#ph-undang-pengguna--undang-tinggi-oa12-oa13-k12), [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-10-b4). Portal pelanggan (OA4) di Dafrin.
 
 **Prompt AI (salin):** tugas ini penunjuk; pakai prompt di entri yang dirujuk.
 
@@ -1796,7 +1834,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 
 | ID | Alasan |
 |---|---|
-| M12-3, M12-4, M12-6..M12-13, M12-17 | Bukan Tinggi (M12-4/M12-9 Tinggi lewat PH-MASUK) |
+| M12-4, M12-6..M12-13, M12-17 | Bukan Tinggi (M12-4/M12-9 Tinggi lewat PH-MASUK). M12-3 (role ke tingkat pengguna) gugur: K12 diubah 28/11, role tetap per organisasi |
 | M09-5, M09-6, M09-9..M09-14 | Sedang/Rendah (M09-5 tercakup P7-4/M09-4; M09-10 tercakup M12-16) |
 | M10-4..M10-8, M10-10 | Sedang/Rendah (M10-4 bersama Dafrin, OC4) |
 | M06-4, M06-5, M06-7..M06-13, M06-15 | Sedang/Rendah (M06-4, M06-7 tercakup PH-PINJAM) |

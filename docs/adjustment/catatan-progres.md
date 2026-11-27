@@ -2328,3 +2328,34 @@ Aturan ini juga ditulis di langkah 1 `5-pengerjaan/README.md`.
 
 Di peta kode Oki ada delapan entri yang sama dengan tugas lain (misalnya
 M12-1 = P7-1). Entri itu tidak diberi nomor sendiri.
+
+## 2026-11-28 — K12 diubah: organisasi tetap satu, tidak dihapus
+
+Programmer B mendapati peta kode Oki hanya memuat tahap 1 K12 (menyembunyikan
+organisasi). Setelah diskusi, dan setelah menimbang dampak menghapus
+organisasi ke fitur Better Auth (role di `members`, undangan, sesi),
+diputuskan **organisasi tidak dihapus**.
+
+ERP tetap memakai **satu organisasi**:
+
+- server menolak membuat organisasi kedua;
+- tombol Tambah organisasi dihapus;
+- pemilih organisasi disembunyikan di web-admin dan portal karyawan;
+- sesi otomatis ke organisasi tunggal.
+
+Yang tetap seperti sekarang:
+
+- halaman Organisasi (profil, anggota, role);
+- undangan (`auth.user_invitations`);
+- role di `auth.members.role`;
+- `organization_id` (diisi organisasi tunggal).
+
+M12-2 di peta kode Oki ditulis ulang. Tugas ini kecil dan tanpa migrasi,
+cukup ADR singkat "satu organisasi". M12-3 gugur. OA2 sekarang berarti kolom
+tetap selamanya.
+
+Usulan sementara "hapus sekaligus" yang sempat ditulis di PR #177 diganti
+dalam PR yang sama.
+
+**Perlu diberitahukan ke Pemilik**, karena opsi (b) bertahap sudah disetujui
+pada 27/11.

@@ -204,7 +204,7 @@ yang ada hanya tiga halaman "Segera hadir", izin investor di
 
 | No | Kekurangan | Modul | Kontrak | Prioritas usulan | Oleh |
 |---|---|---|---|---|---|
-| KF-R1 | **Ubah role pengguna (beberapa role) dari halaman Pengguna.** Sekarang hanya lewat Organisasi → anggota, yang akan disembunyikan K12 | M12 | Ya | Tinggi | O |
+| KF-R1 | **Ubah role pengguna (beberapa role) dari halaman Pengguna.** Sekarang hanya lewat Organisasi → anggota, yang tetap ada (K12 diubah 28/11), tetapi role sebaiknya bisa diubah dari halaman Pengguna | M12 | Ya | Tinggi | O |
 | KF-R2 | **Bug: form ubah karyawan menghapus role tambahan** saat disimpan (satu pilihan role menimpa semua) | M12/M08 | Ya | Tinggi | O + D |
 | KF-R3 | **Admin mengatur ulang kata sandi** atau memberi kata sandi sementara | M12 | Abu-abu | Tinggi | O |
 | KF-E1 | **Layar admin untuk kunjungan lokasi dan swafoto teknisi** (sekarang hanya PIC proyek di portal) | Portal karyawan | Tambahan | Tinggi | O |
@@ -268,7 +268,7 @@ yang ada hanya tiga halaman "Segera hadir", izin investor di
 |---|---|---|---|---|---|
 | KF-D1 | Kartu umur piutang dan utang (endpoint `/ar/aging`, `/ap/aging` sudah ada) | Setengah jadi | Ya | Tinggi | Murah; bagian RD1 |
 | KF-D2 | Kartu tahap 2: gaji disetujui, transaksi gateway terverifikasi | Belum ada | Ya (M01 tahap 2) | Sedang | `m01-dasbor.md:543` |
-| KF-D3 | Dasbor tanpa organisasi aktif menautkan ke `/organizations`, yang disembunyikan K12 | Setengah jadi | Ya | Sedang | `dashboard-page.tsx:118-137` |
+| KF-D3 | Dasbor tanpa organisasi aktif menautkan ke `/organizations`, padahal dengan K12 (satu organisasi) sesi selalu punya organisasi aktif | Setengah jadi | Ya | Sedang | `dashboard-page.tsx:118-137` |
 | KF-D4 | Jumlah dan nilai SPH terbuka di kartu Penjualan | Belum ada | Ya | Rendah | — |
 
 ### 12. Laporan dan Hak Akses (M12, Oki)
