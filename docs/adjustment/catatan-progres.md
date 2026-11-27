@@ -1571,3 +1571,17 @@ keputusan/rencana. Empat belum, lalu ditambahkan:
 - Pemeriksa Mermaid: 20 blok, 0 error.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - B-35 sampai B-38 menjadi prioritas Tinggi
+
+Arahan programmer B: keempatnya fitur utama, jadi bukan Sedang.
+- **B-35** notifikasi tugas proyek;
+- **B-36** konfirmasi tiket di portal;
+- **B-37** cetak/PDF SO, kuitansi, BPB, dan retur (kuitansi lebih dulu);
+- **B-38** pesanan, SPH, faktur, dan bayar di portal serta checkout website
+  (T21, T25), dirancang dulu sesuai Gate 2.
+
+Diperbarui: `4-rencana-kerja/rencana-perubahan.md`, `peta-halaman.md`, dan
+`README.md` (langkah 8 memuat B-35 sampai B-38).
+
+Tidak ada perubahan kode.

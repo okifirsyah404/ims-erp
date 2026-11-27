@@ -81,10 +81,10 @@ OA1–OA7, OB7/OB8, OD1/OD2, OE1, OG1) ada di
 | B-32 | **Tutup PO kurang kirim**: tindakan Tutup untuk PO yang diterima sebagian, dengan alasan; sisa tidak lagi ditunggu | KF-B1 | Tinggi | Diputuskan 27/11 (KF-1) |
 | B-33 | **PPh 23 dipotong pelanggan** di form kuitansi (bagian `sale`); akun dan bupot di sisi Oki (O-KF3) | KF-K3, KF-T3 | Tinggi | Diputuskan 27/11 (KF-1) (bersama Oki) |
 | B-34 | Daftar tunggu kekurangan fitur Sedang/Rendah modul programmer B (KF-P3–P11, KF-G2–G7, KF-B2–B6); butir "Tambahan" menunggu permintaan Pemilik | KF-2, KF-3 | Sedang/Rendah | Diputuskan 27/11 (KF-2, KF-3) |
-| B-35 | Notifikasi ke teknisi saat **tugas proyek** ditugaskan atau tenggatnya dekat (tugas SDM sudah punya notifikasi) | Alur lengkap 7, titik 10 | Sedang | Ditambahkan 27/11 dari alur lengkap; prioritas usulan |
-| B-36 | Tombol **konfirmasi tiket** di portal pelanggan (backend `POST /tickets/:id/confirm` sudah ada, portal belum memetakannya) | Alur lengkap 10, titik 17 | Sedang | Ditambahkan 27/11 dari alur lengkap; prioritas usulan |
-| B-37 | Halaman cetak / PDF untuk **SO, kuitansi, BPB, retur pembelian, retur penjualan** (sekarang hanya tercatat di daftar dokumen) | Alur lengkap 6, titik 9 | Sedang (kuitansi lebih dulu, dipegang pelanggan) | Ditambahkan 27/11 dari alur lengkap; prioritas usulan |
-| B-38 | **Portal pelanggan dan website**: pesanan online (T21), terima/revisi SPH, lihat faktur, bayar lewat gateway, dokumen (T25). Sekarang hanya tampilan; checkout website belum tersambung. Butuh rancangan dulu (Gate 2) | Alur lengkap 4, titik 6; kontrak T21, T25 | Sedang (setelah prioritas tinggi) | Ditambahkan 27/11 dari alur lengkap; prioritas usulan |
+| B-35 | Notifikasi ke teknisi saat **tugas proyek** ditugaskan atau tenggatnya dekat (tugas SDM sudah punya notifikasi) | Alur lengkap 7, titik 10 | Tinggi | Ditambahkan 27/11 dari alur lengkap; **Tinggi, diputuskan programmer B 28/11** (fitur utama) |
+| B-36 | Tombol **konfirmasi tiket** di portal pelanggan (backend `POST /tickets/:id/confirm` sudah ada, portal belum memetakannya) | Alur lengkap 10, titik 17 | Tinggi | Ditambahkan 27/11 dari alur lengkap; **Tinggi, diputuskan programmer B 28/11** (fitur utama) |
+| B-37 | Halaman cetak / PDF untuk **SO, kuitansi, BPB, retur pembelian, retur penjualan** (sekarang hanya tercatat di daftar dokumen) | Alur lengkap 6, titik 9 | Tinggi (kuitansi lebih dulu) | Ditambahkan 27/11 dari alur lengkap; **Tinggi, diputuskan programmer B 28/11** (fitur utama) |
+| B-38 | **Portal pelanggan dan website**: pesanan online (T21), terima/revisi SPH, lihat faktur, bayar lewat gateway, dokumen (T25). Sekarang hanya tampilan; checkout website belum tersambung. Butuh rancangan dulu (Gate 2) | Alur lengkap 4, titik 6; kontrak T21, T25 | Tinggi (dirancang dulu, Gate 2) | Ditambahkan 27/11 dari alur lengkap; **Tinggi, diputuskan programmer B 28/11** (fitur utama) |
 
 ## 3. Temuan di modul Oki (pertanyaan untuk Oki)
 

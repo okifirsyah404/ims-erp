@@ -90,14 +90,14 @@ Sedang/Rendah = langkah 9 dan sesudahnya (lihat README).
 | Aset Tetap & Penyusutan | Satu jalur penyusutan | KF-A1 / M06-14 | Tinggi | O |
 | Pajak | Tampilan terutang / dibayar / sisa per masa; rekap PPh Final bila UMKM | KF-T1, KF-T2 / M10-11, M10-12 | Tinggi | O |
 
-## Tambahan dari alur lengkap (27/11)
+## Tambahan dari alur lengkap (27/11; prioritas Tinggi 28/11)
 
 | Halaman | Perbaikan | Rencana | Prioritas | Oleh |
 |---|---|---|---|---|
-| Proyek: Tugas | Notifikasi ke teknisi saat ditugaskan | B-35 | Sedang | D |
-| Portal pelanggan: Tiket | Tombol konfirmasi tiket selesai | B-36 | Sedang | D |
-| Cetak SO, Kuitansi, BPB, Retur **[baru]** | Halaman cetak / PDF | B-37 | Sedang | D |
-| Portal pelanggan + website: Pesanan, SPH, Faktur, Bayar | Disambungkan ke ERP (T21, T25) | B-38 | Sedang | D |
+| Proyek: Tugas | Notifikasi ke teknisi saat ditugaskan | B-35 | Tinggi | D |
+| Portal pelanggan: Tiket | Tombol konfirmasi tiket selesai | B-36 | Tinggi | D |
+| Cetak SO, Kuitansi, BPB, Retur **[baru]** | Halaman cetak / PDF | B-37 | Tinggi | D |
+| Portal pelanggan + website: Pesanan, SPH, Faktur, Bayar | Disambungkan ke ERP (T21, T25) | B-38 | Tinggi (dirancang dulu) | D |
 
 **Jumlah:** sekitar 35 halaman, termasuk 5 halaman baru (Pembayaran
 Pemasok, Servis & Kondisi, Kasbon portal, Riwayat absen lokasi, Perlu
