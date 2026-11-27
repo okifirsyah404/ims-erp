@@ -100,5 +100,5 @@ Semua memakai pola bawaan `{SEQ:4}/{TYPE}/{COMPANY}/{MM_ROMAN}/{YY}`, reset year
 | Draf invoice tanpa nomor (nomor saat terbit) atau ubah teks "Draf (belum bernomor)" | A8 | aturan | usulan |
 | Isi `orders.company_id` dan `lead_id` dari SPH | Temuan dokumen ini | aturan | usulan |
 | Tolak kwitansi Rp 0 di validasi API | M02 D4 | aturan | usulan |
-| Putuskan nasib tabel target `discount_requests`, `contracts`, `targets` | S6 | tabel (dibuat atau dihapus dari dbml) | menunggu keputusan |
+| Putuskan nasib tabel target `discount_requests`, `contracts`, `targets` | S6 | tabel (dibuat atau dihapus dari dbml) | diputuskan 27/11 (T-4): alurnya **dibangun**, setelah perbaikan prioritas tinggi; tiap kelompok dirancang dulu sebelum kode |
 | Perbaiki catatan dbml soal `web_*` dan pola invoice | Temuan dokumen ini | none (dokumen) | usulan |

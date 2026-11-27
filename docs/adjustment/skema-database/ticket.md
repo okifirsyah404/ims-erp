@@ -70,5 +70,5 @@ erDiagram
 | Izinkan pesan portal hanya lampiran, atau larang di portal | Temuan M07 no. 9 | aturan | usulan |
 | Tombol Ubah tiket (seri, pelapor, keluhan) | Temuan M07 no. 14 | none | usulan |
 | Isi `warranty_id`, `item_serial_id`, `company_id` dari hasil cek garansi | Temuan dokumen ini | aturan | usulan |
-| Template tiket dan sub-tiket | ADR-0024 Q29, S6 | tabel | menunggu keputusan |
+| Template tiket dan sub-tiket | ADR-0024 Q29, S6 | tabel | diputuskan 27/11 (T-4): alurnya **dibangun**, setelah perbaikan prioritas tinggi; tiap kelompok dirancang dulu sebelum kode |
 | Admin bisa membuat tiket (hak baca pelanggan/proyek) | M07 C12, D3 | none (hak) | tidak berlaku (role Admin dihapus, 27/11) |

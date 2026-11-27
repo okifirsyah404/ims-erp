@@ -284,6 +284,20 @@ Ditemukan saat menyusun diagram sekarang vs sesudah (2026-11-27). Diagram\
 | X6 | **B2** (Pembelian dan Manajer Operasional boleh membatalkan PO): kedua role itu tidak dipakai, jadi pembatal tetap Aqim                                               | (a) Biarkan, berlaku bila nanti ada staf pembelian. (b) Hapus butir ini                                      | (a)                                                               | (a) biarkan, berlaku bila nanti ada staf pembelian (jawaban programmer B 27/11)                                                      |
 | X7 | **OD1**: cara agar teknisi bisa mengajukan peminjaman. Lembar: "perbaiki"; bahan modul Oki: daftar unit pinjam khusus                                                 | (a) Daftar unit khusus untuk peminjaman. (b) Beri teknisi hak lihat aset                                     | (a): teknisi tidak perlu melihat seluruh register aset            | (a) daftar unit khusus (jawaban programmer B 27/11)                                                                                  |
 
+### 8c. Keputusan teknis tambahan (tanya-jawab programmer B, 27/11)
+
+Hal teknis yang tidak masuk ringkasan Pemilik, diputuskan setelah rapat.
+
+| No | Hal | Keputusan |
+|---|---|---|
+| T-1 | Celah nomor dokumen (`lintas-modul/penomoran-dokumen.md` temuan 6) | **Tanpa celah**: nomor diambil di dalam transaksi penyimpanan dokumen |
+| T-2 | Perpanjangan lisensi (M03 temuan 1–2) | Masa dihitung tahun/bulan kalender; kunci tetap di kontrak lama sampai periode baru mulai |
+| T-3 | Kode/sumber aplikasi lisensi (M03 temuan 13) | Dikunci setelah aplikasi punya kontrak atau kunci API |
+| T-4 | Tabel tanpa alur (S6): diskon, kontrak, target; tahap, milestone, laporan harian, KPI, rencana kerja; templat dan sub-tiket | **Dibangun alurnya**, setelah perbaikan prioritas tinggi; dirancang dulu per kelompok |
+| T-5 | Tarif dan pembulatan pajak final (ERP-0016) | Bella mengisi tarif di master pajak saat UAT; pembulatan rupiah penuh per dokumen; Aqim mengonfirmasi |
+| T-6 | Dokumen arsitektur usang (E1–E5, ADR-0020, ADR-0012 ganda) | Diperbaiki programmer B lewat PR, Oki meninjau; ADR-0020 accepted; `security-and-access.md` ditunda |
+| T-7 | Aplikasi pilot lisensi (T24) | **Ditunda** |
+
 ## 9. Kesimpulan
 
 | Bagian                                     | Kesimpulan                         |

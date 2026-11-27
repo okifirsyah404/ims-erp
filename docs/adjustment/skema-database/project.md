@@ -97,10 +97,10 @@ erDiagram
 | Perubahan | Sumber | Dampak ke schema | Status |
 |---|---|---|---|
 | Isi `company_id`/`lead_id` proyek dari SO/SPH | Temuan dokumen ini | aturan | usulan |
-| Perpanjangan lisensi: jangan pindahkan kunci sebelum periode baru mulai; hitung masa dengan tahun kalender | Temuan M03 no. 1–2 | aturan | menunggu keputusan |
-| Kunci `code`/`source` aplikasi lisensi setelah dipakai | Temuan M03 no. 13 | aturan | menunggu keputusan |
+| Perpanjangan lisensi: jangan pindahkan kunci sebelum periode baru mulai; hitung masa dengan tahun kalender | Temuan M03 no. 1–2 | aturan | diputuskan 27/11 (T-2): masa dihitung tahun/bulan kalender; kunci tetap di kontrak lama sampai periode baru mulai, lalu pindah otomatis |
+| Kunci `code`/`source` aplikasi lisensi setelah dipakai | Temuan M03 no. 13 | aturan | diputuskan 27/11 (T-3): dikunci setelah aplikasi punya kontrak atau kunci API; nama dan deskripsi tetap bisa diubah |
 | Catat aktivasi manual kontrak di `license_events` | Temuan M03 no. 10 | aturan (`event_type` mungkin perlu nilai baru) | usulan |
 | Admin diberi hak baca proyek | D3 | none (hak) | tidak berlaku (role Admin dihapus, 27/11) |
 | Isian tenggat tugas di form | Temuan M07 no. 10 | none | usulan |
-| Putuskan tabel target (laporan harian, milestone, KPI, dll.) | S6 | tabel | menunggu keputusan |
+| Putuskan tabel target (laporan harian, milestone, KPI, dll.) | S6 | tabel | diputuskan 27/11 (T-4): alurnya **dibangun**, setelah perbaikan prioritas tinggi; tiap kelompok dirancang dulu sebelum kode |
 | Hapus `lead_reference` atau pakai; rapikan catatan dbml penomoran | Temuan dokumen ini | none (dokumen) | usulan |

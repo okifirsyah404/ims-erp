@@ -84,6 +84,6 @@ Tidak ada tabel `code_numberings` di schema ini. Namun `organizations.slug` (hur
 | Hak baru (Gudang baca PO/SO, Admin tambah pelanggan, Admin baca proyek) di `erp-permissions.ts` | `bahan-keputusan.md` B3, B4, C3, D3 | none (kode) | B3, B4 disetujui 27/11; C3, D3 tidak berlaku (role Admin dihapus) |
 | CRUD pengaturan organisasi memakai `organization_settings` | ERP-0045b | none (tabel sudah ada) | direncanakan |
 | ADR-0029 (undangan saja) masih `proposed` walau sudah berjalan | ADR-0029 | none | usulan |
-| `security-and-access.md` masih menulis 19 role; seharusnya 17 (ADR-0018) | `bahan-keputusan.md` E3, `ringkasan-arsitektur.md` D3 | none (dokumen) | untuk Oki (E3); belum diubah atas arahan programmer B |
+| `security-and-access.md` masih menulis 19 role; seharusnya 17 (ADR-0018) | `bahan-keputusan.md` E3, `ringkasan-arsitektur.md` D3 | none (dokumen) | diputuskan 27/11 (T-6): diperbaiki programmer B lewat PR, ditinjau Oki; **ditunda** atas arahan programmer B |
 | Hapus lapisan organisasi: `organizations`, `members`, `invitations` (organisasi), dan role per organisasi pindah ke tingkat pengguna | `../lembar-keputusan-rapat.md` K12 (arah baru 2026-11-26) | tabel + aturan (dan kolom `organization_id` di schema lain) | disetujui 27/11 (K12 bertahap; OA2: kolom dihapus di tahap 3) |
 | Login web-admin tanpa Google; portal pelanggan dengan Google (`accounts` provider google untuk pelanggan) | K13 | none (Better Auth sudah punya `accounts`) | disetujui 27/11 (K13, OA4) |

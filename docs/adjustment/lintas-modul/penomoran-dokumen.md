@@ -127,5 +127,5 @@ bukan kolom tabel pemiliknya.
 | Opsi 4: token `{SUPPLIER}` memakai kolom singkatan pemasok (kolom baru) bukan kode penuh | temuan 2 | Kolom baru di `supplier.suppliers` + form; `docs.dbml` | usulan |
 | Pratinjau memakai kode pemasok/pelanggan terpanjang yang ada, atau validasi saat pola pemasok disimpan | temuan 3 | `service-base.ts` / controller bersama + web-admin | usulan |
 | Tambah `warranty` (dan jenis lain yang masuk register) ke `CODE_MAX_LENGTH` | temuan 5 | `domain.ts` + test | usulan |
-| Alokasi nomor di dalam transaksi dokumen (atau terima celah nomor) | temuan 6 | `service-base.ts`, semua service penerbit; keputusan bisnis soal celah nomor | menunggu keputusan |
+| Alokasi nomor di dalam transaksi dokumen (atau terima celah nomor) | temuan 6 | `service-base.ts`, semua service penerbit; keputusan bisnis soal celah nomor | diputuskan 27/11 (T-1): **tanpa celah**, nomor diambil di dalam transaksi penyimpanan dokumen (bagian bersama, K11) |
 | Perbaiki komentar usang dan kalimat AGENTS.md | temuan 7, 8 | Dokumen/komentar saja | usulan |

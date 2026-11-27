@@ -60,7 +60,7 @@ OA1–OA7, OB7/OB8, OD1/OD2, OE1, OG1) ada di
 | B-11 | Kwitansi Rp 0 harus ditolak dengan pesan jelas (database sudah menolak) | `skema-database/sale.md`; M02 D4 | Sedang | Tidak |
 | B-12 | Catatan SO tidak tampil di detail; alamat pelanggan tidak bisa diubah | M02 Catatan penyusun | Rendah | Tidak |
 | B-13 | Retur penjualan "Rusak" tetap menambah stok jual (barang tanpa seri) | M02 E5 | Tinggi | Tidak |
-| B-14 | Masa perpanjangan lisensi kurang 1 hari lewat 29 Februari; perpanjangan lebih awal bisa mengunci pelanggan | M03 Catatan penyusun | Sedang | Sebagian |
+| B-14 | Masa perpanjangan lisensi kurang 1 hari lewat 29 Februari; perpanjangan lebih awal bisa mengunci pelanggan. **T-2:** masa tahun kalender; kunci pindah saat periode baru mulai. **T-3:** kode/sumber aplikasi dikunci setelah dipakai | M03 Catatan penyusun | Sedang | Diputuskan 27/11 (T-2, T-3) |
 | B-15 | M04: Hapus listing katalog dan Tutup chat tanpa konfirmasi; pemilih barang katalog ikut material/komponen; listing tertimpa | M04 Catatan penyusun | Sedang | Tidak |
 | B-16 | M07: foto dan prioritas tiket portal tidak tersimpan; tiket tidak bisa diubah; tenggat tugas tidak bisa diisi | M07 Catatan penyusun | Sedang | Tidak |
 | B-17 | M08: data karyawan tidak bisa diubah; tolak/batal cuti tanpa alasan dan tanpa konfirmasi; contoh impor memakai kode `EMP-0001` | M08 Catatan penyusun | Sedang | Tidak |
@@ -72,6 +72,9 @@ OA1–OA7, OB7/OB8, OD1/OD2, OE1, OG1) ada di
 | B-23 | Halaman barang dan gudang ikut hak role (B3); Gudang diberi hak baca PO dan SO (B4, hak diajukan ke Oki) | K4 / B3, B4 | Sedang | Disetujui Pemilik 27/11 |
 | B-24 | Portal pelanggan: satu jenis akun (tanpa tipe perorangan/perusahaan saat login), login Google dicocokkan lewat email, data perusahaan diisi di profil | K13 / OA4 | Sedang | Disetujui Pemilik 27/11 |
 | B-25 | Menu Tugas: teknisi dan pekerja lepas hanya melihat tugasnya sendiri | D4 | Rendah | Disetujui Pemilik 27/11 |
+| B-26 | Bangun alur tabel S6: diskon, kontrak, target (penjualan); tahap, milestone, laporan harian, KPI, rencana kerja (proyek); templat dan sub-tiket. Dikerjakan **setelah perbaikan prioritas tinggi**, tiap kelompok dirancang dulu | T-4 / S6 | Sedang | Diputuskan 27/11 |
+| B-27 | Nomor dokumen tanpa celah: alokasi nomor di dalam transaksi penyimpanan (bagian bersama, K11) | T-1 | Sedang | Diputuskan 27/11 |
+| B-28 | Rapikan dokumen arsitektur lewat PR (status ADR-0024/0020/0010, ADR-0012 ganda, `architecture.md` 20 schema); `security-and-access.md` ditunda | T-6 / E1–E5 | Rendah | Diputuskan 27/11 |
 
 ## 3. Temuan di modul Oki (pertanyaan untuk Oki)
 

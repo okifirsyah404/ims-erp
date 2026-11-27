@@ -1343,3 +1343,30 @@ disetujui 27/11.
   - E3 (`security-and-access.md`, untuk Oki).
 
 Tidak ada perubahan kode.
+
+## 2026-11-27 - Keputusan teknis tambahan T-1 sampai T-7
+
+Hasil tanya-jawab programmer B. Dicatat di `lembar-keputusan-rapat.md`
+bagian 8c.
+
+| No | Keputusan |
+|---|---|
+| T-1 | Nomor dokumen tanpa celah: nomor diambil di dalam transaksi |
+| T-2 | Perpanjangan lisensi memakai tahun kalender; kunci pindah saat periode baru mulai |
+| T-3 | Kode dan sumber aplikasi lisensi dikunci setelah dipakai |
+| T-4 | Tabel S6 dibangun alurnya, setelah perbaikan prioritas tinggi |
+| T-5 | Tarif pajak diisi Bella di master saat UAT; pembulatan rupiah penuh per dokumen |
+| T-6 | Dokumen arsitektur dirapikan programmer B lewat PR dan ditinjau Oki; ADR-0020 accepted; `security-and-access.md` ditunda |
+| T-7 | Aplikasi pilot lisensi (T24) ditunda |
+
+Diperbarui:
+- `lembar-keputusan-rapat.md` (bagian 8c baru), `bahan-keputusan.md`
+  (bagian E);
+- `rencana-perubahan.md`: B-14 diperbarui; B-26, B-27, B-28 baru;
+- `lintas-modul/penomoran-dokumen.md`;
+- `skema-database/` (project, sale, ticket, tax, finance, automation, auth);
+- `uat-modul/modul-dafrin/m03-langganan-lisensi.md`.
+
+Tidak ada lagi status "menunggu keputusan" di catatan. Yang tersisa hanya
+definisi label dan tanda ❓ di checklist UAT. Checklist UAT menggambarkan kode
+saat ini, jadi diperbarui saat kodenya berubah.

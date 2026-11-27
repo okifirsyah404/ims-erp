@@ -70,6 +70,8 @@ Bukan keputusan bisnis. Butuh persetujuan Oki karena dokumennya miliknya.
 | E5 | ADR-0006 butir 6 | Mengikuti keputusan A1 (A1 = (b), jawaban programmer B 27/11) |
 
 Keputusan Oki: boleh diperbaiki programmer B / Oki sendiri / biarkan.
+
+**Diputuskan 27/11 (T-6):** diperbaiki programmer B lewat PR, Oki meninjau (sesuai K11). ADR-0020 (M04) ditandai accepted. `security-and-access.md` (E3, E4) **ditunda** atas arahan programmer B.
 ______________________
 
 ---

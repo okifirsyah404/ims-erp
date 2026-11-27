@@ -72,4 +72,4 @@ Tidak ada. Schema ini tidak menerbitkan nomor dokumen.
 | Konfirmasi sebelum Tutup chat | Temuan M04 no. 5 | none | usulan |
 | Chat WhatsApp contoh di seeder untuk UAT | Temuan M04 no. 15 | none (seed) | usulan |
 | Perbarui catatan dbml daftar topik outbox | Temuan dokumen ini | none (dokumen) | usulan |
-| Penerimaan ADR-0020 | ADR-0020 `proposed` | none | menunggu keputusan |
+| Penerimaan ADR-0020 | ADR-0020 `proposed` | none | diputuskan 27/11 (T-6): ditandai accepted lewat PR programmer B, ditinjau Oki |

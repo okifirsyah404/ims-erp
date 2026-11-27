@@ -188,7 +188,7 @@ Kode `chart_of_accounts`, `cost_centers`, `payment_terms`, `cash_bank_accounts` 
 | Pembayaran dan gaji tanpa pemeriksa kedua; Bella memeriksa lewat jurnal dan rekonsiliasi | R6 (3.2), 3.7 | none | usulan |
 | Tutup buku akhir tahun ke laba ditahan 3-2000 (idempoten per tahun) | ERP-0131 | aturan (mungkin kolom penanda di `journal_entries`/`settings`) | direncanakan |
 | Tes khusus jejak audit buka ulang periode | ERP-0017 | none | direncanakan |
-| Laporan dan rekap pajak: gerbang keuangan D12/D14/D18 | ERP-0016 | none | menunggu keputusan |
+| Laporan dan rekap pajak: gerbang keuangan D12/D14/D18 | ERP-0016 | none | diputuskan 27/11 (T-5): Bella mengisi tarif di master pajak (tanggal berlaku) saat UAT; pembulatan ke rupiah penuh per dokumen; Aqim mengonfirmasi |
 | `journal_templates` dibangun (jurnal berulang) | dbml target | tabel | usulan |
 | Belum dibangun: alokasi nota kredit ke invoice lain dan refund, nota kredit pemasok (GR/IR), impor laporan settlement gateway, kapitalisasi dari penerimaan barang, peringatan GR/IR > 30 hari, blokir anggaran per akun/bulan | `docs/architecture/modules/finance.md` "Not built" | kolom/tabel (sebagian) | usulan |
 | Kontrak laba periode terkunci untuk M11 bagi hasil/investor (`ExportedProfitService`) sudah ada; modul M11 belum | ERP-0153, ERP-0023 | none di finance | ditunda (K10, disetujui 27/11) |

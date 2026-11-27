@@ -702,7 +702,7 @@ Langkah yang tidak sesuai (salin nomornya): ______
 
 **Kesimpulan M03:** lulus / belum lulus (coret salah satu)
 
-Catatan: integrasi lisensi ke aplikasi pilot (T24) masih menunggu Pemilik memilih aplikasinya, jadi tidak diuji di sini.
+Catatan: integrasi lisensi ke aplikasi pilot (T24) **ditunda** (keputusan 27/11, T-7), jadi tidak diuji di sini.
 
 Catatan penguji:
 
@@ -715,7 +715,7 @@ Catatan penguji:
 Hal yang ditemukan saat menyusun dari kode:
 
 1. **Masa perpanjangan bisa kurang sehari.** Perpanjangan memakai jumlah hari periode lama, bukan "1 tahun kalender". Bila periode baru melewati 29 Februari, tanggal berakhir maju sehari (25 Nov 2027 → 23 Nov 2028, bukan 24 Nov 2028). `apps/backend/src/app/project/utils/license.ts:41-43`.
-2. **Perpanjangan dini mengunci pelanggan.** Saat draf perpanjangan aktif, kunci pindah ke kontrak baru (`apps/backend/src/app/project/services/licensing.service.ts:306`), padahal tanggal mulainya sehari setelah tanggal berakhir lama (`utils/license.ts:41`). API lalu menjawab "Belum mulai" sampai periode baru mulai (`utils/license.ts:127`). Perlu keputusan.
+2. **Perpanjangan dini mengunci pelanggan.** Saat draf perpanjangan aktif, kunci pindah ke kontrak baru (`apps/backend/src/app/project/services/licensing.service.ts:306`), padahal tanggal mulainya sehari setelah tanggal berakhir lama (`utils/license.ts:41`). API lalu menjawab "Belum mulai" sampai periode baru mulai (`utils/license.ts:127`). **Keputusan 27/11 (T-2):** masa dihitung tahun kalender; kunci tetap di kontrak lama sampai periode baru mulai.
 3. **B4: tidak "ditolak", tapi dicegah.** Dokumen lama menulis "Ditolak: kunci wajib". Di layar, kolom Kunci wajib dan tombol Tambah kunci mati selama kosong (`apps/web-admin/src/routes/_authed/subscription/$contractId/index.tsx:394,441`). Pesan server ("Ketik kunci dari vendor (aplikasi pihak ketiga)") hanya muncul bila form dilewati.
 4. **Kunci yang dicabut menutupi status Dihentikan.** API memeriksa status kunci lebih dulu (`utils/license.ts:122`). Karena itu D6 memakai kunci kedua.
 5. **Pesan pensiun/pulihkan aplikasi** tetap "Aplikasi disimpan" (`apps/web-admin/src/routes/_authed/subscription/applications/index.tsx:68`).
@@ -726,4 +726,4 @@ Hal yang ditemukan saat menyusun dari kode:
 10. **Aktivasi manual tidak tercatat di log.** Mengaktifkan draf biasa (bukan perpanjangan) tidak menulis kejadian apa pun (`licensing.service.ts:303`); Log aktivitas kosong sampai ada panggilan API.
 11. **Nilai kontrak tanpa batas di layar.** Kolom Nilai kontrak (Rp) tidak punya batas atas (`contract-form.tsx:180`); angka sangat besar baru ditolak server dengan pesan umum "Validasi gagal" (`apps/backend/src/app/project/contracts/licensing.contract.ts:52`).
 12. **Berlaku sampai kunci tidak dicek.** Tanggal lampau atau di luar masa kontrak diterima tanpa peringatan (`licensing.service.ts:466-480`, `$contractId/index.tsx:419`).
-13. **Kode dan Sumber kunci aplikasi bisa diubah kapan saja**, juga setelah aplikasi punya kontrak atau kunci API (`licensing.service.ts:127`, `applications/index.tsx:200-234`). Mengubah GYM menjadi Pihak ketiga akan menyembunyikannya dari halaman Kunci API. ❓ perlu keputusan apakah dikunci.
+13. **Kode dan Sumber kunci aplikasi bisa diubah kapan saja**, juga setelah aplikasi punya kontrak atau kunci API (`licensing.service.ts:127`, `applications/index.tsx:200-234`). Mengubah GYM menjadi Pihak ketiga akan menyembunyikannya dari halaman Kunci API. **Keputusan 27/11 (T-3):** dikunci setelah dipakai; nama dan deskripsi tetap bisa diubah.
