@@ -117,6 +117,13 @@ Sedang/Rendah = langkah 9 dan sesudahnya (lihat README).
 | Ekspor di daftar utama; PDF laporan keuangan | Ekspor CSV/XLSX, laporan berkop | M12-16 | Tinggi | O (+ pemilik modul) |
 | Kunjungan lokasi teknisi **[baru]** | Layar admin check-in lokasi dan swafoto | PK-9 | Tinggi | O |
 
+## Tambahan pekerjaan non-modul (28/11)
+
+| Halaman | Perbaikan | Rencana | Prioritas | Oleh |
+|---|---|---|---|---|
+| Impor data **[baru]** (per modul atau satu halaman di Pengaturan) | Unduh templat, unggah, periksa semua baris, daftar kesalahan per baris | L-12 | Tinggi | Bersama |
+| Masuk (login) | Batas percobaan login | L-11 | Tinggi | O |
+
 **Jumlah:** sekitar 35 halaman, termasuk 5 halaman baru (Pembayaran
 Pemasok, Servis & Kondisi, Kasbon portal, Riwayat absen lokasi, Perlu
 Tindakan). Tambahan dari pemeriksaan kekurangan fitur ada di bagian bawah

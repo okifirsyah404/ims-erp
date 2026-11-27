@@ -1811,3 +1811,38 @@ Tidak ada perubahan kode.
   untuk Oki, mengikuti hasil diskusi.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - Pekerjaan non-modul: impor, server, backup, UAT resmi, pelatihan
+
+Dibahas atas permintaan programmer B: tugas kontrak bersama T16, T17, T18,
+T31, dan T32. Keputusan NM-1 sampai NM-11:
+- **Impor (T16):** templat Excel semua-atau-tidak untuk pelanggan, pemasok,
+  barang, stok awal, akun, saldo awal, piutang/utang awal, aset, dan
+  karyawan.
+- **Backup (T17):** harian, disalin ke luar server, disimpan 30 hari, uji
+  restore bulanan. Aplikasi dipasang di server perusahaan.
+- **Tinggi:**
+  - server siap pakai: Chromium, S3, SMTP, scheduler;
+  - batas percobaan login.
+- **Pelatihan (T18):** tatap muka, ditambah panduan lengkap per modul dan
+  panduan penggunaan dari awal sampai akhir.
+- **UAT resmi (T31):** U01–U32 disalin ke repo dan dipetakan ke checklist.
+  File Excel kontrak dicari di `.agents/samples-private/`, tetapi **tidak
+  ada**: isinya hanya contoh surat PDF (SPH, PO, faktur, surat jalan, BAST +
+  garansi). Excel diminta ke programmer B atau Pemilik.
+- **Panduan deploy/rollback/backup** ditulis Oki dan ditinjau Dafrin.
+- **Templat dokumen:** programmer B bertanya apakah penting. Dijelaskan
+  tidak penting untuk sekarang dan tidak menghambat bagian lain, karena
+  halaman cetak mengikuti contoh surat. Dimasukkan ke daftar tunggu. Contoh
+  surat kuitansi, SO, BPB, dan retur diminta ke Aqim (B-37).
+
+File yang diperbarui:
+- `3-rancangan/rancangan-serah-terima.md` (baru).
+- `rencana-perubahan.md`: L-10 sampai L-15, catatan B-37.
+- `rencana-perubahan-modul-oki.md`: X-13.
+- `lembar-keputusan-rapat.md` bagian 8g.
+- `peta-halaman.md`.
+- `README.md`: langkah 7 dan 9 diperbarui, **langkah 12 Serah terima**
+  baru.
+
+Tidak ada perubahan kode.

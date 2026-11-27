@@ -341,6 +341,20 @@ Rincian di `3-rancangan/rancangan-karyawan-kantor-lapangan-freelance.md`. **Dise
 | KL-11, KL-12 | Penempatan tetap dua pilihan; bayaran tetap gaji bulanan + lembur |
 | Tampilan | Kartu "Hari ini" di portal mengikuti keadaan hari (absen kantor / tugas lapangan / cuti), menu portal per jenis karyawan, kolom Sumber di absensi SDM, jam mulai lapangan di tugas proyek, kartu "Di lapangan hari ini" untuk Aqim (rincian bagian 6 dokumen) |
 
+### 8g. Pekerjaan non-modul: impor, server, backup, UAT resmi, pelatihan (tanya-jawab programmer B 28/11)
+
+Rincian di `3-rancangan/rancangan-serah-terima.md`.
+
+| No | Keputusan |
+|---|---|
+| NM-1, NM-2 | Impor templat Excel semua-atau-tidak: pelanggan + pemasok, barang + stok awal, akun + saldo awal + piutang/utang awal, aset + karyawan |
+| NM-3, NM-4 | Backup harian database + berkas, disalin ke luar server, 30 hari, uji restore bulanan; dipasang di server perusahaan |
+| NM-5, NM-6 | Tinggi: server siap pakai (Chromium, S3, SMTP, scheduler) dan batas percobaan login |
+| NM-7, NM-8 | Pelatihan tatap muka; panduan lengkap per modul + panduan penggunaan dari awal sampai akhir |
+| NM-9 | U01–U32 disalin ke repo dan dipetakan; hasil di Excel UjiTerima (menunggu file Excel) |
+| NM-10 | Panduan deploy/rollback/backup ditulis Oki, ditinjau Dafrin |
+| NM-11 | Templat dokumen daftar tunggu; halaman cetak mengikuti contoh surat perusahaan |
+
 ## 9. Kesimpulan
 
 | Bagian                                     | Kesimpulan                         |
