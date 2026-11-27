@@ -175,7 +175,7 @@ Barang (6), Pengadaan (5), dan Lisensi (4) paling panjang.
 | SDM (5) | Karyawan, Absensi, Cuti & Lembur, Penggajian, Tugas | Absensi: tab Jadwal Kerja |
 | Dokumen (2) | Berkas, Tanda Tangan | Tanda Tangan: Minta / Milik Saya / Daftar |
 | Website & WhatsApp (2) | Katalog Website, WhatsApp | WhatsApp: Percakapan / FAQ / Log Otomasi |
-| — | Pengaturan | Bagian: Perusahaan, Pengguna & Log Audit, Nomor Dokumen, Dokumen, Gaji, Keuangan (akun, saldo awal, aturan posting, pusat biaya), Pajak (tarif, PPh 21), Barang & Gudang (kategori, gudang & rak), Aset (kategori), Lisensi (aplikasi, kunci API), Gateway Pembayaran |
+| — | Pengaturan | Bagian: Perusahaan, Pengguna & Log Audit, Nomor Dokumen, Dokumen, Gaji, Keuangan (akun, saldo awal, aturan posting, pusat biaya), Pajak (tarif, PPh 21), Barang & Gudang (kategori, gudang & rak), Aset (kategori), Lisensi (aplikasi, kunci API), Gateway Pembayaran, **Notifikasi WhatsApp** (sakelar pesan pelanggan, B-46) |
 
 Role lain ikut terpangkas karena memakai halaman yang sama. Contoh: Gudang
 ±8 menu, Keuangan ±12, Teknisi ±6.

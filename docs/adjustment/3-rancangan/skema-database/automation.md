@@ -67,6 +67,7 @@ Tidak ada. Schema ini tidak menerbitkan nomor dokumen.
 
 | Perubahan | Sumber | Dampak ke schema | Status |
 |---|---|---|---|
+| Event baru: dokumen menunggu persetujuan, pesanan online masuk, SO terkirim/selesai, pengingat laporan harian; status sakelar pesan pelanggan di payload event | N8-5, N8-6, B-46 | kosakata `OUTBOX_EVENTS` + pengaturan sakelar (pengaturan perusahaan atau kolom baru; dicek ke `docs.dbml`) | diputuskan 28/11, Tinggi |
 | Asisten WhatsApp masuk lewat Meta Cloud API (selain WAHA) | Catatan M04 (risiko blokir WAHA), PR #114 | aturan (mungkin kolom penyedia di `whatsapp_conversations`) | usulan |
 | Terjemahkan alasan gagal kirim outbox | Temuan M04 no. 1 | none | usulan |
 | Konfirmasi sebelum Tutup chat | Temuan M04 no. 5 | none | usulan |

@@ -6,7 +6,8 @@ Satu dokumen untuk seluruh alur bisnis **sesuai kode hari ini** (`main`,
 dicek 2026-11-27): dari barang masuk, gudang, aset, penjualan dan
 surat-suratnya, proyek, kerja lapangan teknisi, purna jual, sampai jalur
 pesanan dari website/portal dan input di web-admin. **Otomasi n8n tidak
-digambar** (belum dikerjakan); hanya disebut di titik event dikirim.
+digambar** (belum dijalankan); hanya disebut di titik event dikirim. Rancangan n8n
+ada di [`../rancangan-n8n-whatsapp.md`](../rancangan-n8n-whatsapp.md).
 
 **Ini kondisi sekarang, bukan sesudah perbaikan.** Perubahan yang sudah
 diputuskan ada di [`sekarang-vs-sesudah.md`](sekarang-vs-sesudah.md); di

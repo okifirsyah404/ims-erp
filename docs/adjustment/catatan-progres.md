@@ -1846,3 +1846,40 @@ File yang diperbarui:
   baru.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - n8n, WhatsApp, dan asisten AI
+
+Programmer B mengingatkan n8n belum dibahas.
+
+Dicek di repo:
+- 13 event outbox dan adaptor n8n/WAHA/AI (kompatibel OpenAI) sudah ada.
+- Workflow siap impor ada di `docs/integrations/n8n/`.
+- Panduan n8n, WAHA, dan Meta ada di `docs/user-guide/`.
+- Asisten chat masuk lewat Meta belum dibangun.
+- Penerima di workflow masih memakai role lama.
+
+Keputusan N8-1 sampai N8-8:
+- **N8-1:** n8n self-host di server perusahaan.
+- **N8-2:** WAHA dulu, pindah ke Meta Cloud API nanti. Langkah
+  pendaftarannya diringkas di rancangan bagian 5 dan merujuk
+  `docs/user-guide/whatsapp-business-meta.id.md`.
+- **N8-3, N8-4:** staf diberi tahu lewat WA dari n8n ditambah Perlu
+  Tindakan; penerima mengikuti role baru.
+- **N8-5:** semua jenis pesan pelanggan, masing-masing dengan **sakelar
+  on/off** di Pengaturan → Notifikasi WhatsApp, bawaan mati.
+- **N8-6:** event baru: menunggu persetujuan, pesanan online, SO
+  terkirim/selesai, pengingat laporan harian.
+- **N8-7:** asisten AI aktif saat go-live, penyedia dipilih Aqim.
+- **N8-8:** prioritas Tinggi sebelum rilis.
+
+File yang diperbarui:
+- `3-rancangan/rancangan-n8n-whatsapp.md` (baru; pemeriksa Mermaid 1 blok,
+  0 error).
+- `rencana-perubahan.md`: B-46, B-47.
+- `rencana-perubahan-modul-oki.md`: X-14.
+- `lembar-keputusan-rapat.md` bagian 8h.
+- `skema-database/automation.md`, `peta-halaman.md`,
+  `rancangan-menu-dasbor-dan-form.md` (Pengaturan), `kekurangan-fitur.md`
+  (KF-N1 dan KF-I1), `diagram-alur/alur-lengkap-saat-ini.md`, `README.md`.
+
+Tidak ada perubahan kode.

@@ -355,6 +355,20 @@ Rincian di `3-rancangan/rancangan-serah-terima.md`.
 | NM-10 | Panduan deploy/rollback/backup ditulis Oki, ditinjau Dafrin |
 | NM-11 | Templat dokumen daftar tunggu; halaman cetak mengikuti contoh surat perusahaan |
 
+### 8h. n8n, WhatsApp, dan asisten AI (tanya-jawab programmer B 28/11)
+
+Rincian di `3-rancangan/rancangan-n8n-whatsapp.md`.
+
+| No | Keputusan |
+|---|---|
+| N8-1 | n8n self-host di server perusahaan |
+| N8-2 | WAHA dulu dengan nomor khusus perusahaan; pindah ke Meta Cloud API resmi nanti (langkah pendaftaran di rancangan bagian 5) |
+| N8-3, N8-4 | Staf diberi tahu lewat WA (n8n) + Perlu Tindakan; penerima mengikuti role baru |
+| N8-5 | Semua jenis pesan pelanggan, masing-masing dengan sakelar on/off di Pengaturan, bawaan mati sampai Aqim menyetujui teks |
+| N8-6 | Event baru: menunggu persetujuan, pesanan online, SO terkirim/selesai, pengingat laporan harian |
+| N8-7 | Asisten AI aktif saat go-live, penyedia dipilih Aqim |
+| N8-8 | Prioritas Tinggi sebelum rilis |
+
 ## 9. Kesimpulan
 
 | Bagian                                     | Kesimpulan                         |

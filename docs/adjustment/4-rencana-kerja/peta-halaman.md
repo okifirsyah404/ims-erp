@@ -124,6 +124,14 @@ Sedang/Rendah = langkah 9 dan sesudahnya (lihat README).
 | Impor data **[baru]** (per modul atau satu halaman di Pengaturan) | Unduh templat, unggah, periksa semua baris, daftar kesalahan per baris | L-12 | Tinggi | Bersama |
 | Masuk (login) | Batas percobaan login | L-11 | Tinggi | O |
 
+## Tambahan n8n dan WhatsApp (28/11)
+
+| Halaman | Perbaikan | Rencana | Prioritas | Oleh |
+|---|---|---|---|---|
+| Pengaturan → Notifikasi WhatsApp **[baru]** | Sakelar on/off per pesan pelanggan dan pemasok (bawaan mati) | B-46 | Tinggi | D |
+| Integrasi → Log otomasi | Event baru terlihat dan bisa dikirim ulang | B-46 | Tinggi | D |
+| Profil pengguna | Nomor WA staf (penerima pesan) | B-46 | Tinggi | D/O |
+
 **Jumlah:** sekitar 35 halaman, termasuk 5 halaman baru (Pembayaran
 Pemasok, Servis & Kondisi, Kasbon portal, Riwayat absen lokasi, Perlu
 Tindakan). Tambahan dari pemeriksaan kekurangan fitur ada di bagian bawah

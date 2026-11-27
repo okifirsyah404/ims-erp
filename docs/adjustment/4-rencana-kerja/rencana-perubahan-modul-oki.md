@@ -188,6 +188,7 @@ risiko OA2 (diganti 27/11: kolom dihapus di tahap 3), OD8 diputuskan.
 | X-11 | Halaman Produk/Gudang mengikuti hak role, bukan `appAdminOnly` | `bahan-keputusan.md` B3 | O (guard) + B (halaman) | Sedang |
 | X-12 | Profil perusahaan: jalur baca pengaturan rahasia (ERP-0045), tutup ERP-0073 | `skema-database/company.md` | Pemilik `company` (K11) | Rendah |
 | X-13 | Server siap pakai (Chromium, S3, SMTP, scheduler), batas percobaan login, backup harian + uji restore, **panduan deploy/rollback/backup ditulis Oki** (Dafrin meninjau) | NM-3, NM-5, NM-6, NM-10; L-10, L-11, L-13 | Oki (deploy) | Tinggi (Diputuskan 28/11) |
+| X-14 | **n8n self-host di server perusahaan** (Docker, HTTPS publik, ikut backup harian) dan WAHA di server yang sama | N8-1, N8-2 | Oki (deploy) | Tinggi (Diputuskan 28/11) |
 
 ## 4. Dokumen yang perlu dirapikan (pemilik: Oki)
 

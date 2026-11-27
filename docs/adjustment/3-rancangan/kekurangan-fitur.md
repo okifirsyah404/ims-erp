@@ -198,7 +198,7 @@ yang ada hanya tiga halaman "Segera hadir", izin investor di
 **Keputusan programmer B 28/11 (bagian kedua):**
 - **Tinggi:** KF-H1 + KF-H2 (B-39), KF-S1 (B-40), KF-S2 (B-41), KF-S6 (B-42), KF-R1 + KF-R2 (M12-14), KF-R3 (M12-15), KF-R5 + KF-R6 (M12-16), KF-E1 (PK-9).
 - **Daftar tunggu:** KF-N1, KF-L1, KF-D1, KF-I3 dan semua butir Sedang/Rendah lain (B-43, M12-17); butir "Tambahan" menunggu permintaan Pemilik.
-- Catatan: KF-L1 (lisensi di portal) termasuk kontrak T25, dan KF-N1 membuat pemberitahuan tetap bergantung pada n8n sampai dikerjakan.
+- Catatan: KF-L1 (lisensi di portal) termasuk kontrak T25. Untuk KF-N1, **diputuskan 28/11 (N8-3)**: pemberitahuan staf lewat WA dari n8n + Perlu Tindakan; KF-I1 (chat WA perlu admin, prospek website) tercakup lewat `whatsapp.handoff` dan `lead.created` ke Bilal (B-46).
 
 ### Ringkasan: butir terpenting bagian kedua
 
