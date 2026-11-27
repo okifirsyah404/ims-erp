@@ -1516,3 +1516,36 @@ Diperbaiki saat perubahan kode berikutnya, karena belum boleh ada perubahan
 kode.
 
 Tidak ada perubahan kode.
+
+## 2026-11-27 - Alur lengkap ERP saat ini
+
+Permintaan programmer B: flow/UML lengkap kondisi sekarang, dari barang
+masuk, aset, gudang, penjualan dan surat-surat, proyek, pembagian tugas dan
+mobilitas, sampai pesanan dari portal dan input di admin. n8n tidak
+digambar.
+
+- `3-rancangan/diagram-alur/alur-lengkap-saat-ini.md` (baru), 19 diagram
+  Mermaid (pemeriksa: 19 blok, 0 error):
+  - peta besar, data induk, pengadaan, stok;
+  - jalur masuk pesanan, penjualan dan retur;
+  - tabel surat-surat;
+  - proyek, kerja lapangan, aset, purna jual;
+  - 8 diagram status;
+  - 17 titik putus.
+- Fakta kode yang dicek ulang oleh agen pemeriksa:
+  - Website RFQ/kontak/demo membuat **prospek**.
+  - Checkout website **belum tersambung** ke ERP.
+  - Portal pelanggan tersambung untuk akun, proyek, tiket, dan
+    perangkat/garansi. Pesanan, SPH, faktur, dan pembayaran di portal hanya
+    tampilan.
+  - Tautan gateway dibuat staf dan dikirim manual; kuitansi otomatis lewat
+    webhook.
+  - PDF otomatis hanya untuk SPH (saat terkirim), slip gaji, perjanjian
+    kerja, dan dokumen bertanda tangan.
+  - SO tidak pernah ditulis Terkirim/Selesai.
+  - Aset hanya dari register manual.
+  - Proyek hanya dari SO; tugas proyek tanpa notifikasi; absen lokasi di
+    luar radius tetap tersimpan.
+- `3-rancangan/diagram-alur/README.md` dan `README.md`: tautan baru.
+
+Tidak ada perubahan kode.

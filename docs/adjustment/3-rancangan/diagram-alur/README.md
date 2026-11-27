@@ -12,6 +12,7 @@ supaya tidak ada yang rusak saat ditampilkan.
 
 | Wilayah | File | Isi |
 |---|---|---|
+| **Seluruh alur (end-to-end)** | [`alur-lengkap-saat-ini.md`](alur-lengkap-saat-ini.md) | **Mulai dari sini.** Satu dokumen: peta besar, data induk, pengadaan, stok, jalur masuk pesanan (website, WhatsApp, portal, input staf), penjualan sampai uang masuk, surat-surat, proyek, kerja lapangan, aset, purna jual, status dokumen, titik putus. Tanpa n8n |
 | Modul programmer B (Dafrin) | [`../uat-modul/diagram-alur-per-role.md`](../../1-validasi/uat-modul/diagram-alur-per-role.md) | 8 diagram urutan (pembelian, retur/penyesuaian, penjualan, retur penjualan, proyek, lisensi, karyawan/gaji, integrasi) + 4 diagram status dokumen |
 | Modul Oki | [`sekarang-modul-oki.md`](sekarang-modul-oki.md) | Login/undangan/role, faktur sampai kas, tagihan dan pembayaran, kasbon dan pertanggungjawaban, jurnal dan tutup periode, gaji dan pajak, aset dan peminjaman, absensi portal karyawan, diagram status |
 | Relasi tabel (ERD) | [`../skema-database/`](../skema-database/README.md) | 20 diagram, satu per schema |

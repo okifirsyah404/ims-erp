@@ -63,7 +63,7 @@ tulis entri di [`catatan-progres.md`](catatan-progres.md).
 | [`ringkasan-arsitektur.md`](3-rancangan/ringkasan-arsitektur.md), [`ringkasan-arsitektur-modul-oki.md`](3-rancangan/ringkasan-arsitektur-modul-oki.md) | Aturan arsitektur yang harus diikuti per wilayah |
 | [`skema-database/`](3-rancangan/skema-database/README.md) | Skema per schema (20): tabel, relasi, alur data, perubahan mendatang |
 | [`lintas-modul/`](3-rancangan/lintas-modul/README.md) | Hal yang dipakai banyak modul (login, penomoran, dokumen, notifikasi, portal, infrastruktur, di luar scope) |
-| [`diagram-alur/`](3-rancangan/diagram-alur/README.md) | Diagram alur sekarang dan sesudah perbaikan |
+| [`diagram-alur/`](3-rancangan/diagram-alur/README.md) | Diagram alur: **alur lengkap saat ini** ([`alur-lengkap-saat-ini.md`](3-rancangan/diagram-alur/alur-lengkap-saat-ini.md)), per modul, dan sekarang vs sesudah perbaikan |
 | [`menu-dan-form-per-role.md`](3-rancangan/menu-dan-form-per-role.md) | Menu per role dan per orang (dihitung dari kode), daftar semua form |
 | [`rancangan-menu-dasbor-dan-form.md`](3-rancangan/rancangan-menu-dasbor-dan-form.md) | Menu per pekerjaan, pemangkasan menu, Perlu Tindakan, dasbor per role, aturan baku form, 13 form utama |
 | [`kekurangan-fitur.md`](3-rancangan/kekurangan-fitur.md) | Fitur yang belum ada atau setengah jadi di Proyek, Gudang, Pengadaan, Aset, Keuangan, Pajak |
