@@ -5,7 +5,7 @@
     "": {
       "name": "ims-erp",
       "devDependencies": {
-        "@dbml/core": "^12.1.0",
+        "@dbml/core": "^13.0.0",
         "@types/bun": "^1.4.4",
         "drizzle-kit": "^1.0.0-rc.6",
         "husky": "^9.1.7",
@@ -604,9 +604,9 @@
 
     "@date-fns/tz": ["@date-fns/tz@1.5.0", "", {}, "sha512-lwYN/vDPeNRULcepoE/LO2Pgx+7/RV+S9ARfbc9lr2DtGkOD7pAiruHvbR1RX3Qyf6ja47EWJDMsNK5vK08DJg=="],
 
-    "@dbml/core": ["@dbml/core@12.1.0", "", { "dependencies": { "@dbml/parse": "12.1.0", "antlr4": "^4.13.1", "lodash": "^4.18.1", "lodash-es": "^4.18.1", "luxon": "^3.4.4", "parsimmon": "^1.13.0", "pluralize": "^8.0.0" } }, "sha512-aXR/h7pvw6aaCbpa4I88yOYBJEoVVp6CK4X46j2kcsQdsFMSgbJhBAdgWqrEUpproYW4pwdZpU/i+7tBqwJAOg=="],
+    "@dbml/core": ["@dbml/core@13.0.0", "", { "dependencies": { "@dbml/parse": "^13.0.0", "antlr4": "^4.13.1", "lodash": "^4.18.1", "lodash-es": "^4.18.1", "luxon": "^3.4.4", "parsimmon": "^1.13.0", "pluralize": "^8.0.0" } }, "sha512-M+yd45YLibKNXwQJP1J9lsR5vedvcDGte+cNCI4zV/KFDRQEM+cuy2KVKtlbKTJuJOG0kIKBslfja7dNw/QWlA=="],
 
-    "@dbml/parse": ["@dbml/parse@12.1.0", "", { "dependencies": { "lodash-es": "^4.18.1", "luxon": "^3.7.2", "pathe": "^2.0.3" } }, "sha512-A9+HKS+yjQzKr+hKs8NZvsX1W65AiXmHrGAhBzr058Pm3WH0pR/lTD82Gv9QiSXp8YJBEXS353JJ0Ba0bl9OKQ=="],
+    "@dbml/parse": ["@dbml/parse@13.0.0", "", { "dependencies": { "lodash-es": "^4.18.1", "luxon": "^3.7.2", "pathe": "^2.0.3" } }, "sha512-HKWD4maGTbEnkCEx6znFw/ixKnFzZ6NUDHN2fv1rIdzmUeTvj/G38O4MjBy6KFqbuFTYh6R/qnzPbG2bo6PAyQ=="],
 
     "@dotenvx/dotenvx": ["@dotenvx/dotenvx@1.75.1", "", { "dependencies": { "@dotenvx/primitives": "^0.8.0", "commander": "^11.1.0", "conf": "^10.2.0", "dotenv": "^17.2.1", "enquirer": "^2.4.1", "env-paths": "^2.2.1", "execa": "^5.1.1", "fdir": "^6.2.0", "ignore": "^5.3.0", "object-treeify": "1.1.33", "open": "^8.4.2", "picomatch": "^4.0.4", "systeminformation": "^5.22.11", "undici": "^7.11.0", "which": "^4.0.0", "yocto-spinner": "^1.1.0" }, "bin": { "dotenvx": "src/cli/dotenvx.js" } }, "sha512-/BITOC9dmS/edY2zQwZNicQ059O6RKabtQfyEafV0nGtfYRNHYy1DIPiYVcov40+tob9hfmBnbR963dS+EQ1DQ=="],
 
