@@ -1,18 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
-import { DatePicker } from '@ims-erp/ui/components/date-picker';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ims-erp/ui/components/tabs';
-import { CostCenterPlReport, ProjectCostingReport } from './cost-reports';
-import { StatementsReport } from './statements-report';
-import { CashForecastReport } from './cash-forecast-report';
-import { ProfitabilityReport } from './profitability-report';
-import { RatiosReport } from './ratios-report';
-import { ManagementPackReport } from './management-pack-report';
 import { Button } from '@ims-erp/ui/components/button';
-import { useState } from 'react';
+import {
+	Card,
+	CardAction,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '@ims-erp/ui/components/card';
+import { DatePicker } from '@ims-erp/ui/components/date-picker';
+import { Field } from '@ims-erp/ui/components/field';
 import { FileSpreadsheet, Download } from 'lucide-react';
+import { useState } from 'react';
+import { FieldLabel } from '@/components/form/field-label';
 import { EmptyState } from '@/components/empty-state';
 import {
 	balanceSheetQueryOptions,
@@ -21,14 +23,28 @@ import {
 } from '@/lib/finance-api';
 import { downloadFile } from '@/lib/download';
 import { usePermission } from '@/lib/use-permission';
+import { CashForecastReport } from './cash-forecast-report';
+import { CostCenterPlReport, ProjectCostingReport } from './cost-reports';
 import { GeneralLedgerReport, TrialBalanceReport } from './ledger-reports';
+import { ManagementPackReport } from './management-pack-report';
+import { ProfitabilityReport } from './profitability-report';
+import { RatiosReport } from './ratios-report';
+import { StatementsReport } from './statements-report';
 
 const formatMoney = (minor: number) => (minor / 100).toLocaleString();
 
 const today = () => new Date().toISOString().slice(0, 10);
 const startOfMonth = () => `${today().slice(0, 7)}-01`;
 
-/** Financial reports: P&L, balance sheet, direct-method cash flow (F6). */
+/**
+ * Financial reports, one section per statement (F6, ADR-0030).
+ *
+ * @remarks
+ * One filter card drives every report: a period (from/to) for the statements
+ * that measure a range, and a single "as of" date for the balance sheet. Each
+ * statement card carries its own CSV export, so a button never downloads a
+ * different statement than the card it sits on.
+ */
 export function ReportsPage() {
 	const { t } = useTranslation(['finance', 'common']);
 	const canRead = usePermission('financial_report.read');
@@ -37,13 +53,19 @@ export function ReportsPage() {
 	const [endDate, setEndDate] = useState(today());
 	const [asOfDate, setAsOfDate] = useState(today());
 
-	const [applied, setApplied] = useState({ startDate: '', endDate: '', asOfDate: '' });
+	const [applied, setApplied] = useState({
+		startDate: startOfMonth(),
+		endDate: today(),
+		asOfDate: today(),
+	});
 
 	const run = () => setApplied({ startDate, endDate, asOfDate });
 
+	const rangeReady = applied.startDate !== '' && applied.startDate <= applied.endDate;
+
 	const { data: pl } = useQuery({
 		...profitAndLossQueryOptions(applied.startDate, applied.endDate),
-		enabled: canRead && applied.startDate !== '' && applied.startDate <= applied.endDate,
+		enabled: canRead && rangeReady,
 	});
 
 	const { data: bs } = useQuery({
@@ -53,7 +75,7 @@ export function ReportsPage() {
 
 	const { data: cf } = useQuery({
 		...cashFlowQueryOptions(applied.startDate, applied.endDate),
-		enabled: canRead && applied.startDate !== '' && applied.startDate <= applied.endDate,
+		enabled: canRead && rangeReady,
 	});
 
 	if (!canRead) {
@@ -63,7 +85,7 @@ export function ReportsPage() {
 	}
 
 	return (
-		<div className='space-y-4'>
+		<div className='space-y-8'>
 			<div>
 				<h1 className='text-xl font-semibold'>{t('finance:reports.title')}</h1>
 				<p className='text-muted-foreground text-sm'>
@@ -71,230 +93,264 @@ export function ReportsPage() {
 				</p>
 			</div>
 
-			<div className='flex flex-wrap items-center gap-2'>
-				<DatePicker
-					className='w-40'
-					value={startDate}
-					onChange={setStartDate}
-				/>
-				<DatePicker
-					className='w-40'
-					value={endDate}
-					onChange={setEndDate}
-				/>
-				<DatePicker
-					className='w-40'
-					value={asOfDate}
-					onChange={setAsOfDate}
-				/>
-				<Button size='sm' onClick={run}>
-					{t('finance:reports.run')}
-				</Button>
-			</div>
+			<Card>
+				<CardHeader>
+					<CardTitle>{t('finance:reports.filter.title')}</CardTitle>
+					<CardDescription>{t('finance:reports.filter.hint')}</CardDescription>
+				</CardHeader>
+				<CardContent className='flex flex-wrap items-end gap-3'>
+					<Field className='w-auto'>
+						<FieldLabel htmlFor='reports-from'>{t('finance:reports.filter.from')}</FieldLabel>
+						<DatePicker className='w-40' value={startDate} onChange={setStartDate} />
+					</Field>
+					<Field className='w-auto'>
+						<FieldLabel htmlFor='reports-to'>{t('finance:reports.filter.to')}</FieldLabel>
+						<DatePicker className='w-40' value={endDate} onChange={setEndDate} />
+					</Field>
+					<Field className='w-auto'>
+						<FieldLabel htmlFor='reports-as-of'>{t('finance:reports.filter.asOf')}</FieldLabel>
+						<DatePicker className='w-40' value={asOfDate} onChange={setAsOfDate} />
+					</Field>
+					<Button size='sm' onClick={run}>
+						{t('finance:reports.filter.apply')}
+					</Button>
+				</CardContent>
+			</Card>
 
-			<div className='flex flex-wrap items-center gap-2'>
-				<ExportButton
-					disabled={applied.startDate === ''}
-					onClick={() =>
-						downloadFile(
-							`/reports/profit-and-loss.csv?startDate=${applied.startDate}&endDate=${applied.endDate}`,
-							`profit-and-loss-${applied.startDate}_${applied.endDate}.csv`,
-						)
+			<section className='space-y-3'>
+				<h2 className='text-lg font-semibold'>{t('finance:reports.group.financial')}</h2>
+
+				<ReportCard
+					title={t('finance:reports.tab.pl')}
+					action={
+						<ExportButton
+							label={t('finance:reports.export.pl')}
+							disabled={!rangeReady}
+							onClick={() =>
+								downloadFile(
+									`/reports/profit-and-loss.csv?startDate=${applied.startDate}&endDate=${applied.endDate}`,
+									`profit-and-loss-${applied.startDate}_${applied.endDate}.csv`,
+								)
+							}
+						/>
 					}
-				/>
-				<ExportButton
-					disabled={applied.asOfDate === ''}
-					onClick={() =>
-						downloadFile(
-							`/reports/balance-sheet.csv?asOfDate=${applied.asOfDate}`,
-							`balance-sheet-${applied.asOfDate}.csv`,
-						)
-					}
-				/>
-				<ExportButton
-					disabled={applied.startDate === ''}
-					onClick={() =>
-						downloadFile(
-							`/reports/cash-flow.csv?startDate=${applied.startDate}&endDate=${applied.endDate}`,
-							`cash-flow-${applied.startDate}_${applied.endDate}.csv`,
-						)
-					}
-				/>
-			</div>
-
-			<Tabs defaultValue='pl'>
-				<TabsList>
-					<TabsTrigger value='pl'>{t('finance:reports.tab.pl')}</TabsTrigger>
-					<TabsTrigger value='bs'>{t('finance:reports.tab.balanceSheet')}</TabsTrigger>
-					<TabsTrigger value='cf'>{t('finance:reports.tab.cashFlow')}</TabsTrigger>
-					<TabsTrigger value='tb'>{t('finance:reports.tab.trialBalance')}</TabsTrigger>
-					<TabsTrigger value='gl'>{t('finance:reports.tab.generalLedger')}</TabsTrigger>
-					<TabsTrigger value='pack'>{t('finance:reports.tab.pack')}</TabsTrigger>
-					<TabsTrigger value='forecast'>{t('finance:reports.tab.forecast')}</TabsTrigger>
-					<TabsTrigger value='statements'>{t('finance:reports.tab.statements')}</TabsTrigger>
-					<TabsTrigger value='ratios'>{t('finance:reports.tab.ratios')}</TabsTrigger>
-					<TabsTrigger value='profitability'>{t('finance:reports.tab.profitability')}</TabsTrigger>
-					<TabsTrigger value='projects'>{t('finance:reports.tab.projectCosting')}</TabsTrigger>
-					<TabsTrigger value='cost-centers'>{t('finance:reports.tab.costCenters')}</TabsTrigger>
-				</TabsList>
-
-				<TabsContent value='tb' className='space-y-3'>
-					<TrialBalanceReport startDate={applied.startDate} endDate={applied.endDate} />
-				</TabsContent>
-
-				<TabsContent value='gl' className='space-y-3'>
-					<GeneralLedgerReport startDate={applied.startDate} endDate={applied.endDate} />
-				</TabsContent>
-
-				<TabsContent value='pack' className='space-y-3'>
-					<ManagementPackReport />
-				</TabsContent>
-
-				<TabsContent value='forecast' className='space-y-3'>
-					<CashForecastReport />
-				</TabsContent>
-
-				<TabsContent value='statements' className='space-y-3'>
-					<StatementsReport startDate={applied.startDate} endDate={applied.endDate} />
-				</TabsContent>
-
-				<TabsContent value='ratios' className='space-y-3'>
-					<RatiosReport startDate={applied.startDate} endDate={applied.endDate} />
-				</TabsContent>
-
-				<TabsContent value='profitability' className='space-y-3'>
-					<ProfitabilityReport startDate={applied.startDate} endDate={applied.endDate} />
-				</TabsContent>
-
-				<TabsContent value='projects' className='space-y-3'>
-					<ProjectCostingReport startDate={applied.startDate} endDate={applied.endDate} />
-				</TabsContent>
-
-				<TabsContent value='cost-centers' className='space-y-3'>
-					<CostCenterPlReport startDate={applied.startDate} endDate={applied.endDate} />
-				</TabsContent>
-
-				<TabsContent value='pl' className='space-y-3'>
+				>
 					{pl ? (
-						<>
-							<ReportSection
+						<div className='space-y-4'>
+							<ReportLines
 								title={t('finance:reports.pl.revenue')}
 								rows={pl.revenue}
 								total={pl.totalRevenue}
 							/>
-							<ReportSection
+							<ReportLines
 								title={t('finance:reports.pl.expenses')}
 								rows={pl.expenses}
 								total={pl.totalExpenses}
 							/>
-							<Card>
-								<CardHeader>
-									<CardTitle>
-										{t('finance:reports.pl.netIncome')}
-									</CardTitle>
-								</CardHeader>
-								<CardContent className='text-lg font-semibold'>
-									{formatMoney(pl.netIncome)}
-								</CardContent>
-							</Card>
-						</>
+							<div className='flex justify-between border-t pt-2 text-base font-semibold'>
+								<span>{t('finance:reports.pl.netIncome')}</span>
+								<span>{formatMoney(pl.netIncome)}</span>
+							</div>
+						</div>
 					) : (
-						<EmptyState icon={FileSpreadsheet} title={t('finance:reports.run')} bordered />
+						<EmptyState icon={FileSpreadsheet} title={t('finance:reports.run')} />
 					)}
-				</TabsContent>
+				</ReportCard>
 
-				<TabsContent value='bs' className='space-y-3'>
+				<ReportCard
+					title={t('finance:reports.tab.balanceSheet')}
+					action={
+						<ExportButton
+							label={t('finance:reports.export.bs')}
+							disabled={applied.asOfDate === ''}
+							onClick={() =>
+								downloadFile(
+									`/reports/balance-sheet.csv?asOfDate=${applied.asOfDate}`,
+									`balance-sheet-${applied.asOfDate}.csv`,
+								)
+							}
+						/>
+					}
+				>
 					{bs ? (
-						<>
-							<ReportSection
+						<div className='space-y-4'>
+							<ReportLines
 								title={t('finance:reports.bs.assets')}
 								rows={bs.assets}
 								total={bs.totalAssets}
 							/>
-							<ReportSection
+							<ReportLines
 								title={t('finance:reports.bs.liabilities')}
 								rows={bs.liabilities}
 								total={bs.totalLiabilities}
 							/>
-							<ReportSection
+							<ReportLines
 								title={t('finance:reports.bs.equity')}
 								rows={bs.equity}
 								total={bs.totalEquity}
 							/>
 							{bs.unexplained !== 0 ? (
-								<Card>
-									<CardHeader>
-										<CardTitle className='text-destructive'>
-											{t('finance:reports.bs.unexplained')}
-										</CardTitle>
-									</CardHeader>
-									<CardContent>{formatMoney(bs.unexplained)}</CardContent>
-								</Card>
+								<div className='flex justify-between border-t pt-2 text-sm font-medium text-destructive'>
+									<span>{t('finance:reports.bs.unexplained')}</span>
+									<span>{formatMoney(bs.unexplained)}</span>
+								</div>
 							) : null}
-						</>
+						</div>
 					) : (
-						<EmptyState icon={FileSpreadsheet} title={t('finance:reports.run')} bordered />
+						<EmptyState icon={FileSpreadsheet} title={t('finance:reports.run')} />
 					)}
-				</TabsContent>
+				</ReportCard>
 
-				<TabsContent value='cf' className='space-y-3'>
+				<ReportCard
+					title={t('finance:reports.tab.cashFlow')}
+					action={
+						<ExportButton
+							label={t('finance:reports.export.cf')}
+							disabled={!rangeReady}
+							onClick={() =>
+								downloadFile(
+									`/reports/cash-flow.csv?startDate=${applied.startDate}&endDate=${applied.endDate}`,
+									`cash-flow-${applied.startDate}_${applied.endDate}.csv`,
+								)
+							}
+						/>
+					}
+				>
 					{cf ? (
-						<>
-							<ReportSection
+						<div className='space-y-4'>
+							<ReportLines
 								title={t('finance:reports.cf.operating')}
-								rows={cf.operating.map((entry) => ({
-									code: entry.code,
-									name: entry.name,
-									amount: entry.amount,
-								}))}
+								rows={cf.operating}
 								total={cf.netOperating}
 							/>
-							<ReportSection
+							<ReportLines
 								title={t('finance:reports.cf.investing')}
-								rows={cf.investing.map((entry) => ({
-									code: entry.code,
-									name: entry.name,
-									amount: entry.amount,
-								}))}
+								rows={cf.investing}
 								total={cf.netInvesting}
 							/>
-							<ReportSection
+							<ReportLines
 								title={t('finance:reports.cf.financing')}
-								rows={cf.financing.map((entry) => ({
-									code: entry.code,
-									name: entry.name,
-									amount: entry.amount,
-								}))}
+								rows={cf.financing}
 								total={cf.netFinancing}
 							/>
-							<Card>
-								<CardHeader>
-									<CardTitle>
-										{t('finance:reports.cf.netChange')}
-									</CardTitle>
-								</CardHeader>
-								<CardContent className='text-lg font-semibold'>
-									{formatMoney(cf.netChangeInCash)}
-								</CardContent>
-							</Card>
-						</>
+							<div className='flex justify-between border-t pt-2 text-base font-semibold'>
+								<span>{t('finance:reports.cf.netChange')}</span>
+								<span>{formatMoney(cf.netChangeInCash)}</span>
+							</div>
+						</div>
 					) : (
-						<EmptyState icon={FileSpreadsheet} title={t('finance:reports.run')} bordered />
+						<EmptyState icon={FileSpreadsheet} title={t('finance:reports.run')} />
 					)}
-				</TabsContent>
-			</Tabs>
+				</ReportCard>
+			</section>
+
+			<section className='space-y-3'>
+				<h2 className='text-lg font-semibold'>{t('finance:reports.group.ledger')}</h2>
+				<TrialBalanceReport startDate={applied.startDate} endDate={applied.endDate} />
+				<GeneralLedgerReport startDate={applied.startDate} endDate={applied.endDate} />
+			</section>
+
+			<section className='space-y-3'>
+				<h2 className='text-lg font-semibold'>{t('finance:reports.group.management')}</h2>
+
+				<ReportCard title={t('finance:reports.tab.pack')}>
+					<ManagementPackReport />
+				</ReportCard>
+
+				<ReportCard title={t('finance:reports.tab.forecast')}>
+					<CashForecastReport />
+				</ReportCard>
+
+				<ReportCard title={t('finance:reports.tab.statements')}>
+					<StatementsReport startDate={applied.startDate} endDate={applied.endDate} />
+				</ReportCard>
+
+				<ReportCard title={t('finance:reports.tab.ratios')}>
+					<RatiosReport startDate={applied.startDate} endDate={applied.endDate} />
+				</ReportCard>
+
+				<ReportCard title={t('finance:reports.tab.profitability')}>
+					<ProfitabilityReport startDate={applied.startDate} endDate={applied.endDate} />
+				</ReportCard>
+
+				<ReportCard title={t('finance:reports.tab.projectCosting')}>
+					<ProjectCostingReport startDate={applied.startDate} endDate={applied.endDate} />
+				</ReportCard>
+
+				<ReportCard title={t('finance:reports.tab.costCenters')}>
+					<CostCenterPlReport startDate={applied.startDate} endDate={applied.endDate} />
+				</ReportCard>
+			</section>
 		</div>
 	);
 }
 
+/** One report section: a titled card, with an optional header action. */
+function ReportCard({
+	title,
+	action,
+	children,
+}: {
+	title: string;
+	action?: React.ReactNode;
+	children: React.ReactNode;
+}) {
+	return (
+		<Card>
+			<CardHeader>
+				<CardTitle>{title}</CardTitle>
+				{action ? <CardAction>{action}</CardAction> : null}
+			</CardHeader>
+			<CardContent>{children}</CardContent>
+		</Card>
+	);
+}
+
+/** A subtotal block inside a statement card (revenue, expenses, ...). */
+function ReportLines({
+	title,
+	rows,
+	total,
+}: {
+	title: string;
+	rows: Array<{ code: string; name: string; amount: number }>;
+	total: number;
+}) {
+	return (
+		<div className='space-y-1'>
+			<h3 className='text-sm font-medium'>{title}</h3>
+			{rows.length === 0 ? (
+				<p className='text-muted-foreground text-sm'>—</p>
+			) : (
+				<div className='space-y-1'>
+					{rows.map((row) => (
+						<div key={row.code} className='flex justify-between text-sm'>
+							<span className='font-mono text-xs'>
+								{row.code} — {row.name}
+							</span>
+							<span className='tabular-nums'>{formatMoney(row.amount)}</span>
+						</div>
+					))}
+					<div className='flex justify-between border-t pt-1 text-sm font-medium'>
+						<span>{title}</span>
+						<span className='tabular-nums'>{formatMoney(total)}</span>
+					</div>
+				</div>
+			)}
+		</div>
+	);
+}
+
+/** CSV export for one statement; hidden without the export permission. */
 function ExportButton({
+	label,
 	disabled,
 	onClick,
 }: {
+	label: string;
 	disabled: boolean;
 	onClick: () => Promise<void>;
 }) {
-	const { t } = useTranslation('finance');
 	const canExport = usePermission('financial_report.export');
 	if (!canExport) return null;
 	return (
@@ -304,45 +360,8 @@ function ExportButton({
 			disabled={disabled}
 			onClick={() => void onClick()}
 		>
-			<Download className='size-4' />
-			{t('reports.export')}
+			<Download className='size-4' data-icon='inline-start' />
+			{label}
 		</Button>
-	);
-}
-
-function ReportSection({	title,
-	rows,
-	total,
-}: {
-	title: string;
-	rows: Array<{ code: string; name: string; amount: number }>;
-	total: number;
-}) {
-	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>{title}</CardTitle>
-			</CardHeader>
-			<CardContent>
-				{rows.length === 0 ? (
-					<p className='text-muted-foreground text-sm'>—</p>
-				) : (
-					<div className='space-y-1'>
-						{rows.map((row) => (
-							<div key={row.code} className='flex justify-between text-sm'>
-								<span className='font-mono text-xs'>
-									{row.code} — {row.name}
-								</span>
-								<span>{formatMoney(row.amount)}</span>
-							</div>
-						))}
-						<div className='flex justify-between border-t pt-1 text-sm font-medium'>
-							<span>{title}</span>
-							<span>{formatMoney(total)}</span>
-						</div>
-					</div>
-				)}
-			</CardContent>
-		</Card>
 	);
 }

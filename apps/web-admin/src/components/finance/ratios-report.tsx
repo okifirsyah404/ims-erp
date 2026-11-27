@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
+import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { ratiosQueryOptions } from '@/lib/finance-api';
 
 type TKind = 'times' | 'percent' | 'days';
@@ -53,10 +54,12 @@ export function RatiosReport({ startDate, endDate }: { startDate: string; endDat
 					<h3 className='mb-2 font-medium'>{group.title}</h3>
 					<div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
 						{group.items.map(([label, value, kind]) => (
-							<div key={label} className='rounded-md border p-3'>
-								<p className='text-muted-foreground text-xs'>{label}</p>
-								<p className='text-lg font-semibold tabular-nums'>{format(value, kind)}</p>
-							</div>
+							<Card key={label} size='sm' className='gap-0 py-3'>
+								<CardContent>
+									<p className='text-muted-foreground text-xs'>{label}</p>
+									<p className='text-lg font-semibold tabular-nums'>{format(value, kind)}</p>
+								</CardContent>
+							</Card>
 						))}
 					</div>
 				</div>

@@ -4,7 +4,6 @@ import {
 	useQuery,
 	useQueryClient,
 } from '@tanstack/react-query';
-import { getRouteApi } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -39,7 +38,6 @@ import { usePermission } from '@/lib/use-permission';
 import { TaxRecordEditDialog } from '@/components/tax/tax-record-edit-dialog';
 
 /** The route API for `/finance/tax/records` (validated search params). */
-const routeApi = getRouteApi('/_authed/finance/tax/records/');
 
 const PAGE_SIZE = 20;
 
@@ -65,9 +63,7 @@ const statusTone = (status: TFilingStatus) =>
  */
 export function TaxRecordList() {
 	const { t } = useTranslation(['tax', 'common']);
-	const navigate = routeApi.useNavigate();
 	const queryClient = useQueryClient();
-	const search = routeApi.useSearch();
 	const canUpdate = usePermission('tax.update');
 	const canVerify = usePermission('tax.verify');
 
@@ -78,11 +74,9 @@ export function TaxRecordList() {
 	const [preview, setPreview] = useState<string | null>(null);
 	const [editing, setEditing] = useState<TTaxRecord | null>(null);
 
-	const page = search.page ?? 1;
-	const year = search.year;
-	const month = search.month;
+	const [page, setPage] = useState(1);
 	const { data, isPending, isError, error } = useQuery({
-		...taxRecordsQueryOptions({ page, limit: PAGE_SIZE, year, month }),
+		...taxRecordsQueryOptions({ page, limit: PAGE_SIZE }),
 		placeholderData: (previous) => previous,
 	});
 	const types = useQuery(taxTypesQueryOptions({ page: 1, limit: 100 }));
@@ -337,9 +331,7 @@ export function TaxRecordList() {
 							<PaginationControls
 								page={page}
 								totalPages={data.pagination.totalPages}
-								onPageChange={(next) =>
-									void navigate({ search: (prev) => ({ ...prev, page: next }) })
-								}
+								onPageChange={setPage}
 							/>
 						) : null}
 					</>

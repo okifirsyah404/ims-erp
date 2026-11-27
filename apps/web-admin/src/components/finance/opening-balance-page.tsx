@@ -1,21 +1,13 @@
-import { MoneyInput } from '@/components/money-input';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { OpeningSubledgerCard } from './opening-subledger-card';
+import { OpeningBalanceRowDialog } from './opening-balance-row-dialog';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { DatePicker } from '@ims-erp/ui/components/date-picker';
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@ims-erp/ui/components/select';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
-import { Scale, Trash2 } from 'lucide-react';
+import { Plus, Scale, Trash2 } from 'lucide-react';
 import { RowActions } from '@/components/data-table/row-actions';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableCard } from '@/components/data-table/data-table-card';
@@ -25,16 +17,12 @@ import { useConfirm } from '@/components/confirm-dialog';
 import { toast } from '@/components/toast';
 import {
 	accountsQueryOptions,
-	addOpeningBalanceRow,
 	openingBalancesQueryOptions,
 	postOpeningBalances,
 	removeOpeningBalanceRow,
-	toMinor,
 	type TOpeningBalanceRow,
 } from '@/lib/finance-api';
 import { usePermission } from '@/lib/use-permission';
-
-const today = () => new Date().toISOString().slice(0, 10);
 
 const formatMoney = (minor: number) => (minor / 100).toLocaleString();
 
@@ -47,10 +35,7 @@ export function OpeningBalancePage() {
 	const canEdit = usePermission('journal.update');
 	const canPost = usePermission('journal.post');
 
-	const [accountId, setAccountId] = useState('none');
-	const [asOfDate, setAsOfDate] = useState(today());
-	const [debit, setDebit] = useState('');
-	const [credit, setCredit] = useState('');
+	const [adding, setAdding] = useState(false);
 
 	const {
 		data: rows,
@@ -69,23 +54,6 @@ export function OpeningBalancePage() {
 
 	const invalidate = () =>
 		queryClient.invalidateQueries({ queryKey: ['opening-balances'] });
-
-	const addRow = useMutation({
-		mutationFn: () =>
-			addOpeningBalanceRow({
-				accountId,
-				asOfDate,
-				debitBalance: toMinor(debit),
-				creditBalance: toMinor(credit),
-			}),
-		onSuccess: async () => {
-			toast.success(t('finance:opening.addRowDone'));
-			setDebit('');
-			setCredit('');
-			invalidate();
-		},
-		onError: (mutationError: Error) => toast.error(mutationError.message),
-	});
 
 	const removeRow = useMutation({
 		mutationFn: (id: string) => removeOpeningBalanceRow(id),
@@ -212,58 +180,18 @@ export function OpeningBalancePage() {
 				</p>
 			</div>
 
-			{canEdit && !hasPosted ? (
-				<div className='flex flex-wrap items-center gap-2 rounded-md border p-4'>
-					<Select
-						value={accountId}
-						onValueChange={(value: string | null) =>
-							setAccountId(value ?? 'none')
-						}
-					>
-						<SelectTrigger className='w-72'>
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value='none'>
-								{t('finance:opening.account')}
-							</SelectItem>
-							{accounts?.rows
-								.filter((account) => account.isActive && account.isPostable)
-								.map((account) => (
-									<SelectItem key={account.id} value={account.id}>
-										{account.code} — {account.name}
-									</SelectItem>
-								))}
-						</SelectContent>
-					</Select>
-					<DatePicker
-						className='w-40'
-						value={asOfDate}
-						onChange={setAsOfDate}
-					/>
-					<MoneyInput
-						className='w-40'
-						placeholder={t('finance:opening.debit')}
-						value={debit}
-						onValueChange={setDebit}
-					/>
-					<MoneyInput
-						className='w-40'
-						placeholder={t('finance:opening.credit')}
-						value={credit}
-						onValueChange={setCredit}
-					/>
-					<Button
-						size='sm'
-						disabled={addRow.isPending || accountId === 'none'}
-						onClick={() => void addRow.mutateAsync()}
-					>
-						{t('finance:opening.addRow')}
-					</Button>
-				</div>
-			) : null}
 
-			<DataTableCard>
+			<DataTableCard
+				title={t('finance:opening.rows')}
+				action={
+					canEdit && !hasPosted ? (
+						<Button size='sm' onClick={() => setAdding(true)}>
+							<Plus className='size-4' data-icon='inline-start' />
+							{t('finance:opening.addRow')}
+						</Button>
+					) : null
+				}
+			>
 				{isError ? (
 					<ErrorState error={error} />
 				) : !isPending && (rows?.length ?? 0) === 0 ? (
@@ -315,7 +243,14 @@ export function OpeningBalancePage() {
 				</div>
 			) : null}
 
-			<OpeningSubledgerCard asOfDate={asOfDate} canEdit={canEdit && !hasPosted} />
+			<OpeningSubledgerCard canEdit={canEdit && !hasPosted} />
+
+			{adding ? (
+				<OpeningBalanceRowDialog
+					accounts={accounts?.rows ?? []}
+					onClose={() => setAdding(false)}
+				/>
+			) : null}
 		</div>
 	);
 }

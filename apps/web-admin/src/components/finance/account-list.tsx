@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getRouteApi } from '@tanstack/react-router';
 import {
 	Archive,
 	BookOpen,
@@ -55,9 +54,6 @@ import {
 } from '@/lib/finance-api';
 import { usePermission } from '@/lib/use-permission';
 
-/** The route API for `/finance/accounts` (validated search params). */
-const routeApi = getRouteApi('/_authed/finance/accounts/');
-
 const PAGE_SIZE = 20;
 
 const typeKey = (t: TAccountType) => `finance:accountType.${t}` as const;
@@ -68,26 +64,29 @@ const categoryKey = (c: TCashFlowCategory) =>
 export function AccountList() {
 	const { t } = useTranslation(['finance', 'common']);
 	const confirm = useConfirm();
-	const navigate = routeApi.useNavigate();
 	const queryClient = useQueryClient();
-	const search = routeApi.useSearch();
 	const canCreate = usePermission('chart_of_account.create');
 	const canUpdate = usePermission('chart_of_account.update');
 	const canArchive = usePermission('chart_of_account.archive');
 
-	const [searchDraft, setSearchDraft] = useState(search.search ?? '');
+	const [searchDraft, setSearchDraft] = useState('');
+	const [filters, setFilters] = useState<{
+		search?: string;
+		accountType?: TAccountType;
+		isActive?: boolean;
+		isPostable?: boolean;
+	}>({});
+	const [page, setPage] = useState(1);
 	const [editing, setEditing] = useState<TAccount | null>(null);
 	const [creating, setCreating] = useState(false);
-
-	const page = search.page ?? 1;
 	const { data, isPending, isError, error } = useQuery({
 		...accountsQueryOptions({
 			page,
 			limit: PAGE_SIZE,
-			accountType: search.accountType,
-			isActive: search.isActive,
-			isPostable: search.isPostable,
-			search: search.search,
+			accountType: filters.accountType,
+			isActive: filters.isActive,
+			isPostable: filters.isPostable,
+			search: filters.search,
 		}),
 		placeholderData: (previous) => previous,
 	});
@@ -274,12 +273,6 @@ export function AccountList() {
 						{t('finance:accounts.description')}
 					</p>
 				</div>
-				{canCreate ? (
-					<Button onClick={() => setCreating(true)}>
-						<Plus className='mr-2 size-4' />
-						{t('finance:accounts.create')}
-					</Button>
-				) : null}
 			</div>
 
 			<div className='flex flex-wrap items-end gap-3'>
@@ -295,32 +288,37 @@ export function AccountList() {
 						onChange={(event) => setSearchDraft(event.target.value)}
 						onKeyDown={(event) => {
 							if (event.key !== 'Enter') return;
-							void navigate({
-								search: (prev) => ({
-									...prev,
-									page: 1,
-									search: searchDraft || undefined,
-								}),
-							});
+							setFilters((prev) => ({ ...prev, search: searchDraft || undefined }));
+							setPage(1);
 						}}
 					/>
 				</div>
 				<AccountsFilterPopover
-					accountType={search.accountType}
-					isActive={search.isActive}
-					isPostable={search.isPostable}
-					onApply={(next) =>
-						void navigate({ search: (prev) => ({ ...prev, page: 1, ...next }) })
-					}
+					accountType={filters.accountType}
+					isActive={filters.isActive}
+					isPostable={filters.isPostable}
+					onApply={(next) => {
+						setFilters((prev) => ({ ...prev, ...next }));
+						setPage(1);
+					}}
 					onReset={() => {
 						setSearchDraft('');
-						void navigate({ search: {} });
+						setFilters({});
+						setPage(1);
 					}}
 				/>
 			</div>
 
 			<DataTableCard
 				title={t('finance:accounts.title')}
+				action={
+					canCreate ? (
+						<Button size='sm' onClick={() => setCreating(true)}>
+							<Plus className='size-4' data-icon='inline-start' />
+							{t('finance:accounts.create')}
+						</Button>
+					) : null
+				}
 				description={
 					pagination ? (
 						t('finance:accounts.count', { count: pagination.total })
@@ -345,9 +343,7 @@ export function AccountList() {
 					<PaginationControls
 						page={pagination.page}
 						totalPages={pagination.totalPages}
-						onPageChange={(next) =>
-							void navigate({ search: (prev) => ({ ...prev, page: next }) })
-						}
+						onPageChange={setPage}
 					/>
 				) : null}
 			</DataTableCard>

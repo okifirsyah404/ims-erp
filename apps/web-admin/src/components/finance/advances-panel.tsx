@@ -6,6 +6,14 @@ import { Plus, Trash2 } from 'lucide-react';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
+import {
+	Card,
+	CardAction,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '@ims-erp/ui/components/card';
 import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
@@ -13,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { FieldLabel } from '@/components/form/field-label';
 import { MoneyInput } from '@/components/money-input';
+import { PaymentsTable } from '@/components/finance/payments-table';
 import { ScrollDialogContent } from '@/components/scroll-dialog-content';
 import { toast } from '@/components/toast';
 import {
@@ -97,19 +106,20 @@ export function AdvancesPanel() {
 	if (!can.readAdvance && !can.readSettlement) return null;
 	return (
 		<div className='space-y-6'>
-			<div className='space-y-3 rounded-md border p-4'>
-				<div className='flex flex-wrap items-center justify-between gap-2'>
-					<div>
-						<h2 className='font-semibold'>{t('finance:advances.title')}</h2>
-						<p className='text-muted-foreground text-sm'>{t('finance:advances.description')}</p>
-					</div>
+			<Card>
+				<CardHeader>
+					<CardTitle>{t('finance:advances.title')}</CardTitle>
+					<CardDescription>{t('finance:advances.description')}</CardDescription>
 					{can.createAdvance ? (
-						<Button size='sm' onClick={() => setCreating(true)}>
-							<Plus className='size-4' data-icon='inline-start' />
-							{t('finance:advances.create')}
-						</Button>
+						<CardAction>
+							<Button size='sm' onClick={() => setCreating(true)}>
+								<Plus className='size-4' data-icon='inline-start' />
+								{t('finance:advances.create')}
+							</Button>
+						</CardAction>
 					) : null}
-				</div>
+				</CardHeader>
+				<CardContent>
 				<Table>
 					<TableHeader>
 						<TableRow>
@@ -179,14 +189,16 @@ export function AdvancesPanel() {
 							);
 						})}
 					</TableBody>
-				</Table>
-			</div>
+					</Table>
+				</CardContent>
+			</Card>
 
-			<div className='space-y-3 rounded-md border p-4'>
-				<div>
-					<h2 className='font-semibold'>{t('finance:settlements.title')}</h2>
-					<p className='text-muted-foreground text-sm'>{t('finance:settlements.description')}</p>
-				</div>
+			<Card>
+				<CardHeader>
+					<CardTitle>{t('finance:settlements.title')}</CardTitle>
+					<CardDescription>{t('finance:settlements.description')}</CardDescription>
+				</CardHeader>
+				<CardContent>
 				<Table>
 					<TableHeader>
 						<TableRow>
@@ -244,7 +256,10 @@ export function AdvancesPanel() {
 						))}
 					</TableBody>
 				</Table>
-			</div>
+				</CardContent>
+			</Card>
+
+			<PaymentsTable paymentType='employee_payment' title={t('finance:payments.type.employee_payment')} />
 
 			{creating ? <AdvanceDialog employees={employees.data ?? []} onClose={() => setCreating(false)} onSaved={refresh} /> : null}
 			{settling ? <SettlementDialog advance={settling} onClose={() => setSettling(null)} onSaved={refresh} /> : null}

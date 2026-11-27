@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import {
 	Card,
+	CardAction,
 	CardContent,
 	CardDescription,
 	CardHeader,
@@ -20,19 +21,23 @@ import {
 export function DataTableCard({
 	title,
 	description,
+	action,
 	children,
 }: {
 	/** Card heading; omit when the page's `<h1>` already names the list. */
 	title?: ReactNode;
 	description?: ReactNode;
+	/** Header action (e.g. a primary "New" button), rendered at the top right. */
+	action?: ReactNode;
 	children: ReactNode;
 }) {
 	return (
 		<Card>
-			{title || description ? (
+			{title || description || action ? (
 				<CardHeader>
 					{title ? <CardTitle>{title}</CardTitle> : null}
 					{description ? <CardDescription>{description}</CardDescription> : null}
+					{action ? <CardAction>{action}</CardAction> : null}
 				</CardHeader>
 			) : null}
 			<CardContent>{children}</CardContent>

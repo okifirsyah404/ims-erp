@@ -12,6 +12,173 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-27 - user guide: finance & accounting for non-technical users
+
+Added `docs/user-guide/finance-accounting-guide.md` (Bahasa Indonesia) for
+accountants: roles, daily AR/AP flow, cash/bank, reconciliation, manual
+journals and reversals, opening balances, fixed assets, month-end close,
+reports, tax workpapers, and known limitations. `docs/user-guide/README.md`
+links the new file. Documentation only; no code or schema change;
+`docs/database/` reviewed and unchanged.
+
+## 2026-11-27 - finance + tax UI pass (ERP-0171..ERP-0176)
+
+**Scope.** User asked for a UI pass across `apps/web-admin` finance and tax:
+create forms in dialogs, borders replaced by cards, table header actions,
+pagination + filters in React state (no router search), and a clearer
+`/finance/reports` without `@ims-erp/ui/components/tabs`.
+
+**Changes.** Filter card on reports with labelled From / To / As-of and Apply;
+three statement cards carry their own labelled CSV export; 12 report sections
+rendered together as stacked cards (no Tabs). New dialogs:
+`journal-entry-dialog.tsx` (draft lines, maker-checker note),
+`reconciliation-dialog.tsx`, `period-dialog.tsx`, `bill-form-dialog.tsx`,
+`tax-type-dialog.tsx`. List pages moved their create buttons into
+`DataTableCard action` (accounts, journal, expenses, cost centres, posting
+rules, bills, reconciliation, closing checklist, tax types) and their pagination
++ filters into component `useState` (12 route files dropped `validateSearch`).
+Card surfaces replaced bare `rounded-md border` blocks in fixed assets,
+advances, project budgets, opening subledger, cash forecast, management pack,
+ratios, reconciliation detail. Locale `finance` gained report filter/group/export
+keys and `journal.line.remove`; `tax:period.apply` removed (its Apply button was
+merged into the recap's live filter). No backend, schema, permission or
+`docs/database/` change.
+
+**Commands and outcomes.** `bunx tsc -p tsconfig.app.json --noEmit` → 0 errors;
+`bunx oxlint` on all touched finance/tax files → only two pre-existing purity
+warnings; web-admin `bun test` → 217 pass; `packages/locales` `bun test` →
+110 pass (parity + dead-key guards green); root `bun run lint` → 0 errors.
+Browser: `/finance/journal`, `/finance/reconciliation`, `/finance/closing`,
+`/finance/payables`, `/finance/cost-centers`, `/finance/reports`,
+`/finance/tax/types` all render with 0 console errors; journal and reconciliation
+dialogs open with their fields and disabled Save until valid; reports shows all
+three sections, no `[data-slot=tabs]`, and per-card CSV exports. No data was
+posted during the walkthrough (dialogs closed with Cancel).
+
+## 2026-11-27 - ERP-0169: cash/bank new movement in a dialog (web-admin)
+
+**Scope.** User asked for the inline "New movement" form on
+`http://localhost:5173/finance/cash-bank` to use a dialog like the other
+finance actions (create account, gateway settlement, tax payment).
+
+**Changes.** New `apps/web-admin/src/components/finance/cash-bank-movement-dialog.tsx`
+following `gateway-settlement-dialog.tsx`: local form state, `postCashBankMovement`
+mutation, success toast, invalidate `cash-bank-accounts` + `cash-bank-transactions`,
+close on success, error toast. `cash-bank-page.tsx` drops the six movement
+states, the inline form and its mutation. Movements now live in one `Card`
+(`CardHeader` with title "Movements", GL-link hint and `CardAction` holding the
+"New movement" button; `CardContent` holds the table / empty / error state).
+The accounts table is likewise one `Card`: "New cash/bank account" in its
+`CardAction` next to the title (primary button), table + its own
+`PaginationControls` inside
+`CardContent`. Pay tax / Pay salaries / BPJS / Record gateway settlement are a
+separate CTA bar *outside* the card: a plain `flex` row with `gap-3` and no
+border or padding; each button is `flex-1` so all three share the same width,
+and `flex-col` so its lucide icon sits vertically above the label. The page header keeps only the
+title and description. Both lists paginate with component `useState` pages
+(`page` for movements, `accountPage` for accounts; accounts are sliced
+client-side over the already-fetched list, clamped to the last page).
+Locale `finance` en+id gains `common.direction`
+for the Direction label (no other new keys). No backend, schema, migration or
+permission change; `docs/database/` reviewed, unchanged.
+
+**Commands and outcomes.**
+- `bunx tsc -p tsconfig.app.json --noEmit` (web-admin) → 0 errors.
+- `bun test` (web-admin) → 217 pass / 0 fail; `bun test` (packages/locales) →
+  110 pass / 0 fail (parity guard green).
+- `bunx oxlint` on both changed components → 0 warnings/errors after using a
+  lazy `useState` initializer for the date (a purity warning matched the
+  existing gateway dialog pattern).
+- `bun run lint` (root) → 0 errors, only pre-existing warnings.
+- Browser (`http://localhost:5173`, signed in as `admin`): page header shows
+  only title + description; the accounts card holds "New cash/bank account" in
+  its header action and the table; the three CTA buttons (Pay tax / Pay
+  salaries / Record gateway settlement) render as their own CTA bar outside
+  the card—equal width (`flex-1`, measured 361px each), icon above the label,
+  no wrapper border or padding; the
+  "Movements" card keeps its own "New movement" button and empty state. 0
+  console errors.
+- Accounts pagination exercised with 22 temporary accounts (`ZZTEST-01..22`
+  created through `POST /finance/cash-bank-accounts`): 25 rows → "Page 1 of 2"
+  with 20 rows, "Next" showed the 5 remaining rows on page 2, URL unchanged;
+  pagination hidden again at 3 rows. Cleanup: deleted the 22 accounts and their
+  `bank_account_links` rows via a temporary `Bun.sql` script, then removed the
+  script. Side effect not reverted: the `code_numberings` counter for the
+  cash/bank series advanced by 22 (no delete endpoint exists).
+
+**Not verified / found.** A full post was not exercised. The seeded `finance`
+role has `cash_bank:create` but not `chart_of_account:read`
+(`packages/common/src/authorization/erp-permissions.ts:762` vs `:790`), so
+`GET /finance/ledger/accounts` answers 403 and the counterpart picker is empty
+for that role; this already affected the old inline form. `accountant` has the
+CoA read but not `cash_bank:create`; only `owner` holds both. Fixing the role
+grant is a permissions change outside this task; left for an explicit decision.
+
+Next executable task: decide whether to grant `chart_of_account:read` to
+`finance` (then rerun `docs/gen-role-permission.ts` and walk a real movement
+post), or close ERP-0169 as UI-only.
+
+## 2026-11-27 - opening balances: add row in a dialog
+
+**Scope.** User asked for a dialog to add an opening-balance row on
+`/finance/opening-balances`, instead of the inline form.
+
+**Changes.** New `apps/web-admin/src/components/finance/opening-balance-row-dialog.tsx`
+(same shape as the cash/bank movement dialog): account select filtered to
+active + postable accounts, as-of date, debit and credit `MoneyInput`s, Save
+disabled until an account and at least one non-zero amount are set; the mutation
+lives in the dialog and invalidates `opening-balances` on success.
+`opening-balance-page.tsx` drops the inline form, its three states and the
+`addRow` mutation; the button moves into the rows card header. `DataTableCard`
+gained an optional `action` prop (`CardAction` slot) so any list card can host a
+primary button — no other caller changed. `opening-subledger-card.tsx` now owns
+its own as-of date picker (it is the only consumer of that value), so the page
+no longer threads `asOfDate`. Locale `finance` en+id gains `opening.rows`
+("Opening balance rows" / "Baris saldo awal"). No backend, schema or permission
+change; `docs/database/` reviewed, unchanged.
+
+**Commands and outcomes.** `bunx tsc -p tsconfig.app.json --noEmit` → 0 errors;
+`bunx oxlint` on the four touched files → 0 warnings; web-admin `bun test` → 217
+pass; `packages/locales` `bun test` → 110 pass (parity guard green).
+
+Browser (`http://localhost:5173`, signed in as `admin`): the rows card shows a
+primary "Tambah baris" button; the dialog opens with account, as-of date, debit
+and credit fields, Save disabled until an account + amount are present. Adding
+`1-1110 — Kas Kecil` / 100,000 posted the row into the table (toast, totals
+updated, batch still unbalanced as expected); deleting it through the row action
+returned the table to "Belum ada baris saldo awal." with 0 console errors. Dev
+DB left clean.
+
+## 2026-11-27 - movements pagination uses component state
+
+**Scope.** User asked for the movements pagination to use React state instead
+of the TanStack Router URL query, without changing the backend or the query
+client.
+
+**Changes.** `cash-bank-page.tsx` replaces `routeApi.useSearch()` /
+`navigate()` with `const [page, setPage] = useState(1)` and passes `setPage`
+straight to `PaginationControls`; unused `getRouteApi` import removed. The
+route `src/routes/_authed/finance/cash-bank/index.tsx` drops `validateSearch`
+and `TCashBankSearch` (route path unchanged, so `routeTree.gen.ts` needs no
+regeneration). Shared `cashBankTransactionsQueryOptions({ page, limit: 20 })`
+and `PaginationControls` still drive the query and the buttons. No change to
+backend, schema, migrations or locale; `docs/database/` reviewed, unchanged.
+
+**Commands and outcomes.** `bunx tsc -p tsconfig.app.json --noEmit` → 0 errors;
+`bunx oxlint` on both files → 0 warnings/errors.
+
+Pagination exercised end to end with 39 temporary movements posted through
+`POST /finance/cash-bank-transactions` (one `out` was rejected for insufficient
+balance, as expected), plus a temporary `2026-11` accounting period. Browser:
+page 1 showed "Page 1 of 2" with rows 40..31; "Next" moved to page 2 with rows
+20..11 and the URL stayed `/finance/cash-bank` (no `?page=2`); "1" returned to
+page 1; 0 console errors. Cleanup: deleted the 39 test movements + their 39
+journals and the period via a temporary `Bun.sql` script against `ims_erp_local`
+(filter `description like 'PAGINATION-TEST-ERP0169-%'`), restored the `BANK-BCA`
+current balance to 0, and removed the script. Browser reload afterwards shows
+"No movements yet." and zero balances. Test script was untracked and deleted;
+no source change other than the two files above.
+
 ## 2026-11-26 - procurement → warehouse re-check; PO document templates (ERP-0165..ERP-0168)
 
 **Scope.** The user asked to re-check the flow from a purchase order until the

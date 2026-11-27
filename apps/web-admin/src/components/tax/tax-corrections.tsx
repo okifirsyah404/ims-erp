@@ -4,7 +4,6 @@ import {
 	useQuery,
 	useQueryClient,
 } from '@tanstack/react-query';
-import { getRouteApi } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -33,7 +32,6 @@ import {
 import { usePermission } from '@/lib/use-permission';
 
 /** The route API for `/finance/tax/corrections` (validated search params). */
-const routeApi = getRouteApi('/_authed/finance/tax/corrections/');
 
 /**
  * Corrections & evidence (ERP-0016, D15): signed amounts against a verified
@@ -42,12 +40,10 @@ const routeApi = getRouteApi('/_authed/finance/tax/corrections/');
  */
 export function TaxCorrections() {
 	const { t } = useTranslation(['tax', 'common']);
-	const navigate = routeApi.useNavigate();
-	const search = routeApi.useSearch();
 	const queryClient = useQueryClient();
 	const canUpdate = usePermission('tax.update');
 
-	const recordId = search.recordId ?? '';
+	const [recordId, setRecordId] = useState('');
 	const [amount, setAmount] = useState('');
 	const [reason, setReason] = useState('');
 	const [evidence, setEvidence] = useState('');
@@ -130,7 +126,7 @@ export function TaxCorrections() {
 				<Select
 					value={recordId === '' ? 'none' : recordId}
 					onValueChange={(value: string | null) =>
-						void navigate({ search: { recordId: value == null || value === 'none' ? undefined : value } })
+						setRecordId(value == null || value === 'none' ? '' : value)
 					}
 				>
 					<SelectTrigger className='max-w-72' aria-label={t('tax:records.title')}>

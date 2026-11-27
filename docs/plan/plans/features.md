@@ -878,7 +878,32 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
 
 ## M09 Finance
 
+- ERP-0171..0176 UI pass (2026-11-27): `/finance/reports` no longer uses Tabs —
+  one labelled filter card (From/To/As-of), three statement cards with named CSV
+  exports, and all 12 report sections stacked as cards. Finance/tax create forms
+  moved into dialogs (journal, reconciliation, period, bill, tax type), bare
+  border blocks became Cards, create buttons moved into table header actions,
+  and pagination + filters became React state (12 route `validateSearch` blocks
+  removed; filters no longer survive reload). Tax recap uses a live year/month
+  filter. Verified: tsc 0, web-admin 217 tests, locales 110, root lint 0 errors,
+  browser walkthrough of 7 pages with 0 console errors.
+
+- ERP-0170 opening-balance row dialog (2026-11-27): the inline add-row form on
+  `/finance/opening-balances` moved to `opening-balance-row-dialog.tsx`; the
+  button sits in the rows card header via the new `action` slot on
+  `DataTableCard`. Account list limited to active + postable accounts; Save needs
+  an account and a non-zero debit or credit. `OpeningSubledgerCard` now owns its
+  own as-of date picker. Verified in the browser (row added then deleted).
+
 - ERP-0167 `accounting_period:create` (2026-11-26) granted to `owner` and `accountant`: the statement lacked the action, so `POST /finance/periods` answered 403 to every role and a fresh environment could never open a month, which blocks every goods receipt ("Accounting period not found"). The closing page hides "Create period" without the grant. Verified live (owner opens 2026-11 through the API).
+- ERP-0169 cash/bank movement dialog (2026-11-27): the inline movement form moved to `cash-bank-movement-dialog.tsx`; "New movement" now lives in its own `Card` titled "Movements" with
+`CardAction` for the button and `CardContent` for the table / empty / error
+state. The accounts table is its own card: "New cash/bank account" in the
+header action, its own pagination inside the card, and Pay tax / Pay salaries /
+Record gateway settlement as an icon CTA bar (wider buttons, horizontal gap,
+no wrapper border/padding) outside the card. Movements pagination uses a
+component `useState` page (router `validateSearch` removed), not the URL.
+Validation, toast and cache invalidation unchanged. Implemented; browser: dialog renders with all six fields and Save gating. Known pre-existing gap: the `finance` role can create movements but cannot read the COA (`GET /finance/ledger/accounts` 403), so the counterpart picker is empty for that role; no end-to-end post verified.
 
 ### in-progress (Stage 1 - F1..F9, commits 7a44dbd..<f9>; backlog mismatch, see note)
 - Ledger core: `accounting` pg-schema (COA, journal entries/lines, periods,

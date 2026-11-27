@@ -5,6 +5,14 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
+import {
+	Card,
+	CardAction,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '@ims-erp/ui/components/card';
 import { Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
@@ -84,10 +92,22 @@ export function FixedAssetsPage() {
 				) : null}
 			</div>
 
-			<Table>
-				<TableHeader>
-					<TableRow>
-						<TableHead>{t('finance:common.code')}</TableHead>
+			<Card>
+				<CardHeader>
+					<CardTitle>{t('finance:fixedAssets.title')}</CardTitle>
+					{canPost ? (
+						<CardAction>
+							<Button size='sm' onClick={() => setCapitalizing(true)}>
+								{t('finance:fixedAssets.capitalize')}
+							</Button>
+						</CardAction>
+					) : null}
+				</CardHeader>
+				<CardContent>
+					<Table>
+						<TableHeader>
+							<TableRow>
+								<TableHead>{t('finance:common.code')}</TableHead>
 						<TableHead>{t('finance:fixedAssets.item')}</TableHead>
 						<TableHead>{t('finance:fixedAssets.capitalizedOn')}</TableHead>
 						<TableHead className='text-right'>{t('finance:fixedAssets.cost')}</TableHead>
@@ -133,17 +153,20 @@ export function FixedAssetsPage() {
 						</TableRow>
 					))}
 				</TableBody>
-			</Table>
+					</Table>
+				</CardContent>
+			</Card>
 
-			<div className='space-y-3 rounded-md border p-4'>
-				<div className='flex flex-wrap items-center justify-between gap-2'>
-					<div>
-						<h2 className='font-semibold'>{t('finance:fixedAssets.fiscalTitle')}</h2>
-						<p className='text-muted-foreground text-sm'>{t('finance:fixedAssets.fiscalHint')}</p>
-					</div>
-					<Input className='w-24' aria-label={t('finance:fixedAssets.year')} value={reportYear} onChange={(event) => setReportYear(event.target.value)} />
-				</div>
-				<Table>
+			<Card>
+				<CardHeader>
+					<CardTitle>{t('finance:fixedAssets.fiscalTitle')}</CardTitle>
+					<CardDescription>{t('finance:fixedAssets.fiscalHint')}</CardDescription>
+					<CardAction>
+						<Input className='w-24' aria-label={t('finance:fixedAssets.year')} value={reportYear} onChange={(event) => setReportYear(event.target.value)} />
+					</CardAction>
+				</CardHeader>
+				<CardContent>
+					<Table>
 					<TableHeader>
 						<TableRow>
 							<TableHead>{t('finance:fixedAssets.item')}</TableHead>
@@ -165,9 +188,10 @@ export function FixedAssetsPage() {
 								<TableCell className='text-right tabular-nums'>{money(row.difference)}</TableCell>
 							</TableRow>
 						))}
-					</TableBody>
-				</Table>
-			</div>
+						</TableBody>
+					</Table>
+				</CardContent>
+			</Card>
 
 			{capitalizing ? <CapitalizeDialog onClose={() => setCapitalizing(false)} onSaved={refresh} /> : null}
 		</div>
