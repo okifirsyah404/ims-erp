@@ -1585,3 +1585,40 @@ Diperbarui: `4-rencana-kerja/rencana-perubahan.md`, `peta-halaman.md`, dan
 `README.md` (langkah 8 memuat B-35 sampai B-38).
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - Rancangan portal dan pesanan online (B-38)
+
+Programmer B bertanya apakah modul Oki juga dibahas. Jawabannya ya:
+validasi, UAT, keputusan OA–OG, rencana, kekurangan Aset/Keuangan/Pajak,
+serta aturan menu, dasbor, dan form. Kekurangan fitur M02, M03, M04, M08,
+M01, dan M12 belum diperiksa.
+
+Rancangan B-38 ternyata sudah diputuskan sebelumnya (14/11, 19/11, 20/11,
+23/11) dan sebagian dibangun di `feat/erp-0069-portal-session`. Rencana
+port ada di `docs/plan/port-portal-onto-main.md`; P1 sudah masuk lewat
+PR #139. Tanya-jawab 28/11 menegaskan dan menyesuaikannya:
+- **PP-1:** alur pesanan → draf SPH → disetujui → diterima pelanggan → SO
+  → faktur → bayar.
+- **PP-2:** satu draf SPH untuk barang berharga dan barang "harga
+  menyusul"; RFQ tetap form terpisah.
+- **PP-3:** satu jenis akun dengan login Google; anggota dan peran dalam
+  portal dihapus.
+- **PP-4:** pemegang SPH pesanan online Bilal (dicek ulang terhadap aturan
+  petugas pelanggan dari ERP-0070).
+- **PP-5:** bayar per termin dari portal, kuitansi otomatis.
+- **PP-6:** keranjang menampilkan ketersediaan tanpa memesan stok.
+- **PP-7:** ubah data perusahaan menjadi permintaan yang diperiksa
+  Penjualan.
+- **PP-8:** semua prioritas Tinggi, urutan P2 + P7 → P3 → P5 → P4.
+
+File yang diperbarui:
+- `3-rancangan/rancangan-portal-pesanan.md` (baru; pemeriksa Mermaid 1
+  blok, 0 error setelah titik koma di pesan diganti).
+- `2-keputusan/lembar-keputusan-rapat.md` (bagian 8d).
+- `4-rencana-kerja/rencana-perubahan.md` (B-38), `peta-halaman.md`,
+  `README.md`.
+
+`docs/plan/port-portal-onto-main.md` (di luar folder ini) belum diubah. Isi
+D4 dan urutan port di sana diperbarui saat langkah 8 dimulai.
+
+Tidak ada perubahan kode.

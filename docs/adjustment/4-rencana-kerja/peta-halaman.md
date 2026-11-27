@@ -97,7 +97,7 @@ Sedang/Rendah = langkah 9 dan sesudahnya (lihat README).
 | Proyek: Tugas | Notifikasi ke teknisi saat ditugaskan | B-35 | Tinggi | D |
 | Portal pelanggan: Tiket | Tombol konfirmasi tiket selesai | B-36 | Tinggi | D |
 | Cetak SO, Kuitansi, BPB, Retur **[baru]** | Halaman cetak / PDF | B-37 | Tinggi | D |
-| Portal pelanggan + website: Pesanan, SPH, Faktur, Bayar | Disambungkan ke ERP (T21, T25) | B-38 | Tinggi (dirancang dulu) | D |
+| Portal pelanggan + website: Pesanan, SPH, Faktur, Bayar | Disambungkan ke ERP (T21, T25); urutan: akun + website → pesanan/SPH/faktur/bayar → dokumen + notifikasi → lacak (PP-8) | B-38 | Tinggi | D |
 
 **Jumlah:** sekitar 35 halaman, termasuk 5 halaman baru (Pembayaran
 Pemasok, Servis & Kondisi, Kasbon portal, Riwayat absen lokasi, Perlu

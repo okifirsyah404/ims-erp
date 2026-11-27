@@ -298,6 +298,21 @@ Hal teknis yang tidak masuk ringkasan Pemilik, diputuskan setelah rapat.
 | T-6 | Dokumen arsitektur usang (E1–E5, ADR-0020, ADR-0012 ganda) | Diperbaiki programmer B lewat PR, Oki meninjau; ADR-0020 accepted; `security-and-access.md` ditunda |
 | T-7 | Aplikasi pilot lisensi (T24) | **Ditunda** |
 
+### 8d. Portal pelanggan dan pesanan online (B-38, tanya-jawab programmer B 28/11)
+
+Rincian di `3-rancangan/rancangan-portal-pesanan.md`.
+
+| No | Keputusan |
+|---|---|
+| PP-1 | Pesanan portal/website → draf SPH → disetujui (K1, K2b) dan dikirim → pelanggan menerima/minta revisi di portal → SO → faktur → bayar gateway |
+| PP-2 | Barang berharga + "harga menyusul" jadi satu draf SPH; "minta penawaran" tetap form RFQ |
+| PP-3 | Satu jenis akun, login Google; anggota dan peran dalam portal dihapus |
+| PP-4 | Pemegang SPH pesanan online: Bilal (petugas bawaan) |
+| PP-5 | Faktur termin tampil di portal dengan tombol Bayar; kuitansi otomatis dan bisa diunduh |
+| PP-6 | Keranjang menampilkan ketersediaan stok, tanpa memesan stok |
+| PP-7 | Ubah data perusahaan dari portal = permintaan yang diperiksa Penjualan |
+| PP-8 | Semua prioritas Tinggi, urutan: P2 + P7 → P3 → P5 → P4 |
+
 ## 9. Kesimpulan
 
 | Bagian                                     | Kesimpulan                         |

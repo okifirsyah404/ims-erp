@@ -66,6 +66,7 @@ tulis entri di [`catatan-progres.md`](catatan-progres.md).
 | [`diagram-alur/`](3-rancangan/diagram-alur/README.md) | Diagram alur: **alur lengkap saat ini** ([`alur-lengkap-saat-ini.md`](3-rancangan/diagram-alur/alur-lengkap-saat-ini.md)), per modul, dan sekarang vs sesudah perbaikan |
 | [`menu-dan-form-per-role.md`](3-rancangan/menu-dan-form-per-role.md) | Menu per role dan per orang (dihitung dari kode), daftar semua form |
 | [`rancangan-menu-dasbor-dan-form.md`](3-rancangan/rancangan-menu-dasbor-dan-form.md) | Menu per pekerjaan, pemangkasan menu, Perlu Tindakan, dasbor per role, aturan baku form, 13 form utama |
+| [`rancangan-portal-pesanan.md`](3-rancangan/rancangan-portal-pesanan.md) | Portal pelanggan dan pesanan online (B-38): keputusan PP-1–PP-8, alur target, urutan port P2+P7 → P3 → P5 → P4 |
 | [`kekurangan-fitur.md`](3-rancangan/kekurangan-fitur.md) | Fitur yang belum ada atau setengah jadi di Proyek, Gudang, Pengadaan, Aset, Keuangan, Pajak |
 
 ### 4-rencana-kerja
