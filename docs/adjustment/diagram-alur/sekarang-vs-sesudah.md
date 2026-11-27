@@ -18,11 +18,12 @@ kondisi sekarang di [`../uat-modul/diagram-alur-per-role.md`](../uat-modul/diagr
 (modul programmer B) dan [`sekarang-modul-oki.md`](sekarang-modul-oki.md)
 (modul Oki). Gaya aktornya sama: `Role - nama orang`.
 
-> **Peringatan.** Semua diagram **Sesudah** adalah **usulan**, bukan keputusan final.
-> Diperbarui 2026-11-27: diagram Sesudah mengikuti **jawaban programmer B lewat
-> tanya-jawab 27/11** (lembar rapat bagian 0); Pemilik dan Oki masih
-> mengonfirmasi saat rapat. K8, K9, K11 dibahas di rapat. Diagram Sesudah akan
-> dibetulkan bila rapat mengubah jawaban. Tidak ada kode yang diubah untuk file ini.
+> **Status 2026-11-27: disetujui.** Pada rapat 27/11 Pemilik menyetujui semua
+> keputusan sesuai usulan (lembar rapat, ringkasan untuk Pemilik), termasuk
+> K8, K9 (portal karyawan dan fitur lain diterima sebagai tambahan), K11, dan
+> OB11. Diagram **Sesudah** sekarang adalah **target yang disetujui**; label
+> "usulan" dan "jawaban programmer B 27/11" di bawah dibaca sebagai
+> "disetujui 27/11". Oki masih meninjau lewat PR #171. Belum ada kode yang diubah.
 
 **Sumber:** `../lembar-keputusan-rapat.md`, `../bahan-keputusan.md`,
 `../bahan-keputusan-modul-oki.md`, `../rencana-perubahan.md`,
@@ -119,7 +120,7 @@ sequenceDiagram
     Note over SV,AU: bila audit gagal, transaksi tetap jalan dan jejaknya hilang
 ```
 
-### Sesudah (usulan)
+### Sesudah (disetujui 27/11)
 
 ```mermaid
 sequenceDiagram
@@ -204,7 +205,7 @@ sequenceDiagram
     end
 ```
 
-### Sesudah (usulan)
+### Sesudah (disetujui 27/11)
 
 ```mermaid
 sequenceDiagram
@@ -292,7 +293,7 @@ sequenceDiagram
     end
 ```
 
-### Sesudah (usulan)
+### Sesudah (disetujui 27/11)
 
 ```mermaid
 sequenceDiagram
@@ -373,7 +374,7 @@ sequenceDiagram
     O->>ST: Catat ke stok, selisih dari saldo saat itu
 ```
 
-### Sesudah (usulan)
+### Sesudah (disetujui 27/11)
 
 ```mermaid
 sequenceDiagram
@@ -440,7 +441,7 @@ sequenceDiagram
     Note over K,W: cuti Aqim sendiri juga tidak bisa disetujui (3.7), tetapi A3a menyatakan Aqim tidak cuti
 ```
 
-### Sesudah (usulan)
+### Sesudah (disetujui 27/11)
 
 ```mermaid
 sequenceDiagram
@@ -521,7 +522,7 @@ sequenceDiagram
     Note over W,WA: label role: Manajer Penjualan dan Penjualan terpisah, Akuntan dan Keuangan terpisah
 ```
 
-### Sesudah (usulan) - web-admin, bertahap
+### Sesudah (disetujui 27/11) - web-admin, bertahap
 
 ```mermaid
 sequenceDiagram
@@ -552,7 +553,7 @@ sequenceDiagram
     Note over W,AUTH: role Anggota dan role organisasi Admin tidak ada lagi, tanda admin aplikasi Aqim tetap
 ```
 
-### Sesudah (usulan) - portal pelanggan dan portal karyawan
+### Sesudah (disetujui 27/11) - portal pelanggan dan portal karyawan
 
 ```mermaid
 sequenceDiagram
@@ -650,7 +651,7 @@ sequenceDiagram
     Note over B,FN: berhasil, padahal rencana M09 hanya Pemilik (RO4)
 ```
 
-### Sesudah (usulan)
+### Sesudah (disetujui 27/11)
 
 ```mermaid
 sequenceDiagram
@@ -732,7 +733,7 @@ sequenceDiagram
     Note over W,FN: MACET selalu (RO5). Tidak ada pemegang hak setuju selain Aqim
 ```
 
-### Sesudah (usulan)
+### Sesudah (disetujui 27/11)
 
 ```mermaid
 sequenceDiagram
@@ -805,7 +806,7 @@ sequenceDiagram
     G->>SV: kembalikan (kondisi selalu baik), tutup
 ```
 
-### Sesudah (usulan)
+### Sesudah (disetujui 27/11)
 
 ```mermaid
 sequenceDiagram
@@ -851,14 +852,14 @@ ada cek radius saat check-out. Jawaban programmer B 27/11: absen di luar radius
 **ditolak** (OG1 (a)), berbeda dari rekomendasi lama (simpan dan tandai, lalu
 ditinjau). Karena data di luar radius tidak pernah tersimpan, layar tinjau
 tidak dibutuhkan. Pekerja non-PIC diusulkan bisa melihat kunjungannya sendiri
-(OG2). Seluruh portal karyawan tetap menunggu K9 (dibahas di rapat).
+(OG2). Portal karyawan diterima sebagai tambahan (K9, rapat 27/11).
 
 | Keputusan | Isi | Status |
 |---|---|---|
 | OG1 | Absen lokasi di luar radius ditolak | jawaban programmer B 27/11: (a) tolak |
 | PK-1 | Radius dari pengaturan; cek radius yang sama saat check-out | usulan |
 | OG2 | Non-PIC melihat kunjungannya sendiri | usulan |
-| K9 | Portal karyawan diterima sebagai tambahan kontrak | dibahas di rapat |
+| K9 | Portal karyawan diterima sebagai tambahan kontrak | disetujui rapat 27/11 |
 
 ### Sekarang
 
@@ -883,7 +884,7 @@ sequenceDiagram
     Note over K,SV: tidak ada layar tinjau untuk absen di luar radius
 ```
 
-### Sesudah (usulan)
+### Sesudah (disetujui 27/11)
 
 ```mermaid
 sequenceDiagram

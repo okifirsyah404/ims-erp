@@ -24,8 +24,8 @@ Pemilik dan Oki. Isinya gabungan semua keputusan dari\
 
 ## 0. Keputusan programmer B lewat tanya-jawab (2026-11-27)
 
-Jawaban programmer B di chat. Statusnya **jawaban programmer B**; Pemilik\
-dan Oki tinggal mengonfirmasi saat rapat. File keputusan, rencana, validasi,\
+Jawaban programmer B di chat. **Dikonfirmasi Pemilik (Aqim) pada rapat 2026-11-27: semua butir disetujui sesuai usulan** (dilaporkan programmer B). Oki tinggal meninjau lewat PR #171.\
+ File keputusan, rencana, validasi,\
 dan diagram sudah disesuaikan dengan daftar ini.
 
 | No          | Keputusan                                                                                                                                                                                                       | Catatan                                                                                    |
@@ -55,7 +55,7 @@ dan diagram sudah disesuaikan dengan daftar ini.
 | OD1 / X7    | Peminjaman aset memakai **daftar unit khusus** untuk diajukan teknisi                                                                                                                                           | OD2 (persetujuan sendiri selalu lolos) diperbaiki                                          |
 | K10 / OE1   | M11 **ditunda**; halaman investor ditutup (hanya Pemilik)                                                                                                                                                       | Ya Tunda dulu                                                                              |
 | OG1         | Absen lokasi di luar radius **ditolak**                                                                                                                                                                         | Berbeda dari rekomendasi (simpan dan tandai)                                               |
-| K8, K9, K11 | **Dibahas di rapat**                                                                                                                                                                                            | Kontrak A/B, fitur di luar kontrak, pemilik bagian bersama                                 |
+| K8, K9, K11 | **K8:** kontrak disesuaikan dengan pembagian modul; pertukaran task dicatat resmi. **K9:** semua fitur di luar kontrak diterima sebagai tambahan. **K11:** bagian bersama dipegang bersama, setiap perubahan wajib diberitahukan lewat PR (rapat 27/11) | Kontrak A/B, fitur di luar kontrak, pemilik bagian bersama                                 |
 | OB13 / RO6  | Kasbon teknisi **dicairkan Aqim**; teknisi **mengajukan dan melihat kasbonnya dari portal karyawan**                                                                                                            | Portal karyawan belum punya halaman kasbon (wilayah Oki)                                   |
 | C13         | Unit pinjaman **wajib disetujui dulu** sebelum diserahkan Gudang                                                                                                                                                | Sekarang Gudang bisa menyerahkan tanpa persetujuan                                         |
 | PK-1        | Check-out lokasi proyek **juga dicek radius** (di luar radius ditolak)                                                                                                                                          | Konsisten dengan OG1                                                                       |
@@ -71,7 +71,7 @@ dan diagram sudah disesuaikan dengan daftar ini.
 | OB3         | **Layar pembayaran pemasok dibuat** (termasuk potongan PPh)                                                                                                                                                     |                                                                                            |
 | OB5         | Keuangan (Bella) **bisa membuka Aset tetap dan Anggaran proyek**                                                                                                                                                |                                                                                            |
 | OB10        | Penghapusan piutang **langsung jadi beban** (tanpa cadangan)                                                                                                                                                    |                                                                                            |
-| OB11        | Arus kas tidak langsung (kapitalisasi nonkas): **dibahas di rapat**                                                                                                                                             |                                                                                            |
+| OB11        | Arus kas tidak langsung: **(a) jurnal yang tidak menyentuh kas diabaikan**, sehingga kapitalisasi nonkas tidak muncul di Investasi/Pendanaan (rapat 27/11) |                                                                                            |
 | OB12        | Ekspor CSV laporan **diperbaiki**                                                                                                                                                                               |                                                                                            |
 | OB14        | Tagihan pemasok manual **bisa memilih akun beban**                                                                                                                                                              |                                                                                            |
 | OB15        | Teks Inggris di Keuangan: **nanti**                                                                                                                                                                             | Prioritas rendah                                                                           |
@@ -236,10 +236,10 @@ nyatakan setuju atau tidak per matriks.
 
 | No  | Pertanyaan                                                                                                                                | Pilihan                                                                                   | Rekomendasi                                             | Keputusan                                                                         | Oleh |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------- | ---- |
-| K8  | Kolom A/B kontrak tidak sama dengan pembagian modul (T19/T20/T23/T24/T27/T28 dikerjakan programmer B; T02/T12/T13/T29/T30 dikerjakan Oki) | (a) Kontrak disesuaikan dengan pembagian modul. (b) Pekerjaan dikembalikan sesuai kontrak | Dibicarakan; rincian di `lintas-modul/di-luar-scope.md` | Dibahas di rapat (27/11)                                                          |      |
-| K9  | Fitur di kode yang di luar kontrak (portal karyawan, absen GPS, dua gateway pembayaran, PPh 21/Coretax, keuangan lanjutan)                | (a) Diterima sebagai tambahan. (b) Dibekukan                                              | Dibicarakan per fitur                                   | Dibahas di rapat (27/11)                                                          |      |
+| K8  | Kolom A/B kontrak tidak sama dengan pembagian modul (T19/T20/T23/T24/T27/T28 dikerjakan programmer B; T02/T12/T13/T29/T30 dikerjakan Oki) | (a) Kontrak disesuaikan dengan pembagian modul. (b) Pekerjaan dikembalikan sesuai kontrak | Dibicarakan; rincian di `lintas-modul/di-luar-scope.md` | (a) kontrak disesuaikan dengan pembagian modul; pertukaran task A/B dicatat resmi beserta dampak pembayarannya (rapat 27/11)                                                          |      |
+| K9  | Fitur di kode yang di luar kontrak (portal karyawan, absen GPS, dua gateway pembayaran, PPh 21/Coretax, keuangan lanjutan)                | (a) Diterima sebagai tambahan. (b) Dibekukan                                              | Dibicarakan per fitur                                   | (a) semua fitur yang sudah ada diterima sebagai tambahan, ikut UAT dan serah terima (rapat 27/11)                                                          |      |
 | K10 | M11 Bonus & Investor belum dibangun (schema `investor` sudah dihapus)                                                                     | (a) Dibangun dengan ADR baru. (b) Ditunda                                                 | Diputuskan Pemilik dan Oki                              | (b) ditunda; halaman investor ditutup, hanya Pemilik (jawaban programmer B 27/11) |      |
-| K11 | Pemilik bagian yang belum jelas: modul dokumen, notifikasi, webhook, profil perusahaan, lokasi, penomoran/audit bersama, deploy/CI        | Dibagi ke Dafrin / Oki / bersama                                                          | Dibagi per bagian                                       | Dibahas di rapat (27/11)                                                          |      |
+| K11 | Pemilik bagian yang belum jelas: modul dokumen, notifikasi, webhook, profil perusahaan, lokasi, penomoran/audit bersama, deploy/CI        | Dibagi ke Dafrin / Oki / bersama                                                          | Dibagi per bagian                                       | Semua bagian bersama dipegang bersama; setiap perubahan wajib diberitahukan ke programmer lain lewat PR (rapat 27/11)                                                          |      |
 
 ## 8. Untuk Oki
 
@@ -288,9 +288,9 @@ Ditemukan saat menyusun diagram sekarang vs sesudah (2026-11-27). Diagram\
 
 | Bagian                                     | Kesimpulan                         |
 | ------------------------------------------ | ---------------------------------- |
-| Konsep saat ini (17 role, alur di kode)    | dipakai / diubah / diganti (coret) |
-| Matriks role dan hak per dokumen           | setuju / perlu perubahan           |
-| Urutan pengerjaan (`rencana-perubahan.md`) | setuju / ubah: …                   |
+| Konsep saat ini (17 role, alur di kode)    | **dipakai, dengan perubahan** sesuai keputusan di lembar ini (rapat 27/11) |
+| Matriks role dan hak per dokumen           | **setuju** sesuai rekomendasi bagian 6 (rapat 27/11) |
+| Urutan pengerjaan (`rencana-perubahan.md`) | **setuju**: audit dalam transaksi, lalu K1, lalu perbaikan prioritas tinggi (rapat 27/11) |
 
 **Tindak lanjut**
 
@@ -306,4 +306,4 @@ Ditemukan saat menyusun diagram sekarang vs sesudah (2026-11-27). Diagram\
 
 | Pemilik | Oki | Dafrin |
 | ------- | --- | ------ |
-|         |     |        |
+| Disetujui 2026-11-27 (rapat, dilaporkan Dafrin) | menunggu tinjauan PR #171 | 2026-11-27 |

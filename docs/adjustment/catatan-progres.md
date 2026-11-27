@@ -1225,3 +1225,37 @@ form apa saja yang ada.
   persetujuannya jatuh ke Aqim.
 - `README.md`: baris baru di tabel Dokumen bersama.
 - Tidak ada perubahan kode.
+
+## 2026-11-27 - Hasil rapat: semua keputusan disetujui sesuai usulan
+
+Laporan programmer B: lembar keputusan rapat dan ringkasan untuk Pemilik
+disetujui **sesuai usulan**. Tiga butir rapat yang belum punya usulan konkret
+ditanyakan lewat chat:
+- **K8:** kontrak disesuaikan dengan pembagian modul. Pertukaran task A/B
+  dicatat resmi beserta dampak pembayarannya.
+- **K9:** semua fitur di luar kontrak diterima sebagai tambahan, dan ikut UAT
+  serta serah terima.
+- **K11:** bagian bersama dipegang bersama. Setiap perubahan wajib lewat PR
+  dan diberitahukan ke programmer lain.
+- **OB11:** opsi (a) sesuai usulan. Jurnal yang tidak menyentuh kas diabaikan
+  di laporan arus kas tidak langsung.
+
+File yang diperbarui:
+- `lembar-keputusan-rapat.md`: status bagian 0, baris K8/K9/K11 dan OB11,
+  bagian 7, kesimpulan, tanda tangan.
+- `ringkasan-untuk-pemilik.md`: 19 butir ☑ Ya, hasil bagian B, tanggal.
+- `bahan-keputusan.md`: baris tanda tangan Pemilik.
+- `bahan-keputusan-modul-oki.md`: catatan rapat, OB11.
+- `rencana-perubahan.md` dan `rencana-perubahan-modul-oki.md`: status
+  "menunggu konfirmasi" diganti "disetujui Pemilik 27/11"; K8, K9, K11,
+  OB11; langkah 1 urutan selesai.
+- `lintas-modul/di-luar-scope.md`: empat baris "Perubahan mendatang".
+- `diagram-alur/README.md` dan `diagram-alur/sekarang-vs-sesudah.md`: status
+  disetujui; judul "Sesudah (usulan)" diganti "Sesudah (disetujui 27/11)".
+- `menu-dan-form-per-role.md`: OB5 diterapkan, sehingga Keuangan melihat
+  Aset tetap; MN2 disesuaikan.
+- `README.md`: status.
+
+Belum ada perubahan kode. Masih terbuka:
+- tinjauan Oki di PR #171;
+- usulan MN1–MN7 dan FR1–FR10.

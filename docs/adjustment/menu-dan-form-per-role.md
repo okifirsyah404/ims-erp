@@ -10,8 +10,9 @@ Dokumen ini menjawab dua pertanyaan:
 - Menu dihitung langsung dari kode: daftar menu
   `apps/web-admin/src/components/sidebar/nav-config.ts`, aturan tampil
   `filter-nav.ts`, dan hak role `packages/common/src/authorization/erp-permissions.ts`.
-- Kolom "sesudah" menerapkan keputusan 27/11 yang sudah diambil (K2, K2b, K2d,
-  K10, K12 tahap 1, B4). **Belum dikodekan**: ini gambaran target.
+- Kolom "sesudah" menerapkan keputusan yang **disetujui Pemilik pada rapat
+  27/11** (K2, K2b, K2d, K10, K12 tahap 1, B4, OB5). **Belum dikodekan**: ini
+  gambaran target.
 - Daftar form diambil dari kode web-admin, portal karyawan (`apps/web-employee`),
   dan portal pelanggan (`apps/web-customer-portal`).
 - Usulan baru di bagian 3 dan 6 (kode **MN** dan **FR**) **belum diputuskan**.
@@ -74,7 +75,7 @@ Keterangan:
 | Keuangan → Aturan Posting | ✓ |  |  |  |  |  |  |  | ✓ |  |
 | Keuangan → Pusat Biaya | ✓ |  |  |  |  |  |  |  | ✓ |  |
 | Keuangan → Anggaran proyek | ✓ |  |  |  | ✓ |  | ✓ | ✓ | ✓ |  |
-| Keuangan → Aset tetap | ✓ |  |  |  |  |  | ✓ |  |  |  |
+| Keuangan → Aset tetap | ✓ |  |  |  |  |  | ✓ |  | ✓ |  |
 | Keuangan → Rekonsiliasi | ✓ |  |  |  |  |  |  |  | ✓ |  |
 | Keuangan → Piutang | ✓ |  |  |  |  |  |  |  | ✓ |  |
 | Keuangan → Utang | ✓ |  |  |  |  |  |  |  | ✓ |  |
@@ -172,7 +173,7 @@ Keterangan:
 | **Agus** (Manajer Proyek, Teknisi, Gudang) | Dasbor; Pelanggan (baca); Sales order (baca), Surat Jalan, Retur Penjualan; Anggaran proyek, Aset tetap (lihat MN1, MN2); Proyek, Tiket, Garansi; Gudang (bila ditunjuk PIC); Produk dan Barang (termasuk Stok, Penyesuaian, Mutasi); semua menu Aset & Peralatan; Permintaan Pembelian, Pesanan Pembelian (baca), Penerimaan Barang, Retur Pembelian; Tugas; Dokumen |
 | **Jamil** (Manajer Proyek, Teknisi), **Hatta** (Manajer Proyek) | Dasbor; Pelanggan (baca); Anggaran proyek, Aset tetap; Proyek, Tiket, Garansi; semua menu Aset & Peralatan; Permintaan Pembelian; Tugas; Dokumen |
 | **Fahri, Alex, Ade** (Teknisi) | Dasbor; Anggaran proyek (lihat MN1); Proyek, Tiket, Garansi; Peminjaman aset; Permintaan Pembelian; Tugas; Dokumen |
-| **Bella** (Keuangan gabungan) | Dasbor; Penjualan (semua, termasuk Faktur, Uang Muka, Kuitansi); semua menu Keuangan **kecuali Aset tetap** (lihat MN2); semua Pajak; Proyek, Garansi, Lisensi (baca); Nilai Persediaan, Produk, Barang (baca), Pemasok, Penerimaan Barang (baca); Karyawan, Penggajian; Dokumen; Laporan → Arsip Bulanan |
+| **Bella** (Keuangan gabungan) | Dasbor; Penjualan (semua, termasuk Faktur, Uang Muka, Kuitansi); semua menu Keuangan (Aset tetap ditambahkan, OB5); semua Pajak; Proyek, Garansi, Lisensi (baca); Nilai Persediaan, Produk, Barang (baca), Pemasok, Penerimaan Barang (baca); Karyawan, Penggajian; Dokumen; Laporan → Arsip Bulanan |
 | **Dafrin, Oki** (Pekerja Lepas) | Dasbor; Tugas; Dokumen (Berkas, Tanda tangan, Templat) |
 
 Semua orang juga melihat **Pengaturan → Dokumen** dan **Dokumen → Templat**
@@ -225,7 +226,7 @@ server, kecuali yang disebut lain.
 | No | Temuan | Usulan | Wilayah |
 |---|---|---|---|
 | MN1 | **Anggaran proyek** (di bawah Keuangan) tampil untuk Teknisi dan Layanan Pelanggan, karena menu ini hanya meminta hak baca proyek. Isinya anggaran per akun, jadi data keuangan | Menu meminta hak lihat biaya proyek (`project.read_cost`): tinggal Pemilik, Manajer Proyek, Keuangan | Oki (M09) |
-| MN2 | **Aset tetap** (di bawah Keuangan) tampil untuk Manajer Proyek, tetapi **tidak untuk Keuangan**. Padahal form di halaman itu (kapitalisasi, jalankan penyusutan) butuh hak posting jurnal, yang hanya dimiliki Keuangan dan Pemilik. Hal yang sama berlaku untuk Aset & Peralatan → Penyusutan dan Penghapusan Aset | Aset tetap, Penyusutan, Penghapusan: Pemilik dan Keuangan. Manajer Proyek tetap melihat Register Aset, Peminjaman, Catatan Servis, Set Peralatan | Oki (M06, M09) |
+| MN2 | **Aset tetap** (di bawah Keuangan) tampil untuk Manajer Proyek. Di kode sekarang **tidak tampil untuk Keuangan**; itu sudah diputuskan diperbaiki lewat OB5 (Bella membuka Aset tetap dan Anggaran proyek; sudah tercermin di tabel). Sisa pertanyaannya: apakah Manajer Proyek tetap melihatnya. Catatan: form di halaman itu (kapitalisasi, jalankan penyusutan) butuh hak posting jurnal, yang hanya dimiliki Keuangan dan Pemilik. Hal yang sama berlaku untuk Aset & Peralatan → Penyusutan dan Penghapusan Aset | Aset tetap, Penyusutan, Penghapusan: Pemilik dan Keuangan saja. Manajer Proyek tetap melihat Register Aset, Peminjaman, Catatan Servis, Set Peralatan | Oki (M06, M09) |
 | MN3 | **Pengaturan → Dokumen** tampil untuk semua orang, termasuk Pekerja Lepas. Isinya pengaturan perusahaan (kop dokumen, dsb.) dan hanya bisa diubah Pemilik | Hanya Pemilik dan admin aplikasi | Bersama (K11) |
 | MN4 | **Dokumen → Templat** tampil untuk semua orang, padahal halamannya masih "segera hadir" (ERP-0050) | Sembunyikan sampai halamannya dibuat | Bersama (K11) |
 | MN5 | **Bonus & Investor** hanya tampil untuk Pemilik (K10), tetapi ketiga halamannya masih "segera hadir" | Sembunyikan seluruh grup sampai M11 dibangun | Oki (M11) |

@@ -23,10 +23,7 @@ supaya tidak ada yang rusak saat ditampilkan.
 |---|---|
 | [`sekarang-vs-sesudah.md`](sekarang-vs-sesudah.md) | Untuk setiap alur yang berubah: diagram **Sekarang** (dengan titik macet/bermasalah) dan **Sesudah (usulan)**, beserta nomor keputusan dan bagian kode yang terdampak. Ditutup peta bentrok sesudah perbaikan |
 
-**Penting:** diagram "Sesudah" adalah **usulan**. Isinya mengikuti
-rekomendasi dan jawaban sementara programmer B di
-[`../lembar-keputusan-rapat.md`](../lembar-keputusan-rapat.md), dan akan
-dibetulkan setelah rapat dengan Pemilik dan Oki.
+**Status:** diagram "Sesudah" sudah **disetujui Pemilik pada rapat 2026-11-27** (semua keputusan sesuai usulan di [`../lembar-keputusan-rapat.md`](../lembar-keputusan-rapat.md)). Oki masih meninjau lewat PR #171.
 
 `docs/user-guide/diagrams.md` (2026-11-06) adalah versi lama dan sebagian
 sudah usang; pakai diagram di folder ini.

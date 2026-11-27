@@ -84,5 +84,5 @@ ______________________
 
 | Diputuskan oleh | Tanggal | Tanda tangan |
 |---|---|---|
-| Pemilik | | |
+| Pemilik | 2026-11-27 | disetujui sesuai usulan di rapat (dilaporkan programmer B) |
 | Oki | | |

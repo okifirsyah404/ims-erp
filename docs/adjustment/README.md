@@ -7,6 +7,11 @@ Indonesia untuk programmer B (Dafrin), programmer kedua (Oki), dan Pemilik.
 **Aturan:** tidak ada perubahan kode sebelum catatan di folder ini beres dan
 disetujui (arahan programmer B, 2026-11-26).
 
+**Status 2026-11-27:** Pemilik menyetujui semua keputusan sesuai usulan pada
+rapat 27/11 (lembar rapat dan ringkasan untuk Pemilik), termasuk K8, K9, K11,
+dan OB11. Yang masih terbuka: tinjauan Oki di PR #171 dan usulan baru
+MN1–MN7 / FR1–FR10 di `menu-dan-form-per-role.md`.
+
 ## Isi folder
 
 **Dokumen per wilayah programmer** (isi sejajar: validasi, keputusan,
