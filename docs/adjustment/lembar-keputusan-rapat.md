@@ -104,7 +104,7 @@ dan diagram sudah disesuaikan dengan daftar ini.
 
 | Tanggal | Tempat | Hadir                       | Notulis |
 | ------- | ------ | --------------------------- | ------- |
-|         |        | Pemilik (Aqim), Oki, Dafrin |         |
+| 2026-11-27 | Kantor | Pemilik (Aqim), Oki, Dafrin | Dafrin |
 
 ***
 
@@ -310,14 +310,14 @@ Hal teknis yang tidak masuk ringkasan Pemilik, diputuskan setelah rapat.
 
 | No | Tindakan                                                                                       | Penanggung jawab | Tenggat |
 | -- | ---------------------------------------------------------------------------------------------- | ---------------- | ------- |
-| 1  | Salin keputusan ke `bahan-keputusan.md`, `validasi-konsep-saat-ini.md`, `rencana-perubahan.md` | Dafrin           |         |
-| 2  | Ubah ADR-0006 bila K1 = (b)                                                                    | Oki              |         |
-| 3  | Atur ulang role anggota sesuai K2                                                              | Aqim             |         |
-| 4  | Atur format kode pemasok sesuai K6                                                             | Aqim             |         |
+| 1  | Salin keputusan ke semua catatan `docs/adjustment/` | Dafrin | **Selesai 2026-11-27** |
+| 2  | Ubah ADR-0006 butir 6 sesuai K1 = (b) | Oki | Sebelum K1 dikodekan (setelah audit dalam transaksi, OA5–OA7) |
+| 3  | Atur ulang role anggota sesuai K2 (bagian 1, tabel role per orang) | Aqim | Setelah rilis perubahan hak role (M12-5: K2b, K2d, Anggota, Admin) |
+| 4  | Atur format kode pemasok sesuai K6 (Administrasi → Nomor Kode) | Aqim | Setelah perbaikan pratinjau nomor (X-3); sebelum PO pertama berikutnya |
 |    |                                                                                                |                  |         |
 
 **Tanda tangan**
 
 | Pemilik | Oki | Dafrin |
 | ------- | --- | ------ |
-| Disetujui 2026-11-27 (rapat, dilaporkan Dafrin) | menunggu tinjauan PR #171 | 2026-11-27 |
+| Disetujui 2026-11-27 (rapat, dilaporkan Dafrin) | Hadir 2026-11-27; tinjauan dokumen di PR #171 | 2026-11-27 |

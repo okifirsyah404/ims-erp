@@ -1370,3 +1370,17 @@ Diperbarui:
 Tidak ada lagi status "menunggu keputusan" di catatan. Yang tersisa hanya
 definisi label dan tanda ❓ di checklist UAT. Checklist UAT menggambarkan kode
 saat ini, jadi diperbarui saat kodenya berubah.
+
+## 2026-11-27 - Lembar rapat dilengkapi
+
+- **Tabel Rapat:** 2026-11-27, di kantor. Hadir Pemilik (Aqim), Oki, dan
+  Dafrin; notulis Dafrin.
+- **Tindak lanjut** (tenggat mengikuti urutan kerja):
+  1. Salin keputusan: selesai 27/11.
+  2. ADR-0006: diubah Oki sebelum K1 dikodekan.
+  3. Role anggota: diatur Aqim setelah rilis M12-5.
+  4. Kode pemasok: diatur Aqim setelah perbaikan pratinjau nomor (X-3).
+- **Tanda tangan Oki:** hadir 27/11; tinjauan dokumen tetap lewat PR #171.
+
+Dengan ini, ketiga bagian perapian (status, keputusan teknis, lembar rapat)
+selesai. Berikutnya: pembahasan menu dan UI form.
