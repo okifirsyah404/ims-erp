@@ -103,7 +103,9 @@ Sedang/Rendah = langkah 9 dan sesudahnya (lihat README).
 
 | Halaman | Perbaikan | Rencana | Prioritas | Oleh |
 |---|---|---|---|---|
-| Penggajian | Potongan absensi, pro-rata, upah lembur dihitung | B-39 | Tinggi | D |
+| Penggajian + Pengaturan → Gaji | Potongan alpa, izin tanpa gaji, terlambat, pro-rata (diatur); upah lembur dihitung | B-39 | Tinggi | D |
+| Portal karyawan: Laporan harian **[baru]** | Isi laporan harian, pengingat, menyusul maks. 2 hari | B-44 | Tinggi | D + O |
+| Laporan mingguan/bulanan + penilaian **[baru]** | Rangkuman otomatis, ringkasan karyawan, skor Aqim, PDF per karyawan | B-44 | Tinggi | D |
 | Detail pelanggan | Riwayat SPH/SO/faktur/proyek/lisensi/tiket dan saldo | B-40 | Tinggi | D |
 | Detail SPH / faktur | Unduh PDF, salin tautan, wa.me / email | B-41 | Tinggi | D |
 | Faktur tanpa SO **[baru]** | Faktur jasa / biaya tambahan / perpanjangan | B-42 | Tinggi | D |

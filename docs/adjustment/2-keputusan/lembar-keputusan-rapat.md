@@ -313,6 +313,17 @@ Rincian di `3-rancangan/rancangan-portal-pesanan.md`.
 | PP-7 | Ubah data perusahaan dari portal = permintaan yang diperiksa Penjualan |
 | PP-8 | Semua prioritas Tinggi, urutan: P2 + P7 → P3 → P5 → P4 |
 
+### 8e. Tambahan programmer B: laporan kerja dan potongan gaji (28/11)
+
+Rincian di `3-rancangan/rancangan-laporan-kerja-dan-potongan-gaji.md`. Keduanya prioritas Tinggi.
+
+| No | Keputusan |
+|---|---|
+| PG-1–PG-5 | Pengaturan potongan di Pengaturan → Gaji: per hari = gaji pokok ÷ hari kerja; alpa, izin tanpa gaji, terlambat (toleransi + nominal per kejadian), pro-rata |
+| LK-1–LK-3 | Laporan harian wajib semua karyawan di portal karyawan; pengingat; hari tanpa laporan tercatat; menyusul maks. 2 hari |
+| LK-4–LK-6 | Laporan mingguan/bulanan otomatis dari harian + ringkasan karyawan; dinilai Aqim, skor 1–5 per aspek + komentar |
+| LK-7 | Unduhan PDF per karyawan; rekap per tim disiapkan untuk nanti |
+
 ## 9. Kesimpulan
 
 | Bagian                                     | Kesimpulan                         |

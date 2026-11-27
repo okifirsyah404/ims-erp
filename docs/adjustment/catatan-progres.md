@@ -1658,3 +1658,33 @@ Diperbarui: `rencana-perubahan.md`, `rencana-perubahan-modul-oki.md`,
 `peta-halaman.md`, `README.md` (langkah 8).
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - Tambahan: laporan kerja karyawan dan pengaturan potongan gaji
+
+Permintaan programmer B: (1) gaji perlu pengaturan potongan tidak hadir;
+(2) karyawan wajib membuat laporan hasil kerja harian, ditambah laporan
+mingguan dan bulanan untuk presentasi dan evaluasi. Keduanya disetujui
+lewat tanya-jawab, prioritas **Tinggi**.
+
+- `3-rancangan/rancangan-laporan-kerja-dan-potongan-gaji.md` (baru):
+  - **PG-1–PG-5:** potongan per hari = gaji pokok ÷ hari kerja (dari
+    jadwal); yang dipotong alpa, izin tanpa gaji, terlambat (toleransi +
+    nominal per kejadian), dan pro-rata; potongan tampil per baris di rekap
+    dan slip.
+  - **LK-1–LK-7:**
+    - laporan harian wajib untuk semua karyawan, diisi di portal karyawan;
+    - pengingat dikirim; hari tanpa laporan tercatat; boleh diisi menyusul
+      paling lambat 2 hari;
+    - laporan mingguan dan bulanan dirangkum otomatis, ditambah ringkasan
+      karyawan;
+    - penilaian oleh Aqim saja, skor 1–5 per aspek + komentar;
+    - unduhan PDF per karyawan (rekap tim menyusul).
+  - Pemeriksa Mermaid: 1 blok, 0 error.
+- `rencana-perubahan.md`: B-39 ditambah pengaturan potongan; **B-44 baru**
+  laporan kerja (mencakup laporan harian dan KPI dari B-26).
+- `lembar-keputusan-rapat.md` bagian 8e, `peta-halaman.md`, `README.md`.
+- Saat desain perlu diputuskan: pemilik tabel laporan karyawan non-proyek
+  (`human_resource` atau `project`), lewat Gate 1 dan grill. Layar portal
+  karyawan dikerjakan bersama Oki.
+
+Tidak ada perubahan kode.
