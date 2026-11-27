@@ -1384,3 +1384,25 @@ saat ini, jadi diperbarui saat kodenya berubah.
 
 Dengan ini, ketiga bagian perapian (status, keputusan teknis, lembar rapat)
 selesai. Berikutnya: pembahasan menu dan UI form.
+
+## 2026-11-27 - Rancangan menu, dasbor, dan form (usulan)
+
+Permintaan programmer B: membahas susunan menu, isi dasbor per role, aturan
+baku semua form, dan form yang paling sering dipakai, sampai rinci dari pesan
+berhasil hingga kesalahan validasi.
+
+- `rancangan-menu-dasbor-dan-form.md` (baru, **usulan**):
+  1. Masalah: menu per modul teknis, nama campur, tidak ada tempat "yang
+     perlu saya kerjakan", dasbor kosong untuk SDM dan Pekerja Lepas.
+  2. Susunan menu per pekerjaan, nama seragam, dan halaman **Perlu Tindakan**
+     per orang (RM1–RM4).
+  3. Kartu dasbor per role, dengan baris "Hari ini" (RD1–RD3).
+  4. Aturan baku form RF-1 sampai RF-26 dan pola kalimat pesan (RF-A, RF-B).
+  5. Rincian 13 form utama FU1–FU13 (FU-A, FU-B). Kondisi sekarang K-1
+     sampai K-11 diperiksa ke kode oleh agen pemeriksa.
+  6. Dasar teknis TF-1 sampai TF-10 (TF-A, TF-B).
+- Isi dasbor sekarang dicek di `components/dashboard/dashboard-page.tsx`:
+  kartu kas, laba, penjualan, stok, proyek, langganan, aktivitas, dan tautan
+  cepat. Peran SDM dan Pekerja Lepas mendapat dasbor kosong.
+- `README.md`: baris baru.
+- Tidak ada perubahan kode.
