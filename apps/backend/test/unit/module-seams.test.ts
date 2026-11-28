@@ -130,6 +130,8 @@ describe('seam — ExportedProductService.assertProduct (ADR-0026)', () => {
 			isSerialized: true,
 			isStockTracked: true,
 			productCategoryId: null,
+			// B-30: the standard warranty months travel with the snapshot.
+			warrantyMonths: null,
 		});
 	});
 

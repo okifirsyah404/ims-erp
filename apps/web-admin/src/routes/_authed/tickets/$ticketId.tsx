@@ -190,7 +190,7 @@ function TicketDetailPage() {
 							label={t('projects:ticket.warranty')}
 							value={
 								data.warrantyEndsOn
-									? `${data.warrantyCode} · ${t('projects:ticket.until', { date: formatBusinessDate(data.warrantyEndsOn, i18n.language) })}`
+									? `${data.warrantyCode ? `${data.warrantyCode} · ` : ''}${t('projects:ticket.until', { date: formatBusinessDate(data.warrantyEndsOn, i18n.language) })}`
 									: t('projects:ticket.noWarranty')
 							}
 						/>

@@ -5,6 +5,7 @@
  * line, sells the serial units and moves the order to in progress; only a
  * prepared note is cancelled, giving its quantities back.
  */
+import { warrantyEndDate } from '../../src/app/project/utils/warranty';
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type {
 	TDeliveryNoteItemSelect,
@@ -34,6 +35,8 @@ let soItems: TOrderItemSelect[];
 let notes: (TDeliveryNoteRow & { items: TDeliveryNoteItemSelect[] })[];
 let movements: { productId: string; quantity: string; movementType: string; referenceType?: string | null }[];
 let sold: { productId: string; serials: readonly string[]; customerId: string | null }[];
+/** B-30: the customer warranty end frozen on each sold serial batch. */
+let warranties: (string | null | undefined)[];
 let inStock: string[];
 let inProgress: number;
 /** Registry calls made by the service (ERP-0044). */
@@ -72,6 +75,7 @@ beforeEach(() => {
 	registered = [];
 	voided = [];
 	sold = [];
+	warranties = [];
 	inStock = ['SN1', 'SN2', 'SN3'];
 	inProgress = 0;
 	const findNote = (id: string) => notes.find((row) => row.id === id) ?? null;
@@ -138,7 +142,7 @@ beforeEach(() => {
 			},
 		},
 		{
-			getProduct: async (id: string) => ({ id, isSerialized: id === 'item-s', isStockTracked: true }) as never,
+			getProduct: async (id: string) => ({ id, isSerialized: id === 'item-s', isStockTracked: true, warrantyMonths: id === 'item-s' ? 12 : null }) as never,
 		},
 		{
 			/**
@@ -147,7 +151,8 @@ beforeEach(() => {
 			 * service.
 			 */
 			inStockSerials: async () => inStock,
-			async sellUnits(productId: string, serials: readonly string[], data: { customerId: string | null }) {
+			async sellUnits(productId: string, serials: readonly string[], data: { customerId: string | null; warrantyExpiresOn?: string | null }) {
+				warranties.push(data.warrantyExpiresOn);
 				sold.push({ productId, serials, customerId: data.customerId });
 				return serials.filter((serial) => !inStock.includes(serial));
 			},
@@ -226,6 +231,8 @@ describe('delivery notes', () => {
 		]);
 		expect(shipped.items.map((item) => item.unitCost)).toEqual([7_000, 7_000, null]);
 		expect(sold).toEqual([{ productId: 'item-s', serials: ['SN1', 'SN2'], customerId: 'cust-1' }]);
+		// B-30: no live project, so the product's 12 months run from the delivery date.
+		expect(warranties).toEqual([warrantyEndDate(note.deliveryDate, 12)]);
 		expect(inProgress).toBe(1);
 		// ERP-0044: the shipped surat jalan is registered with its own code.
 		expect(registered).toEqual([

@@ -145,6 +145,8 @@ export const products = productSchema.table(
 		minStockQty: numeric('min_stock_qty', { precision: 18, scale: 3 })
 			.notNull()
 			.default('0'),
+		/** Standard customer warranty in months for a sale without a project (B-30); null = none. */
+		warrantyMonths: integer('warranty_months'),
 		barcode: text('barcode'),
 		/** Exact integer IDR minor units (ADR-0002). Never a float. */
 		sellingPrice: money('selling_price').notNull().default(0),
@@ -191,6 +193,10 @@ export const products = productSchema.table(
 		),
 		check('products_prices_check', sql`selling_price >= 0 AND purchase_price >= 0`),
 		check('products_min_stock_check', sql`min_stock_qty >= 0`),
+		check(
+			'products_warranty_months_check',
+			sql`warranty_months IS NULL OR (warranty_months >= 0 AND warranty_months <= 120)`,
+		),
 		check(
 			'products_unit_label_check',
 			sql`unit_label IN ('pcs', 'unit', 'set', 'paket', 'titik', 'm', 'roll', 'kg', 'jam', 'bulan', 'tahun', 'lic', 'lot', 'pulau')`,

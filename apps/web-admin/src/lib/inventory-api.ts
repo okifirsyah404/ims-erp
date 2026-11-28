@@ -88,6 +88,8 @@ export type TProduct = {
 	isSerialized: boolean;
 	isStockTracked: boolean;
 	minStockQty: string;
+	/** B-30: standard customer warranty in months (sale without a project); null = none. */
+	warrantyMonths?: number | null;
 	barcode: string | null;
 	sellingPrice: number;
 	purchasePrice: number;
@@ -153,6 +155,7 @@ export type TProductCreateInput = {
 	isSerialized: boolean;
 	isStockTracked: boolean;
 	minStockQty: number;
+	warrantyMonths?: number | null;
 	barcode?: string | null;
 	sellingPrice: number;
 	purchasePrice: number;

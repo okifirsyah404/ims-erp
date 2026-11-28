@@ -71,6 +71,7 @@ function seedRow(organizationId: string): TProductSelect {
 		isStockTracked: true,
 		serialNumber: null,
 		minStockQty: '0.000',
+		warrantyMonths: null,
 		barcode: null,
 		sellingPrice: 0,
 		purchasePrice: 0,

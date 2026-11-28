@@ -68,7 +68,7 @@ export class ExportedInventoryService {
 		@inject(ITEM_SERIAL_REPOSITORY_TOKEN)
 		private readonly serials: Pick<
 			IItemSerialRepository,
-			'findBySerial' | 'countLiveUnits' | 'countLiveUnitsByProduct' | 'countByWarehouse'
+			'findBySerial' | 'findAnyBySerial' | 'countLiveUnits' | 'countLiveUnitsByProduct' | 'countByWarehouse'
 		>,
 		@inject(STOCK_REPOSITORY_TOKEN)
 		private readonly stocks: Pick<
@@ -175,6 +175,15 @@ export class ExportedInventoryService {
 	/** Whether a serial number is already registered (organization scope or global). */
 	async serialExists(organizationId: string | null, serialNumber: string): Promise<boolean> {
 		return !!(await this.serials.findBySerial(organizationId, serialNumber));
+	}
+
+	/**
+	 * A serial's product and customer warranty end (any scope), or `null` when
+	 * the serial is unknown (B-30: the service-ticket warranty check).
+	 */
+	async serialWarranty(serialNumber: string): Promise<{ productId: string | null; warrantyExpiresOn: string | null } | null> {
+		const unit = await this.serials.findAnyBySerial(serialNumber);
+		return unit ? { productId: unit.productId, warrantyExpiresOn: unit.warrantyExpiresOn ?? null } : null;
 	}
 
 	/** Live serialized units currently held in a warehouse (archive guard). */

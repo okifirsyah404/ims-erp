@@ -1009,6 +1009,7 @@ Table product.products {
   is_serialized boolean [not null, default: false]
   is_stock_tracked boolean [not null, default: true]
   min_stock_qty numeric(18,3) [not null, default: 0]
+  warranty_months integer [note: "Standard customer warranty in months for a sale without a project (B-30, KF-P2). NULL = no standard warranty. Shipping a serialized unit on an order without a live project freezes delivery date + months into inventory.item_serials.warranty_expires_on."]
   barcode text
   selling_price bigint [not null, default: 0, note: "Exact integer IDR minor units (ADR-0002). Never a float."]
   purchase_price bigint [not null, default: 0]
@@ -1042,6 +1043,7 @@ Table product.products {
     `product_kind IN ('product', 'component', 'material')`
     `selling_price >= 0 AND purchase_price >= 0`
     `min_stock_qty >= 0`
+    `warranty_months IS NULL OR (warranty_months >= 0 AND warranty_months <= 120)`
     `unit_label IN ('pcs', 'unit', 'set', 'paket', 'titik', 'm', 'roll', 'kg', 'jam', 'bulan', 'tahun', 'lic', 'lot', 'pulau')`
     `price_mode IN ('list', 'rfq')`
     `out_of_stock_mode IN ('out', 'preorder', 'request')`
@@ -1344,7 +1346,7 @@ Table inventory.item_serials {
   warehouse_id uuid [note: "Logical reference to warehouse.warehouses.id. Cross-module FK intentionally omitted. Validated through the Warehouse module contract. NULL while the unit is lost."]
   bin_id uuid [note: "Logical reference to warehouse.warehouse_storages.id. Cross-module FK intentionally omitted. Validated through the Warehouse module contract."]
   acquired_on date
-  warranty_expires_on date
+  warranty_expires_on date [note: "Last day of the unit's customer warranty (Jakarta business date). Typed on the unit, or set when the unit is shipped on an order without a live project from product.products.warranty_months (B-30). The service-ticket warranty check reads it after a project certificate."]
   purchase_order_line_id uuid [note: "Logical reference to the procurement line this unit was ordered on. Cross-module FK intentionally omitted. Validated through the Procurement module contract."]
   customer_id uuid [note: "Logical reference to customer.customers.id, set when sold. Cross-module FK intentionally omitted. Validated through the Customer module contract."]
   company_id uuid [note: "Logical reference to customer.companies.id, set when sold to a company. Cross-module FK intentionally omitted. Validated through the Customer module contract."]

@@ -52,6 +52,8 @@ type TSeedProduct = {
 	minStockQty: string;
 	sellingPrice: number;
 	purchasePrice: number;
+	/** B-30: standard customer warranty in months (sale without a project). */
+	warrantyMonths?: number;
 	serials?: readonly string[];
 };
 
@@ -75,6 +77,7 @@ const SEED_PRODUCTS: readonly TSeedProduct[] = [
 		minStockQty: '2.000',
 		sellingPrice: 2_500_000,
 		purchasePrice: 1_800_000,
+		warrantyMonths: 12,
 		serials: ['DC-2026-0001', 'DC-2026-0002'],
 	},
 	{
@@ -219,7 +222,7 @@ async function ensureProduct(
 	index: number,
 ): Promise<string> {
 	const [existing] = await drizzleDB
-		.select({ id: products.id })
+		.select({ id: products.id, warrantyMonths: products.warrantyMonths })
 		.from(products)
 		.where(
 			and(
@@ -229,7 +232,14 @@ async function ensureProduct(
 			),
 		)
 		.limit(1);
-	if (existing) return existing.id;
+	if (existing) {
+		// B-30: a row seeded before the column existed gets its warranty once;
+		// a value already set (also by a user) is left alone.
+		if (seed.warrantyMonths != null && existing.warrantyMonths === null) {
+			await drizzleDB.update(products).set({ warrantyMonths: seed.warrantyMonths }).where(eq(products.id, existing.id));
+		}
+		return existing.id;
+	}
 
 	const prefix = seed.productKind === 'product' ? 'PRD' : seed.productKind === 'component' ? 'CMP' : 'MAT';
 	const [created] = await drizzleDB
@@ -247,6 +257,7 @@ async function ensureProduct(
 			minStockQty: seed.minStockQty,
 			sellingPrice: seed.sellingPrice,
 			purchasePrice: seed.purchasePrice,
+			warrantyMonths: seed.warrantyMonths ?? null,
 			currencyCode: 'IDR',
 			createdAt: new Date(),
 			updatedAt: new Date(),

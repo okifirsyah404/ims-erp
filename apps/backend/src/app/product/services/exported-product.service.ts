@@ -193,6 +193,7 @@ function toSnapshot(row: TProductSnapshot): TProductSnapshot {
 		isSerialized: row.isSerialized,
 		isStockTracked: row.isStockTracked,
 		productCategoryId: row.productCategoryId ?? null,
+		warrantyMonths: row.warrantyMonths ?? null,
 	};
 }
 
@@ -214,6 +215,8 @@ export type TProductSnapshot = {
 	isStockTracked: boolean;
 	/** Revenue posting-rule discriminator (ERP-0135). */
 	productCategoryId: string | null;
+	/** Standard customer warranty in months for a sale without a project (B-30); null = none. */
+	warrantyMonths?: number | null;
 };
 
 /** Type-only re-exports for the module's own services. */

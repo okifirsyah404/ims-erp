@@ -49,6 +49,8 @@ const product = {
 	'items.purchasePrice': 'Purchase price',
 	'items.description_label': 'Description',
 	'items.barcode': 'Barcode',
+	'items.warrantyMonths': 'Warranty (months)',
+	'items.warrantyMonthsHint': 'Standard customer warranty for a sale without a project, counted from the delivery note date. Leave empty if the product has no warranty.',
 	'items.noCategory': 'No category',
 	'items.brand': 'Brand',
 	'items.specification': 'Specification',

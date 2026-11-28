@@ -48,6 +48,13 @@ export interface IItemSerialRepository {
 		serialNumber: string,
 	): Promise<TItemSerialSelect | null>;
 
+	/**
+	 * Fetches one alive unit by serial number in any scope (company-wide or
+	 * an organization's), newest first; the service-ticket warranty check
+	 * (B-30) traces a serial the same way the delivery note does.
+	 */
+	findAnyBySerial(serialNumber: string): Promise<TItemSerialSelect | null>;
+
 	/** Inserts a unit. */
 	create(data: TUnitCreateData, tx?: TTx): Promise<TItemSerialSelect>;
 
@@ -82,7 +89,7 @@ export interface IItemSerialRepository {
 	sell(
 		productId: string,
 		serialNumbers: readonly string[],
-		data: { warehouseId: string; customerId: string | null; movementId: string | null },
+		data: { warehouseId: string; customerId: string | null; movementId: string | null; warrantyExpiresOn?: string | null },
 		tx: TTx,
 	): Promise<string[]>;
 

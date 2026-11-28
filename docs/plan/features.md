@@ -918,6 +918,13 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   columns); it leaves Goods receipts, stays billable for what arrived, and the
   project budget keeps only the received value. Verified: backend 1667,
   web-admin 230, locales 110, migration applied, UAT `uat/B-32.md` all Valid.
+- ERP-0188 B-30 warranty without a project (2026-11-28): products carry a
+  standard warranty in months; shipping a serial on an order without a project
+  freezes its warranty end on the unit, and the new-ticket check falls back from
+  the project certificate to the unit date and then delivery date + months. No
+  warranty never blocks a ticket: a yellow notice says it counts as paid.
+  Verified: backend 1671, web-admin 230, locales 110, migration applied, UAT
+  `uat/B-30.md` all Valid.
 - ERP-0187 P7-4 new role grants (2026-11-28): 13 organization roles; `sales`
   holds the former sales manager grants, `finance` the former accountant
   grants; the organization `admin`, `sales_manager`, `accountant` and

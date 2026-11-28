@@ -935,6 +935,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 | web-admin | `apps/web-admin/src/components/inventory/item-form.tsx` | Isian masa garansi produk (bila kolom dibuat) |
 | web-admin | `apps/web-admin/src/routes/_authed/tickets/new.tsx` | Peringatan kuning FU10 |
 | test | `apps/backend/test/unit/handover-warranty.test.ts` | Seri dari SO tanpa proyek dalam/luar garansi |
+| tambahan (dikerjakan 28/11) | migrasi `20261128174034_erp0188_product_warranty_months`, `apps/backend/src/app/product/contracts/product.contract.ts` + `services/exported-product.service.ts` (`warrantyMonths` di snapshot), `inventory/contracts/item-serial.repository.interface.ts` + `repositories/item-serial.repository.ts` (`sell` membekukan `warranty_expires_on`, `findAnyBySerial`), `services/serial-unit.service.ts`, `web-admin/src/lib/inventory-api.ts`, `lib/service-ticket-api.ts`, `routes/_authed/tickets/$ticketId.tsx`, seeder `product.seeder.ts`, locale `product.ts` + `projects.ts`, test `delivery-note.service.test.ts`, `module-seams.test.ts`, `product-authorization.test.ts`, `docs/database/module-ownership.md` | Kolom `product.products.warranty_months` (0–120, null = tanpa garansi); dibekukan ke seri saat surat jalan tanpa proyek dikirim; urutan cek: surat garansi proyek → tanggal unit → tanggal kirim + bulan produk; berbayar = `in_warranty false` (penagihan di B-31) |
 
 - **Skema/migrasi:** Mungkin: `product.products.warranty_months` (nama final
   saat desain); `docs.dbml` dulu.

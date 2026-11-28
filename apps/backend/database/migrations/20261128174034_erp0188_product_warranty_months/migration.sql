@@ -1,0 +1,2 @@
+ALTER TABLE "product"."products" ADD COLUMN "warranty_months" integer;--> statement-breakpoint
+ALTER TABLE "product"."products" ADD CONSTRAINT "products_warranty_months_check" CHECK (warranty_months IS NULL OR (warranty_months >= 0 AND warranty_months <= 120));

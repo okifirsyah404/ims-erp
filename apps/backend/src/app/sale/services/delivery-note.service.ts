@@ -12,6 +12,7 @@ import { DOCUMENT_SERVICE_TOKEN } from '@app/document/constants/di';
 import { POSTING_SERVICE_TOKEN } from '@app/finance/constants/di';
 import type { PostingService } from '@app/finance/services/posting.service';
 import { inventoryValue } from '@app/finance/utils/inventory-value';
+import { warrantyEndDate } from '@app/project/utils/warranty';
 import { PROJECT_LOOKUP_SERVICE_TOKEN } from '@app/project/constants/di';
 import type { ProjectLookupService } from '@app/project/services/project-lookup.service';
 import type { DocumentService } from '@app/document';
@@ -358,10 +359,15 @@ export class DeliveryNoteService {
 					cogs.push({ productId: item.id, value: inventoryValue(line.quantity, posted.movement.unitCost) });
 				}
 				if (item.isSerialized && line.serialNumbers?.length) {
+					// B-30 (KF-P2): without a live project the product's standard
+					// warranty runs from the delivery date (a project's certificate
+					// covers project sales instead).
+					const warrantyExpiresOn =
+						!project && item.warrantyMonths ? warrantyEndDate(note.deliveryDate, item.warrantyMonths) : null;
 					const missing = await this.units.sellUnits(
 						item.id,
 						line.serialNumbers,
-						{ warehouseId, customerId: note.customerId, movementId },
+						{ warehouseId, customerId: note.customerId, movementId, warrantyExpiresOn },
 						tx,
 					);
 					if (missing.length > 0) throw new DeliveryNoteLineError('notInStock', index + 1);

@@ -8,7 +8,7 @@ import {
 import type { TPaginationResult } from '@ims-erp/common';
 import { paginationResult } from '@utils/pagination.util';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, asc, count, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import type {
 	IItemSerialRepository,
@@ -94,6 +94,17 @@ export class ItemSerialRepository implements IItemSerialRepository {
 		return row ?? null;
 	}
 
+	/** Fetches one alive unit by serial number in any scope, newest first (B-30). */
+	async findAnyBySerial(serialNumber: string): Promise<TItemSerialSelect | null> {
+		const [row] = await this.database
+			.select()
+			.from(itemSerials)
+			.where(and(isNull(itemSerials.deletedAt), eq(itemSerials.serialNumber, serialNumber)))
+			.orderBy(desc(itemSerials.createdAt))
+			.limit(1);
+		return row ?? null;
+	}
+
 	/** Inserts a unit. */
 	async create(
 		data: TUnitCreateData,
@@ -167,7 +178,7 @@ export class ItemSerialRepository implements IItemSerialRepository {
 	async sell(
 		productId: string,
 		serialNumbers: readonly string[],
-		data: { warehouseId: string; customerId: string | null; movementId: string | null },
+		data: { warehouseId: string; customerId: string | null; movementId: string | null; warrantyExpiresOn?: string | null },
 		tx: TTx,
 	): Promise<string[]> {
 		if (serialNumbers.length === 0) return [];
@@ -179,6 +190,9 @@ export class ItemSerialRepository implements IItemSerialRepository {
 				binId: null,
 				customerId: data.customerId,
 				movementId: data.movementId,
+				// B-30: a sale without a project freezes the customer warranty end;
+				// otherwise the unit keeps whatever was typed on it.
+				...(data.warrantyExpiresOn ? { warrantyExpiresOn: data.warrantyExpiresOn } : {}),
 			})
 			.where(
 				and(
