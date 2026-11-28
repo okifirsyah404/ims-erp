@@ -643,7 +643,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-815 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+816 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -1516,6 +1516,7 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | DELETE | `/admin/users/:userId` | org member + permission | `member:delete` | `owner`, `admin` |
 | POST | `/admin/users/:userId/deactivate` | org member + permission | `member:update` | `owner`, `admin` |
 | POST | `/admin/users/:userId/restore` | org member + permission | `member:update` | `owner`, `admin` |
+| PATCH | `/admin/users/:userId/roles` | org member + permission | `member:update` | `owner`, `admin` |
 | GET | `/invitations/claim/:token` | no guard macro | - | - |
 | POST | `/invitations/claim/:token` | no guard macro | - | - |
 | GET | `/username-availability/` | no guard macro | - | - |

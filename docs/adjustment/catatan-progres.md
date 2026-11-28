@@ -2359,3 +2359,46 @@ dalam PR yang sama.
 
 **Perlu diberitahukan ke Pemilik**, karena opsi (b) bertahap sudah disetujui
 pada 27/11.
+
+## 2026-11-28 - M12-2 dikerjakan (keputusan pemilik di sesi kerja)
+
+Keputusan tambahan saat pengerjaan: pembuatan organisasi ditutup **total**,
+bukan hanya organisasi kedua. Organisasi pertama hanya dari seeder (panggilan
+sistem Better Auth dengan `userId` eksplisit). Ini menyimpang dari
+"Seharusnya" entri M12-2 yang masih mengizinkan pembuatan pertama lewat HTTP;
+dicatat di entri peta kode Oki ("Catatan pengerjaan").
+
+Yang berubah: service selalu melempar `OrganizationAlreadyExistsError`
+(409, `organization.singleOrganization`), gerbang plugin mengembalikan
+`false`, tombol + dialog Tambah organisasi dihapus (bukan disembunyikan),
+pemilih organisasi menjadi kartu identitas statis di web-admin dan portal
+karyawan, kunci locale mati dibersihkan. ADR: ADR-0031.
+
+Test: `organization-single.test.ts` baru; blok test pembuatan di
+`organization-create-nested.test.ts` dan `notification.producers.test.ts`
+dipangkas; `multi-organization.test.ts` dihapus. UAT M12-2: langkah 3 Valid
+(unit test), langkah 1, 2, 4 menunggu browser (dan PH-UNDANG untuk langkah 4).
+
+## 2026-11-28 - M12-14 (lanjutan M12-2): halaman Organisasi dibubarkan
+
+Permintaan pemilik: http://localhost:5173/organizations redundan dengan
+/admin/users dan dashboard. Hasilnya:
+
+- /organizations* dihapus **total**, tanpa redirect, beserta entri menu
+  Administrasi (halaman Organisasi).
+- Profil organisasi pindah ke /settings/organizations; hanya owner atau app
+  admin yang melihat entri menunya (nav flag `ownerOnly`).
+- Ubah role pindah ke /admin/users (aksi baris "Ubah peran", dialog centang).
+  Backend: `PATCH /admin/users/:userId/roles` lewat port
+  `IOrganizationMemberRolePort` (kontrak di modul `user`, adapter di
+  `organization`), audit `member.roleChanged`. Tangga role dan penjaga
+  pemilik terakhir tetap satu jalur dengan `updateMemberRole`.
+- Dashboard dapat kartu identitas organisasi (nama, kode, deskripsi, dibuat).
+  Angka proyek/penjualan/stok/laba-rugi/kas tetap di widget nyata yang sudah
+  ada, tidak diduplikasi.
+- Tidak ada UI hapus organisasi.
+- Notifikasi organisasi (`org.org_created`/`org.member_added`) membuka
+  dashboard (`/`), bukan halaman organisasi.
+
+Sisa: KF-R2 (form karyawan M08 masih menimpa daftar role saat simpan) belum
+dikerjakan; di luar lingkup permintaan ini. UAT: `uat/M12-14.md`.

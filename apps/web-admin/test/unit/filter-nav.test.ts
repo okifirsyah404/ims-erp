@@ -8,10 +8,12 @@ const ctx = (
 	isAppAdmin = false,
 	hasInternalRole = true,
 	isPic = false,
+	isOwner = false,
 ) => ({
 	can: (list: string[]) => list.every((p) => perms.includes(p)),
 	isAppAdmin,
 	hasInternalRole,
+	isOwner,
 	isPic,
 });
 
@@ -121,5 +123,29 @@ describe('nav section order', () => {
 		expect(navSections.some((section) => section.labelKey === 'section.subscription')).toBe(
 			false,
 		);
+	});
+});
+describe('organization settings entry (M12-2)', () => {
+	const item = () =>
+		leaf('item.organizations', { url: '/settings/organizations', ownerOnly: true });
+
+	test('ownerOnly shows for the owner and for an app admin, not for other members', () => {
+		expect(filterNav([sec([item()])], ctx([], false, true, false, true))[0].items).toHaveLength(1);
+		expect(filterNav([sec([item()])], ctx([], true))[0].items).toHaveLength(1);
+		// organization.read alone is not enough: the page edits the company profile.
+		expect(filterNav([sec([item()])], ctx(['organization.read']))).toEqual([]);
+	});
+
+	test('the Organizations entry moved out of Administration into Settings', () => {
+		const administration = navSections.find(
+			(section) => section.labelKey === 'section.administration',
+		)!;
+		const settings = navSections.find((section) => section.labelKey === 'section.settings')!;
+		expect(administration.items.map((entry) => entry.titleKey)).not.toContain(
+			'item.organizations',
+		);
+		const entry = settings.items.find((row) => row.titleKey === 'item.organizations');
+		expect(entry?.url).toBe('/settings/organizations');
+		expect(entry?.ownerOnly).toBe(true);
 	});
 });

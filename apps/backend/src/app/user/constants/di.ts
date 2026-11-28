@@ -14,6 +14,7 @@ import type { UserService } from '../services/user.service';
 import type { IUserPersonalFieldsPort } from '../contracts/user-personal-fields.port';
 import type { IInvitationEmployeePort } from '../contracts/invitation-employee.port';
 import type { IOrganizationSlugResolverPort } from '../contracts/organization-slug-resolver.port';
+import type { IOrganizationMemberRolePort } from '../contracts/organization-member-role.port';
 import type { IUserAccountGateway } from '../contracts/user-account.gateway.interface';
 import type { ExportedUserService } from '../services/exported-user.service';
 
@@ -25,6 +26,10 @@ export const EXPORTED_USER_SERVICE_TOKEN: InjectionToken<ExportedUserService> = 
 /** Cross-module port: slug → id for bulk invite files. */
 export const ORGANIZATION_SLUG_RESOLVER_TOKEN: InjectionToken<IOrganizationSlugResolverPort> =
 	Symbol('ORGANIZATION_SLUG_RESOLVER');
+
+/** Cross-module port: replace a member's organization roles (admin users surface). */
+export const ORGANIZATION_MEMBER_ROLE_TOKEN: InjectionToken<IOrganizationMemberRolePort> =
+	Symbol('ORGANIZATION_MEMBER_ROLE');
 
 /** Cross-module port: the claim's personal data and post-claim work, implemented by HR (ERP-0121). */
 export const INVITATION_CLAIM_PORT_TOKEN: InjectionToken<IInvitationClaimPort> = Symbol('INVITATION_CLAIM_PORT');

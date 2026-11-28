@@ -46,6 +46,7 @@ import {
 	MemberNotFoundError,
 	MemberRoleNotAssignableError,
 	OrganizationAlreadyDeletedError,
+	OrganizationAlreadyExistsError,
 	OrganizationNotDeletedError,
 	OrganizationNotFoundError,
 	OrganizationSlugTakenError,
@@ -116,6 +117,9 @@ export class OrganizationService {
 	 * @param creatorEmail - The creator's own email; a nested-user row with
 	 * this email is skipped (the creator already becomes owner)
 	 *
+	 * @throws {OrganizationAlreadyExistsError} Always: the ERP uses exactly one
+	 * company (K12, M12-2), so no organization can be created here
+	 *
 	 * @remarks
 	 * Enum verification is best-effort: a failure there must not orphan an
 	 * organization that Better Auth has already created. Roles are a closed
@@ -135,6 +139,7 @@ export class OrganizationService {
 		actor?: TActor,
 		creatorEmail?: string,
 	): Promise<TCreateOrganizationResult> {
+		if (this.singleOrganizationOnly()) throw new OrganizationAlreadyExistsError();
 		const created = await this.gateway.createOrganization({
 			name: input.name,
 			slug: input.slug,
@@ -200,6 +205,21 @@ export class OrganizationService {
 			},
 			members,
 		};
+	}
+
+	/**
+	 * Single-organization rule (K12, M12-2): this ERP serves exactly one
+	 * company, so creating another organization is closed for every caller.
+	 *
+	 * @remarks
+	 * The first organization is provisioned by the seeder, which calls Better
+	 * Auth with an explicit `userId` (a system action that skips
+	 * `allowUserToCreateOrganization`) and never reaches this method.
+	 *
+	 * @returns Always `true` while the rule holds
+	 */
+	private singleOrganizationOnly(): boolean {
+		return true;
 	}
 
 	/**
@@ -581,6 +601,35 @@ export class OrganizationService {
 	}
 
 	/**
+	 * Replaces the role list of a member identified by user id.
+	 *
+	 * @remarks
+	 * The admin user surface (`PATCH /admin/users/:userId/roles`) knows the
+	 * user, not the member row, so it resolves the member here and then runs
+	 * the same path as {@link updateMemberRole}: one place for the role-tier
+	 * ladder, the last-owner guard and the Better Auth write.
+	 *
+	 * @throws MemberNotFoundError when the user is not a member
+	 */
+	async updateMemberRolesByUser(
+		headers: Headers,
+		organizationId: string,
+		userId: string,
+		input: TUpdateMemberRole,
+		assignment: TMemberAssignmentContext,
+	): Promise<{ id: string; role: string }> {
+		const member = await this.repository.findMemberByUser(organizationId, userId);
+		if (!member) throw new MemberNotFoundError();
+		return this.updateMemberRole(
+			headers,
+			organizationId,
+			member.id,
+			input,
+			assignment,
+		);
+	}
+
+	/**
 	 * Removes a member through the Better Auth gateway.
 	 *
 	 * @throws MemberNotFoundError when the member does not exist
@@ -702,6 +751,7 @@ export {
 	LastOwnerError,
 	MemberNotFoundError,
 	OrganizationAlreadyDeletedError,
+	OrganizationAlreadyExistsError,
 	OrganizationNotFoundError,
 	OrganizationNotDeletedError,
 	OrganizationSlugTakenError,

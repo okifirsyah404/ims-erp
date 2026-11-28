@@ -16,6 +16,7 @@ import {
 	inArray,
 	isNull,
 	sql,
+	type SQL,
 } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import { cacheIdKey } from '@utils/cache.util';
@@ -345,6 +346,29 @@ export class OrganizationRepository implements IOrganizationRepository {
 		organizationId: string,
 		memberId: string,
 	): Promise<TOrganizationMember | null> {
+		return this.findMemberWhere(organizationId, eq(members.id, memberId));
+	}
+
+	/**
+	 * A user's membership in an organization, by user id.
+	 *
+	 * @remarks
+	 * Backs the admin user surface's role change (`PATCH
+	 * /admin/users/:userId/roles`): the route identifies the member by user,
+	 * while every other member mutation is member-id based.
+	 */
+	async findMemberByUser(
+		organizationId: string,
+		userId: string,
+	): Promise<TOrganizationMember | null> {
+		return this.findMemberWhere(organizationId, eq(members.userId, userId));
+	}
+
+	/** Shared projection for the two member lookups above. */
+	private async findMemberWhere(
+		organizationId: string,
+		condition: SQL,
+	): Promise<TOrganizationMember | null> {
 		const [row] = await this.db
 			.select({
 				id: members.id,
@@ -358,9 +382,7 @@ export class OrganizationRepository implements IOrganizationRepository {
 			})
 			.from(members)
 			.leftJoin(users, eq(users.id, members.userId))
-			.where(
-				and(eq(members.id, memberId), eq(members.organizationId, organizationId)),
-			)
+			.where(and(eq(members.organizationId, organizationId), condition))
 			.limit(1);
 		if (!row) return null;
 		return {

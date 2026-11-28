@@ -3,7 +3,7 @@ import { navSections } from '@/components/sidebar/nav-config';
 import { findNavLeaf, leafVisible } from '@/components/sidebar/filter-nav';
 import type { SidebarItem } from '@/components/sidebar/sidebar-item';
 import { hasRole } from '@ims-erp/common';
-import { hasInternalRole } from '@/lib/internal-role';
+import { hasInternalRole, isOwnerRole } from '@/lib/internal-role';
 import { myOrganizationsQueryOptions } from '@/lib/organization-api';
 import type { Permission } from '@/lib/permissions';
 import { myWarehousesQueryOptions } from '@/lib/warehouse-api';
@@ -56,6 +56,7 @@ export async function canOpenPath(
 			can: (list) => list.every((p) => granted.has(p)),
 			isAppAdmin,
 			hasInternalRole: orgs.some((org) => hasInternalRole(org.role)),
+			isOwner: orgs.some((org) => isOwnerRole(org.role)),
 			isPic: await isWarehousePic(queryClient, leaf, isAppAdmin),
 		});
 	} catch {

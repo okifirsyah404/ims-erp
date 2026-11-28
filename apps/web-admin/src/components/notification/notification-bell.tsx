@@ -33,23 +33,22 @@ import { useRealtimeStore } from '@/lib/realtime/realtime-store';
  *
  * @remarks
  * Deliberately shallow: `organization_member`'s id is the member row, which no
- * route accepts without its organization id, so it falls back to the
- * organization list. Unknown sources (including the seeded demo rows) are not
- * navigable — the item still marks itself read.
+ * route accepts without its organization id. Since K12 there is one company and
+ * no organization page, so both organization sources land on the dashboard —
+ * the only surface every internal user may open. The organization profile in
+ * Settings is owner/app-admin only, so it is not a notification target.
+ * Unknown sources (including the seeded demo rows) are not navigable — the
+ * item still marks itself read.
  */
 function navigateToSource(
 	navigate: ReturnType<typeof useNavigate>,
 	notification: TNotification,
 ): void {
-	if (notification.sourceType === 'organization' && notification.sourceId) {
-		void navigate({
-			to: '/organizations/$organizationId',
-			params: { organizationId: notification.sourceId },
-		});
-		return;
-	}
-	if (notification.sourceType === 'organization_member') {
-		void navigate({ to: '/organizations' });
+	if (
+		notification.sourceType === 'organization' ||
+		notification.sourceType === 'organization_member'
+	) {
+		void navigate({ to: '/' });
 	}
 }
 

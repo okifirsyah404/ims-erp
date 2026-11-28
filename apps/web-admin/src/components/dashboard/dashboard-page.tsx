@@ -50,6 +50,7 @@ import { useChartRange } from '@/lib/use-chart-range';
 import { todayBusinessDate } from '@/lib/format';
 import type { TProjectStage } from '@/lib/project-api';
 import { useActiveOrganizationId } from '@/lib/use-active-organization';
+import { organizationQueryOptions } from '@/lib/organization-api';
 import { usePermission, usePermissionState } from '@/lib/use-permission';
 
 import { CashFlowChartCard, CashFlowKpis } from './cash-flow-summary';
@@ -89,6 +90,7 @@ function useDashboardAccess() {
 		product: usePermissionState('product.read'),
 		project: usePermissionState('project.read'),
 		license: usePermissionState('license.read'),
+		organization: usePermissionState('organization.read'),
 	};
 	const isPending = Object.values(checks).some((check) => check.isPending);
 	const can = Object.fromEntries(
@@ -130,7 +132,7 @@ export function DashboardPage() {
 				</EmptyHeader>
 				<EmptyContent>
 					<Link
-						to='/organizations'
+						to='/settings/organizations'
 						className='inline-flex h-8 items-center rounded-lg border bg-background px-3 text-sm font-medium hover:bg-muted'
 					>
 						{t('nav:organization.manage')}
@@ -144,7 +146,6 @@ export function DashboardPage() {
 	const showOperations = can.invoice || can.product || can.project || can.license;
 	const quickLinks = QUICK_LINKS.filter((link) => can[link.access]);
 	const showActivity = can.invoice || quickLinks.length > 0;
-
 	return (
 		// `@container/dashboard`: the grids follow the width the content actually
 		// gets, not the viewport. On a tablet the open sidebar leaves ~500 px, so
@@ -167,6 +168,10 @@ export function DashboardPage() {
 				</Empty>
 			) : (
 				<>
+					{can.organization && (
+						<OrganizationCard organizationId={organizationId} />
+					)}
+
 					{showFinance && (
 						<DashboardSection
 							title={t('section.finance.title')}
@@ -219,8 +224,66 @@ export function DashboardPage() {
 	);
 }
 
-function SalesWidget({
-	organizationId,
+/**
+ * The company organization (M12-2): name, code, description and creation date.
+ *
+ * @remarks
+ * Read-only identity card. The five business figures (projects, sales, stock,
+ * profit & loss, cash) already have their own widgets on real data, so they are
+ * deliberately not repeated here. The "manage" link appears only for a caller
+ * who may edit the profile (`organization.update`).
+ */
+function OrganizationCard({ organizationId }: { organizationId: string }) {
+	const { t } = useTranslation(['dashboard', 'nav']);
+	const canEdit = usePermission('organization.update');
+	const query = useQuery({
+		...organizationQueryOptions(organizationId),
+		retry: false,
+	});
+
+	return (
+		<Card>
+			<CardHeader>
+				<CardTitle>{t('organization.title')}</CardTitle>
+				<CardDescription>{t('organization.description')}</CardDescription>
+				{canEdit && (
+					<CardAction>
+						<Link
+							to='/settings/organizations'
+							className='inline-flex min-h-8 items-center text-xs font-normal whitespace-nowrap text-muted-foreground hover:text-foreground'
+						>
+							{t('nav:organization.manage')}
+						</Link>
+					</CardAction>
+				)}
+			</CardHeader>
+			<CardContent>
+				<QueryBody
+					isPending={query.isPending}
+					isError={query.isError}
+					onRetry={() => void query.refetch()}
+				>
+					{query.data && (
+						<div className='grid gap-2 text-sm sm:grid-cols-2'>
+							<Figure label={t('organization.name')} value={query.data.name} />
+							<Figure label={t('organization.code')} value={query.data.slug} />
+							<Figure
+								label={t('organization.created')}
+								value={new Date(query.data.createdAt).toLocaleDateString()}
+							/>
+							<Figure
+								label={t('organization.descriptionLabel')}
+								value={query.data.description || '—'}
+							/>
+						</div>
+					)}
+				</QueryBody>
+			</CardContent>
+		</Card>
+	);
+}
+
+function SalesWidget({	organizationId,
 	window,
 }: {
 	organizationId: string | null;

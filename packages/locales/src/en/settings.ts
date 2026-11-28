@@ -212,6 +212,34 @@ const settings = {
 	'document.letterheads.deleted': 'Letterhead deleted',
 	'document.letterheads.pickImage': 'Choose an image',
 	'document.letterheads.headerRequired': 'Choose a header image',
+
+	// Organization profile (M12-2/M12-14): one company per installation.
+	'organizationSettings.title': 'Organization',
+	'organizationSettings.description':
+		'The company organization. The application uses a single organization, so its profile is edited here; members and their roles are managed on the Users page.',
+	'organizationSettings.saved': 'Organization profile saved',
+	'organizationSettings.readOnly':
+		'You can view the profile; changing it needs organization settings access.',
+	'organizationSettings.noOrganization':
+		'No active organization yet. An administrator provisions the company organization.',
+	'organizationSettings.details': 'Profile',
+	'organizationSettings.name': 'Name',
+	'organizationSettings.nameHint': 'Shown in the sidebar and on documents that use the organization name.',
+	'organizationSettings.descriptionLabel': 'Description',
+	'organizationSettings.descriptionPlaceholder':
+		'What the company does, who it serves, anything worth knowing (optional).',
+	'organizationSettings.slug': 'Code',
+	'organizationSettings.slugHint':
+		'Permanent code used in URLs, API contexts and the {ORG} document token.',
+	'organizationSettings.image': 'Logo',
+	'organizationSettings.imageHint':
+		'PNG, JPG, WebP or HEIC — converted to WebP automatically. Shown in the sidebar.',
+	'organizationSettings.imageSaved': 'Logo updated',
+	'organizationSettings.imageCleared': 'Logo removed',
+	'organizationSettings.imageInvalid':
+		'This file could not be read as an image. Try another file.',
+	'organizationSettings.membersHint':
+		'Members and their roles are changed on the Users page.',
 } as const;
 
 export default settings;

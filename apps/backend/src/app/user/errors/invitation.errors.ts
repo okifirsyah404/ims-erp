@@ -230,3 +230,46 @@ export class UserStateError extends UserManagementError {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// Organization member roles (M12-14)
+// ---------------------------------------------------------------------------
+
+/**
+ * Refusals from the organization module's member-role port, retold in this
+ * module's error family.
+ *
+ * @remarks
+ * The port lives in `organization`; `user` must not import its errors
+ * (`elysia-module` rule 3.2), so the adapter translates them here and the
+ * module's single `onError` arm keeps mapping the family.
+ */
+export class OrganizationMemberRoleError extends UserManagementError {
+	/** The user holds no membership in the target organization. */
+	static memberNotFound(): OrganizationMemberRoleError {
+		return new OrganizationMemberRoleError(
+			404,
+			'organization.memberNotFound',
+			'Member not found',
+		);
+	}
+
+	/** A requested role sits above the caller's own tier. */
+	static roleNotAssignable(roles: readonly string[]): OrganizationMemberRoleError {
+		return new OrganizationMemberRoleError(
+			403,
+			'organization.roleNotAssignable',
+			`Role not assignable: ${roles.join(', ')}`,
+			{ roles: roles.join(', ') },
+		);
+	}
+
+	/** The change would leave the organization without an owner. */
+	static lastOwner(): OrganizationMemberRoleError {
+		return new OrganizationMemberRoleError(
+			409,
+			'organization.lastOwner',
+			'Cannot remove or demote the last owner',
+		);
+	}
+}
+

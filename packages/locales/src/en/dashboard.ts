@@ -42,6 +42,16 @@ const dashboard = {
 	'action.retry': 'Try again',
 	'action.viewAll': 'View all',
 
+	// Company organization card (M12-2). The five business figures have their
+	// own widgets on real data, so this card stays identity-only.
+	'organization.title': 'Organization',
+	'organization.description':
+		'The company organization. Members and their roles are managed on the Users page.',
+	'organization.name': 'Name',
+	'organization.code': 'Code',
+	'organization.created': 'Created',
+	'organization.descriptionLabel': 'Description',
+
 	'error.unavailable': 'This figure is unavailable right now.',
 	'empty.noAccounts': 'No cash or bank account yet.',
 	'empty.noOrganization': 'Pick an organization in the switcher to see its figures.',

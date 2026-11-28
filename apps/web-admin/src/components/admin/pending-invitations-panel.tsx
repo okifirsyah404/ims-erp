@@ -27,9 +27,9 @@ import { usePermission } from '@/lib/use-permission';
  *
  * @remarks
  * The same panel serves the application-admin users page (`/admin/invitations`)
- * and an organization's members tab (`/organizations/:id/invitations`). The
- * two differ only in endpoint and cache key, so they are injected rather than
- * duplicated.
+ * and, since M12-14, is the only invitation surface left: the organization
+ * member pages were deleted with `/organizations*`. Sources still differ in
+ * endpoint and cache key, so they are injected rather than duplicated.
  */
 export type TInvitationSource = {
 	/** Query for the pending rows (list only `status: 'pending'`). */
