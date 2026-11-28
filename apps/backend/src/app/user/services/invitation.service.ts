@@ -2,7 +2,11 @@ import type { IInvitationClaimPort, TClaimPersonalData } from '../contracts/invi
 import { inject, injectable } from 'tsyringe';
 import { runWithEndpointContext } from '@better-auth/core/context';
 import type { TUserInvitationSelect } from '@drizzle/schemas/auth.schema';
-import type { TPaginationResult } from '@ims-erp/common';
+import {
+	parseRoleList,
+	type TPaginationResult,
+	withBaseMemberRole,
+} from '@ims-erp/common';
 import {
 	INVITATION_CLAIM_PORT_TOKEN,
 	INVITATION_MAILER_TOKEN,
@@ -132,8 +136,9 @@ export class InvitationService {
 	 * Creates one invitation. Both paths require `name` (it prefills the
 	 * pre-created user and the claim profile form). The org path also
 	 * requires `organizationId`; the roles are the closed-enum
-	 * `organizationRoles` list, defaulting to `['member']` when omitted and
-	 * stored comma-joined (Better Auth multi-role convention, ERP-0041).
+	 * `organizationRoles` list, always prefixed with the base `member` role
+	 * (P7-4) and stored comma-joined (Better Auth multi-role convention,
+	 * ERP-0041).
 	 *
 	 * Overwrite rule: a pending invitation for the same email is reused —
 	 * same user row, new token, old token invalidated, counts resent. The
@@ -166,9 +171,11 @@ export class InvitationService {
 			: undefined);
 
 		// Comma-join, dedupe preserving order: the storage shape mirrors
-		// Better Auth's `auth.members.role` multi-role convention.
+		// Better Auth's `auth.members.role` multi-role convention. The base
+		// `member` role is always added (P7-4), so the claimed membership
+		// carries it too.
 		const organizationRole = isOrgPath
-			? [...new Set(input.organizationRoles ?? ['member'])].join(',')
+			? withBaseMemberRole(input.organizationRoles ?? []).join(',')
 			: null;
 
 		// Overwrite rule: reuse the pending invitation + pre-created user.
@@ -524,7 +531,11 @@ export class InvitationService {
 			organizationName = await this.authGateway.attachMembership({
 				userId: user.id,
 				organizationId: invitation.organizationId,
-				roleName: target.invitation.organizationRole ?? 'member',
+				// Invitations stored before P7-4 may lack the base role; add it
+				// here so every claimed membership carries `member`.
+				roleName: withBaseMemberRole(
+					parseRoleList(target.invitation.organizationRole),
+				).join(','),
 			});
 			// ERP-0047: membership exists now, so this is the claim success
 			// point — never the invite send, never a rejected/expired token.

@@ -44,10 +44,8 @@ function toRole(grants: ErpPermissionRequest) {
 
 export const erpRoles = {
 	owner: toRole(erpRoleGrants.owner),
-	admin: toRole(erpRoleGrants.admin),
 	member: toRole(erpRoleGrants.member),
 	operations_manager: toRole(erpRoleGrants.operations_manager),
-	sales_manager: toRole(erpRoleGrants.sales_manager),
 	sales: toRole(erpRoleGrants.sales),
 	project_manager: toRole(erpRoleGrants.project_manager),
 	technician: toRole(erpRoleGrants.technician),
@@ -55,11 +53,9 @@ export const erpRoles = {
 	purchasing: toRole(erpRoleGrants.purchasing),
 	warehouse: toRole(erpRoleGrants.warehouse),
 	finance: toRole(erpRoleGrants.finance),
-	accountant: toRole(erpRoleGrants.accountant),
 	hr: toRole(erpRoleGrants.hr),
 	customer_service: toRole(erpRoleGrants.customer_service),
 	marketing: toRole(erpRoleGrants.marketing),
-	auditor: toRole(erpRoleGrants.auditor),
 } as const;
 
 /**

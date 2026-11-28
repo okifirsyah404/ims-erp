@@ -77,10 +77,35 @@ describe('rowsToInviteSheet', () => {
 	test('allowedRoles rejects a role the uploader may not assign', () => {
 		const result = rowsToInviteSheet(
 			[{ email: 'a@b.co', name: 'A', role: 'owner' }],
-			{ allowedRoles: ['member', 'finance'] },
+			{ allowedRoles: ['sales', 'finance'] },
 		);
 		expect(result.rows).toHaveLength(0);
 		expect(result.errors[0]?.message).toContain('role not allowed');
+	});
+
+	test('P7-4: roles removed from the catalog are unknown', () => {
+		const result = rowsToInviteSheet([
+			{ email: 'a@b.co', name: 'A', role: 'sales_manager' },
+			{ email: 'c@d.co', name: 'C', role: 'admin' },
+			{ email: 'e@f.co', name: 'E', role: 'accountant|finance' },
+			{ email: 'g@h.co', name: 'G', role: 'auditor' },
+		]);
+		expect(result.rows).toHaveLength(0);
+		expect(result.errors.map((e) => e.message)).toEqual([
+			'unknown role: sales_manager',
+			'unknown role: admin',
+			'unknown role: accountant',
+			'unknown role: auditor',
+		]);
+	});
+
+	test('P7-4: several offered roles in one cell, plus the base member role', () => {
+		const result = rowsToInviteSheet(
+			[{ email: 'a@b.co', name: 'A', role: 'member|sales|warehouse' }],
+			{ allowedRoles: ['sales', 'warehouse'] },
+		);
+		expect(result.errors).toHaveLength(0);
+		expect(result.rows[0]?.role).toBe('member|sales|warehouse');
 	});
 
 	test('duplicate email in file is a per-row error', () => {

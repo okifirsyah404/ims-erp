@@ -18,8 +18,10 @@ import { myOrganizationsQueryOptions } from './organization-api';
  * the target organization is not the active one.
  *
  * Returns an empty role list while the memberships are loading or the caller
- * belongs to no organization, which collapses the dropdown to the non-tier
+ * belongs to no organization, which collapses the picker to the non-tier
  * roles — the safe direction (never offer something that will be rejected).
+ * Only the offered roles (`offeredOrganizationRoles`, P7-4) ever come back:
+ * never the base `member` role, which the backend adds itself.
  */
 export function useCallerOrgRoles(organizationId: string | null | undefined): {
 	callerRoles: string[];

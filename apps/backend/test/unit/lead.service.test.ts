@@ -47,7 +47,13 @@ const MANAGER: TLeadContext = { organizationId: ORG, actorUserId: 'manager', can
 const ALICE: TLeadContext = { organizationId: ORG, actorUserId: 'alice', canManage: false };
 const BOB: TLeadContext = { organizationId: ORG, actorUserId: 'bob', canManage: false };
 /** Members of ORG and their roles; `outsider` belongs to no organization. */
-const MEMBER_ROLES: Record<string, string> = { manager: 'sales_manager', alice: 'sales', bob: 'sales', clerk: 'warehouse' };
+const MEMBER_ROLES: Record<string, string> = {
+	manager: 'member,sales',
+	alice: 'member,sales',
+	bob: 'member,sales',
+	// Warehouse reads orders (B4) but never leads, so it is not assignable.
+	clerk: 'member,warehouse',
+};
 const ACTIVE_CUSTOMER = '01920000-0000-7000-8000-0000000000c1';
 
 class FakeLeads implements ILeadRepository {

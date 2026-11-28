@@ -23,8 +23,8 @@ const BASE = 'http://localhost:3001';
 const ORG = 'JPgGGmy8ILDftfleMx1JtSgAOdLIZ5cE';
 const ADMIN_EMAIL = 'admin@local.com';
 const ADMIN_PASSWORD = 'admin123456';
-const MEMBER_EMAIL = 'member.seed@entragate.local';
-const MEMBER_PASSWORD = 'member123456';
+const MEMBER_EMAIL = 'freelancer.seed@entragate.local';
+const MEMBER_PASSWORD = 'freelancer123456';
 
 type TSignIn = { token: string; cookie: string };
 

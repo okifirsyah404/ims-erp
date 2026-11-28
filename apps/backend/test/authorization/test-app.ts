@@ -32,7 +32,7 @@ export type TestUser = {
 	 * Deliberately a separate key from {@link role}, which is the
 	 * **organization** role. `requireGlobalAdmin` reads `user.role` on the
 	 * session, so the two must not be conflated: a user can be an
-	 * organization `admin` and still not be a platform admin.
+	 * organization `owner` and still not be a platform admin.
 	 */
 	globalRole?: 'admin' | 'user';
 };
@@ -57,10 +57,15 @@ export const fixture = {
 			role: 'owner',
 			globalRole: 'user',
 		},
+		/**
+		 * Organization manager who is NOT a platform admin. The organization
+		 * `admin` role was removed in P7-4, so this fixture is now an owner
+		 * membership (with the base `member` role) on a plain user account.
+		 */
 		admin: {
 			id: 'user-org-admin',
 			organizationId: ORG_A,
-			role: 'admin',
+			role: 'member,owner',
 			globalRole: 'user',
 		},
 		sales: {

@@ -175,45 +175,9 @@ if (envelopeStatus(legalInvite) === 201) {
 	);
 }
 
-// ---- org admin: may invite member/hr, may not invite admin or owner ------
-const adminMember = await signIn('admin.seed@entragate.local', 'admin123456');
-const adminInvitesAdmin = await call(
-	adminMember,
-	'POST',
-	`/organizations/${ORG}/invitations`,
-	ORG,
-	{
-		email: uniqueEmail('byadmin'),
-		name: 'Admin Invited By Admin',
-		organizationRoles: ['admin'],
-	},
-);
-check(
-	'org admin: invitation with admin -> 403',
-	envelopeStatus(adminInvitesAdmin) === 403,
-	`${envelopeStatus(adminInvitesAdmin)} ${adminInvitesAdmin.json?.message ?? ''}`,
-);
-
-const adminInvitesHr = await call(
-	adminMember,
-	'POST',
-	`/organizations/${ORG}/invitations`,
-	ORG,
-	{
-		email: uniqueEmail('hradmin'),
-		name: 'HR Invited By Admin',
-		organizationRoles: ['hr'],
-	},
-);
-check(
-	'org admin: invitation with hr -> 201',
-	envelopeStatus(adminInvitesHr) === 201,
-	`${envelopeStatus(adminInvitesHr)} ${adminInvitesHr.json?.message ?? ''}`,
-);
-
-// ---- org HR: may invite member, may not invite admin or hr ---------------
+// ---- P7-4 (OA12): only the owner invites; org HR has no invitation grant --
 const hrMember = await signIn('hr.seed@entragate.local', 'hr123456');
-for (const role of ['admin', 'hr', 'owner']) {
+for (const role of ['finance', 'hr', 'owner']) {
 	const attempt = await call(
 		hrMember,
 		'POST',
@@ -232,21 +196,22 @@ for (const role of ['admin', 'hr', 'owner']) {
 	);
 }
 
-const hrInvitesMember = await call(
-	hrMember,
+// ---- roles removed in P7-4 are rejected by the closed enum ----------------
+const removedRole = await call(
+	admin,
 	'POST',
 	`/organizations/${ORG}/invitations`,
 	ORG,
 	{
-		email: uniqueEmail('bymember'),
-		name: 'Member Invited By HR',
-		organizationRoles: ['member'],
+		email: uniqueEmail('removed-role'),
+		name: 'Removed Role Invite',
+		organizationRoles: ['sales_manager'],
 	},
 );
 check(
-	'org hr: invitation with member -> 201',
-	envelopeStatus(hrInvitesMember) === 201,
-	`${envelopeStatus(hrInvitesMember)} ${hrInvitesMember.json?.message ?? ''}`,
+	'owner caller: invitation with removed sales_manager -> 4xx',
+	[400, 422].includes(envelopeStatus(removedRole)),
+	`${envelopeStatus(removedRole)} ${removedRole.json?.message ?? ''}`,
 );
 
 console.log(results.join('\n'));

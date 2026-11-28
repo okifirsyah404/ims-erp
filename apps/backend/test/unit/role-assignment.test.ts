@@ -11,10 +11,11 @@ import {
  * Unit tests for the server-side role-assignment enforcement.
  *
  * @remarks
- * The dialog hides the options, but these guards are the boundary: an org
- * admin must not invite an `owner`, and org HR must not invite `admin`/`hr`.
- * The ladder itself is shared data from `@ims-erp/common`, so these tests pin
- * the wiring (guard context in, illegal roles out) rather than the tiers.
+ * The dialog hides the options, but these guards are the boundary: nobody
+ * invites an `owner`, only an owner gives `hr`, the removed roles (P7-4) are
+ * refused, and the base `member` role is accepted because the backend adds it
+ * anyway. The ladder itself is shared data from `@ims-erp/common`, so these
+ * tests pin the wiring (guard context in, illegal roles out).
  */
 
 const ctx = (
@@ -22,45 +23,59 @@ const ctx = (
 	isPlatformAdmin = false,
 ): TRoleAssignmentContext => ({ callerRoles, isPlatformAdmin });
 
+const REMOVED = ['admin', 'sales_manager', 'accountant', 'auditor'];
+
 describe('grantableRolesFor', () => {
 	test('never offers owner, whatever the caller holds', () => {
-		for (const roles of [['owner'], ['admin'], ['hr'], ['member'], []]) {
+		for (const roles of [['owner'], ['hr'], ['member'], []]) {
 			expect(grantableRolesFor(ctx(roles))).not.toContain('owner');
 		}
 	});
 
-	test('an org admin loses admin but keeps hr', () => {
-		const roles = grantableRolesFor(ctx(['admin']));
-		expect(roles).not.toContain('admin');
-		expect(roles).toContain('hr');
+	test('never offers the base member role or a removed role (OA9, P7-4)', () => {
+		for (const roles of [['owner'], ['hr'], []]) {
+			const offered = grantableRolesFor(ctx(roles, true));
+			expect(offered).not.toContain('member');
+			for (const removed of REMOVED) expect(offered).not.toContain(removed);
+		}
 	});
 
-	test('org HR loses admin and hr', () => {
+	test('an owner may offer hr', () => {
+		expect(grantableRolesFor(ctx(['owner']))).toContain('hr');
+	});
+
+	test('org HR loses hr', () => {
 		const roles = grantableRolesFor(ctx(['hr']));
-		expect(roles).not.toContain('admin');
 		expect(roles).not.toContain('hr');
-		expect(roles).toContain('member');
+		expect(roles).toContain('sales');
 	});
 
-	test('a platform admin may invite admin and hr but never owner', () => {
+	test('a platform admin may invite hr but never owner', () => {
 		const roles = grantableRolesFor(ctx([], true));
-		expect(roles).toContain('admin');
 		expect(roles).toContain('hr');
 		expect(roles).not.toContain('owner');
 	});
 });
 
 describe('unassignableInviteRoles', () => {
-	test('an org admin inviting an owner is reported', () => {
-		expect(unassignableInviteRoles(ctx(['admin']), ['owner'])).toEqual(['owner']);
+	test('inviting an owner is reported', () => {
+		expect(unassignableInviteRoles(ctx(['owner']), ['owner'])).toEqual(['owner']);
 	});
 
-	test('org HR inviting admin is reported', () => {
-		expect(unassignableInviteRoles(ctx(['hr']), ['admin'])).toEqual(['admin']);
+	test('org HR inviting hr is reported', () => {
+		expect(unassignableInviteRoles(ctx(['hr']), ['hr'])).toEqual(['hr']);
 	});
 
-	test('a legal invite passes', () => {
-		expect(unassignableInviteRoles(ctx(['admin']), ['member', 'finance'])).toEqual([]);
+	test('a removed role is reported (P7-4)', () => {
+		expect(unassignableInviteRoles(ctx(['owner']), ['sales_manager', 'sales'])).toEqual([
+			'sales_manager',
+		]);
+		expect(unassignableInviteRoles(ctx([], true), ['admin'])).toEqual(['admin']);
+	});
+
+	test('a legal multi-role invite passes, with or without member', () => {
+		expect(unassignableInviteRoles(ctx(['owner']), ['sales', 'warehouse'])).toEqual([]);
+		expect(unassignableInviteRoles(ctx(['owner']), ['member', 'finance'])).toEqual([]);
 	});
 
 	test('an application-level invite carries no roles and passes', () => {
@@ -77,14 +92,17 @@ describe('member management', () => {
 		expect(assignableRolesFor(ctx([], true), ['owner'])).not.toContain('owner');
 	});
 
-	test('an admin may keep admin on a member who already holds it', () => {
-		expect(assignableRolesFor(ctx(['admin']), ['admin'])).toContain('admin');
-		expect(unassignableMemberRoles(ctx(['admin']), ['admin'], ['admin'])).toEqual([]);
+	test('org HR may keep hr on a member who already holds it', () => {
+		expect(unassignableMemberRoles(ctx(['hr']), ['hr', 'member'], ['member', 'hr'])).toEqual([]);
 	});
 
-	test('an admin may not promote a member to admin', () => {
-		expect(unassignableMemberRoles(ctx(['admin']), ['admin'], ['member'])).toEqual([
-			'admin',
-		]);
+	test('org HR may not promote a member to hr', () => {
+		expect(unassignableMemberRoles(ctx(['hr']), ['hr'], ['member'])).toEqual(['hr']);
+	});
+
+	test('a removed role cannot be kept, even when the member holds it (P7-4)', () => {
+		expect(
+			unassignableMemberRoles(ctx(['owner']), ['admin', 'sales'], ['member', 'admin']),
+		).toEqual(['admin']);
 	});
 });

@@ -27,10 +27,15 @@ describe('hasInternalOrgRole', () => {
 		expect(hasInternalOrgRole('customer')).toBe(false);
 	});
 
-	test('any organization role counts, including freelancer and auditor', () => {
+	test('any organization role counts, including freelancer and the base member', () => {
 		expect(hasInternalOrgRole('sales')).toBe(true);
 		expect(hasInternalOrgRole('freelancer')).toBe(true);
-		expect(hasInternalOrgRole('auditor')).toBe(true);
+		expect(hasInternalOrgRole('member')).toBe(true);
+	});
+
+	test('roles removed in P7-4 no longer count', () => {
+		expect(hasInternalOrgRole('auditor')).toBe(false);
+		expect(hasInternalOrgRole('sales_manager')).toBe(false);
 	});
 });
 

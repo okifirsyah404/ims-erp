@@ -183,7 +183,7 @@ describe('InvitationService — tenant rules on the overwrite path', () => {
 				email: 'invitee@example.com',
 				name: 'Invitee',
 				organizationId: ORG_A,
-				organizationRoles: ['admin'],
+				organizationRoles: ['finance'],
 			},
 			ACTOR,
 		);
@@ -194,8 +194,27 @@ describe('InvitationService — tenant rules on the overwrite path', () => {
 			expect.objectContaining({
 				type: 'org',
 				organizationId: ORG_A,
-				orgRole: 'admin',
+				// P7-4: the base `member` role is always stored first.
+				orgRole: 'member,finance',
 			}),
+		);
+	});
+
+	test('P7-4: a new org invite stores the base member role plus every picked role', async () => {
+		const { service, invitations } = makeService({ user: makeUser() });
+
+		await service.invite(
+			{
+				email: 'invitee@example.com',
+				name: 'Invitee',
+				organizationId: ORG_A,
+				organizationRoles: ['sales', 'warehouse', 'sales'],
+			},
+			ACTOR,
+		);
+
+		expect(invitations.create).toHaveBeenCalledWith(
+			expect.objectContaining({ orgRole: 'member,sales,warehouse' }),
 		);
 	});
 

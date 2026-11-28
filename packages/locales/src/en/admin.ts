@@ -44,12 +44,16 @@ const admin = {
 	'invite.emailPlaceholder': 'person@company.com',
 	'invite.name': 'Name',
 	'invite.namePlaceholder': 'Full name of the invitee',
-	'invite.role': 'Role',
-	'invite.rolePlaceholder': 'Select a role',
-	'invite.defaultRole': 'Default role (optional)',
+	'invite.role': 'Roles',
+	'invite.rolePlaceholder': 'Search and pick roles…',
+	'invite.roleEmpty': 'No role matches.',
+	'invite.roleHint':
+		'Pick one or more roles; rights add up across roles. Every member also gets the base Member role automatically. Only the owner can give Human Resource.',
+	'invite.roleRequired': 'Pick at least one role',
+	'invite.defaultRole': 'Default roles',
 	'invite.defaultRolePlaceholder': 'Used when a row omits role',
 	'invite.rows': 'Rows ({{max}} max)',
-	'invite.rowsPlaceholder': 'email@company.com, Jane Doe, member',
+	'invite.rowsPlaceholder': 'email@company.com, Jane Doe, sales|warehouse',
 	'invite.rowsHint':
 		'One per line: <code>email, name, role</code>. Name and role are optional; join several roles with <code>|</code>. An unrecognized role fails that row.',
 	'invite.send': 'Send invitation',
@@ -64,7 +68,7 @@ const admin = {
 	'invite.organizationEmpty': 'No organizations found.',
 	'invite.noOrganization': 'No organization (application-level)',
 	'invite.rowsPlaceholderAdmin':
-		'email@company.com, Jane Doe, org-code, member',
+		'email@company.com, Jane Doe, org-code, sales',
 	'invite.rowsHintAdmin':
 		'One per line: <code>email, name, org code, role</code>. Leave the org code empty to invite without an organization. An unknown code fails only that row.',
 	'invite.rowsEmpty': 'No valid rows to send.',

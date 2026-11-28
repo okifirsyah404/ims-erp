@@ -47,11 +47,15 @@ const admin_: Record<keyof typeof admin, string> = {
 	'invite.name': 'Nama',
 	'invite.namePlaceholder': 'Nama lengkap penerima undangan',
 	'invite.role': 'Peran',
-	'invite.rolePlaceholder': 'Pilih peran',
-	'invite.defaultRole': 'Peran bawaan (opsional)',
+	'invite.rolePlaceholder': 'Cari dan pilih peran…',
+	'invite.roleEmpty': 'Tidak ada peran yang cocok.',
+	'invite.roleHint':
+		'Pilih satu peran atau lebih; hak dari semua peran digabung. Setiap anggota otomatis juga mendapat peran dasar Anggota. Hanya Pemilik yang dapat memberi peran Sumber Daya Manusia.',
+	'invite.roleRequired': 'Pilih minimal satu peran',
+	'invite.defaultRole': 'Peran bawaan',
 	'invite.defaultRolePlaceholder': 'Dipakai jika baris tanpa peran',
 	'invite.rows': 'Baris (maksimal {{max}})',
-	'invite.rowsPlaceholder': 'email@perusahaan.com, Budi Santoso, member',
+	'invite.rowsPlaceholder': 'email@perusahaan.com, Budi Santoso, sales|warehouse',
 	'invite.rowsHint':
 		'Satu per baris: <code>email, nama, peran</code>. Nama dan peran opsional; gabungkan beberapa peran dengan <code>|</code>. Peran yang tidak dikenali menggagalkan baris itu.',
 	'invite.send': 'Kirim undangan',
@@ -66,7 +70,7 @@ const admin_: Record<keyof typeof admin, string> = {
 	'invite.organizationEmpty': 'Organisasi tidak ditemukan.',
 	'invite.noOrganization': 'Tanpa organisasi (tingkat aplikasi)',
 	'invite.rowsPlaceholderAdmin':
-		'email@perusahaan.com, Budi Santoso, kode-organisasi, member',
+		'email@perusahaan.com, Budi Santoso, kode-organisasi, sales',
 	'invite.rowsHintAdmin':
 		'Satu per baris: <code>email, nama, kode organisasi, peran</code>. Kosongkan kode organisasi untuk mengundang tanpa organisasi. Kode yang tidak dikenali hanya menggagalkan baris itu.',
 	'invite.rowsEmpty': 'Tidak ada baris valid untuk dikirim.',

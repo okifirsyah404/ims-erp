@@ -1,6 +1,6 @@
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
-import { erpRoleNames } from '../authorization/erp-permissions.js';
+import { BASE_MEMBER_ROLE, erpRoleNames } from '../authorization/erp-permissions.js';
 import {
 	employmentTypeNames,
 	isEmploymentTypeName,
@@ -71,9 +71,9 @@ export type TInviteSheetParseOptions = {
 	maxRows?: number;
 	/**
 	 * Roles the uploader may assign. Absent = the whole catalog. A role outside
-	 * this list is a per-row error, matching the backend's own check (a
-	 * non-owner may not invite an `owner`, an org admin may not invite `admin`,
-	 * org HR may not invite `hr`).
+	 * this list is a per-row error, matching the backend's own check (nobody
+	 * invites an `owner`; only an owner invites `hr`). The base `member` role
+	 * is always accepted: the backend adds it to every member anyway.
 	 */
 	allowedRoles?: readonly string[];
 };
@@ -118,7 +118,7 @@ export function rowsToInviteSheet(
 		}
 		const role = normalize(headerKey(record, 'role')).toLowerCase() || null;
 		if (role) {
-			// Multi-role cells are pipe-separated ('admin|finance'); the comma
+			// Multi-role cells are pipe-separated ('sales|warehouse'); the comma
 			// stays the CSV field separator (ERP-0041).
 			const roles = role.split('|').map((r) => r.trim()).filter(Boolean);
 			const unknown = roles.filter((r) => !(erpRoleNames as readonly string[]).includes(r));
@@ -128,7 +128,9 @@ export function rowsToInviteSheet(
 			}
 			const allowed = options.allowedRoles;
 			if (allowed) {
-				const forbidden = roles.filter((r) => !allowed.includes(r));
+				const forbidden = roles.filter(
+					(r) => r !== BASE_MEMBER_ROLE && !allowed.includes(r),
+				);
 				if (forbidden.length > 0) {
 					errors.push({
 						row,

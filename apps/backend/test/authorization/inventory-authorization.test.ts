@@ -198,7 +198,9 @@ describe('inventory routes — permission vocabulary', () => {
 	});
 
 	test('the borrowing statement is granted to the request-issuing roles', () => {
-		const roles = ['technician', 'sales', 'sales_manager', 'warehouse'] as const;
+		// P7-4: `sales_manager` is gone (its grants moved to `sales`) and the
+		// freelancer now borrows tools too (KL-6).
+		const roles = ['technician', 'sales', 'freelancer', 'warehouse'] as const;
 		for (const role of roles) {
 			const grants = erpRoleGrants[role] as Record<string, readonly string[]>;
 			expect(grants.asset_borrowing).toBeDefined();
@@ -216,7 +218,7 @@ describe('inventory routes — permission vocabulary', () => {
 	});
 
 	test('only management roles may mark a unit lost', () => {
-		for (const role of ['owner', 'admin', 'operations_manager'] as const) {
+		for (const role of ['owner', 'operations_manager'] as const) {
 			const grants = erpRoleGrants[role] as Record<string, readonly string[]>;
 			expect(grants.asset_borrowing).toContain('mark_lost');
 		}

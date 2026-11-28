@@ -2239,6 +2239,30 @@ tidak dipakai.
 
 Tidak ada perubahan kode.
 
+## 2026-11-28 - P7-4 Hak role baru (ERP-0185)
+
+Branch `feat/erp-0185-p7-4-hak-role`, belum di-push.
+
+- **Role:** 13 role tersisa. `sales_manager`, `admin`, `accountant`,
+  `auditor` dihapus dari enum (keputusan grill Oki 28/11: tidak dipetakan).
+  `sales` memegang semua hak Manajer Penjualan; `finance` memegang hak
+  Akuntan (tanpa buka kembali periode); Pekerja Lepas melihat proyek yang
+  ditugaskan, pinjam alat, kasbon; Gudang membaca PO/SO.
+- **Role dasar `member`:** selalu ditambahkan backend di setiap penulisan
+  role dan tidak pernah ditawarkan; haknya hanya `ac:read`.
+- **Hanya Pemilik:** mengundang, membaca Log Audit, membuka kembali periode
+  (sebelumnya opsi `ownership` di rute periode tidak pernah dibaca guard).
+- **Form undang:** combobox banyak role (chips) dengan teks bantuan.
+- **Migrasi data** `20261128153813_erp0185_sales_role`: `sales_manager` →
+  `sales`, role yang dihapus dibuang, `member` di depan, tanpa duplikat;
+  diuji di database sekali pakai (9 kasus, jalan kedua 0 baris).
+- **Seeder:** akun per orang Aqim, Bella, Agus MD, Bilal, Agus, Dafrin, Oki;
+  akun seed role yang dihapus hilang. Rombak penuh tetap L-16.
+- `security-and-access.md` diubah atas keputusan Oki (daftar role dan
+  matriks saja); `role-permission.md` dibuat ulang.
+- UAT: [`5-pengerjaan/uat/P7-4.md`](5-pengerjaan/uat/P7-4.md), 7/7 Valid
+  (lewat API dan test; tidak di browser atas permintaan Oki).
+
 ## 2026-11-28 - B-32 Tutup PO kurang kirim (ERP-0184)
 
 Branch `feat/b-32-tutup-po-kurang-kirim`, belum di-push.

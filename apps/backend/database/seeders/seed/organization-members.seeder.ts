@@ -1,5 +1,5 @@
 import { fakerID_ID as faker } from '@faker-js/faker';
-import type { ErpRoleName } from '@ims-erp/common';
+import { type ErpRoleName, withBaseMemberRole } from '@ims-erp/common';
 import { and, eq } from 'drizzle-orm';
 import pino from 'pino';
 import { drizzleDB } from '../../../drizzle/db';
@@ -40,12 +40,13 @@ export type TMemberSeedEntry = {
 };
 export type TMemberSeedConfig = readonly TMemberSeedEntry[];
 
-/** The member seeding plan; edited in-place to change volumes. */
+/**
+ * The member seeding plan; edited in-place to change volumes. One account per
+ * offered role (P7-4): the removed roles (`admin`, `sales_manager`,
+ * `accountant`, `auditor`) and the base `member` role get no account.
+ */
 export const MEMBER_SEED_CONFIG: TMemberSeedConfig = [
-	{ role: 'admin', userCount: 1 },
-	{ role: 'member', userCount: 1 },
 	{ role: 'operations_manager', userCount: 1 },
-	{ role: 'sales_manager', userCount: 1 },
 	{ role: 'sales', userCount: 1 },
 	{ role: 'project_manager', userCount: 1 },
 	{ role: 'technician', userCount: 1 },
@@ -53,11 +54,40 @@ export const MEMBER_SEED_CONFIG: TMemberSeedConfig = [
 	{ role: 'purchasing', userCount: 1 },
 	{ role: 'warehouse', userCount: 1 },
 	{ role: 'finance', userCount: 1 },
-	{ role: 'accountant', userCount: 1 },
 	{ role: 'hr', userCount: 24 },
 	{ role: 'customer_service', userCount: 1 },
 	{ role: 'marketing', userCount: 1 },
-	{ role: 'auditor', userCount: 1 },
+];
+
+/**
+ * One test account per person with that person's role mix (K2, P7-4,
+ * `rancangan-data-seeder.md` section 3). Used by the P7-4 UAT: two sales
+ * people approve each other's quotations, Bella is the merged finance role,
+ * Dafrin and Oki are freelancers. The full per-person seeder rework is L-16.
+ */
+export type TPersonSeedEntry = {
+	/** Anchor slug: `<slug>.seed@example.com` / `<slug>_seed`. */
+	slug: string;
+	name: string;
+	roles: readonly ErpRoleName[];
+};
+
+export const PERSON_SEED_CONFIG: readonly TPersonSeedEntry[] = [
+	{ slug: 'aqim', name: 'Aqim (uji)', roles: ['owner', 'hr'] },
+	{ slug: 'bella', name: 'Bella (uji)', roles: ['finance'] },
+	{ slug: 'agus_md', name: 'Agus MD (uji)', roles: ['sales'] },
+	{
+		slug: 'bilal',
+		name: 'Bilal (uji)',
+		roles: ['sales', 'warehouse', 'customer_service', 'marketing'],
+	},
+	{
+		slug: 'agus',
+		name: 'Agus (uji)',
+		roles: ['project_manager', 'technician', 'warehouse'],
+	},
+	{ slug: 'dafrin', name: 'Dafrin (uji)', roles: ['freelancer'] },
+	{ slug: 'oki', name: 'Oki (uji)', roles: ['freelancer'] },
 ];
 
 /**
@@ -229,12 +259,30 @@ export async function addSeedMembersTo(
 			const content = seedAccountContent(identity.email);
 			created += await upsertSeedMember(
 				organizationId,
-				role,
-				instance,
+				`${role}#${instance}`,
+				[role],
 				identity,
 				content,
+				seedRolePassword(role),
 			);
 		}
+	}
+	// Per-person accounts after the per-role ones, so adding them leaves the
+	// faker sequence of the role accounts unchanged.
+	for (const person of PERSON_SEED_CONFIG) {
+		const identity = {
+			email: `${person.slug}.seed@example.com`,
+			username: `${person.slug}_seed`,
+		};
+		const content = { ...seedAccountContent(identity.email), name: person.name };
+		created += await upsertSeedMember(
+			organizationId,
+			person.slug,
+			person.roles,
+			identity,
+			content,
+			`${person.slug}123456`,
+		);
 	}
 	return created;
 }
@@ -242,13 +290,18 @@ export async function addSeedMembersTo(
 /**
  * Creates (or reuses) one seed account and joins it to the organization.
  * Returns 1 when a membership was created, 0 when it already existed.
+ *
+ * @remarks
+ * The membership carries the base `member` role plus the given roles
+ * (P7-4), the same shape the backend writes for every member.
  */
 async function upsertSeedMember(
 	organizationId: string,
-	role: ErpRoleName,
-	instance: number,
+	label: string,
+	roles: readonly ErpRoleName[],
 	identity: { email: string; username: string },
 	content: { name: string; bio: string; phone: string },
+	password: string,
 ): Promise<number> {
 	const [existingUser] = await drizzleDB
 		.select({ id: users.id })
@@ -263,7 +316,7 @@ async function upsertSeedMember(
 				body: {
 					email: identity.email,
 					name: content.name,
-					password: seedRolePassword(role),
+					password,
 					data: {
 						username: identity.username,
 						displayUsername: identity.username,
@@ -278,7 +331,7 @@ async function upsertSeedMember(
 
 	if (existingUser) {
 		logger.info(
-			{ role, instance, userId, organizationId },
+			{ account: label, userId, organizationId },
 			'Role account already exists; reusing (password/phone NOT reset)',
 		);
 	} else {
@@ -305,23 +358,37 @@ async function upsertSeedMember(
 
 	if (existingMember) {
 		logger.info(
-			{ role, instance, userId, organizationId },
+			{ account: label, userId, organizationId },
 			'Role account already a member; skipping',
 		);
 		return 0;
 	}
 
-	// Custom ERP roles are registered server-side via `erpRoles`; the
-	// inferred endpoint type only knows built-in literals, hence the cast.
-	await auth.api.addMember({
-		body: {
+	const role = withBaseMemberRole(roles).join(',');
+	if (roles.includes('owner')) {
+		// Better Auth's escalation hook refuses an `owner` grant without an
+		// acting owner session, so a seeded co-owner is written directly (the
+		// organization seeder does the same for the first owner).
+		await drizzleDB.insert(members).values({
+			id: crypto.randomUUID(),
 			organizationId,
 			userId,
-			role: role as 'member',
-		},
-	});
+			role,
+			createdAt: new Date(),
+		});
+	} else {
+		// Custom ERP roles are registered server-side via `erpRoles`; the
+		// inferred endpoint type only knows built-in literals, hence the cast.
+		await auth.api.addMember({
+			body: {
+				organizationId,
+				userId,
+				role: role as 'member',
+			},
+		});
+	}
 	logger.info(
-		{ role, instance, userId, organizationId },
+		{ account: label, userId, organizationId },
 		'Role account added to organization',
 	);
 	return 1;

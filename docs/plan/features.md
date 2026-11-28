@@ -918,6 +918,15 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   columns); it leaves Goods receipts, stays billable for what arrived, and the
   project budget keeps only the received value. Verified: backend 1667,
   web-admin 230, locales 110, migration applied, UAT `uat/B-32.md` all Valid.
+- ERP-0185 P7-4 new role grants (2026-11-28): 13 organization roles; `sales`
+  holds the former sales manager grants, `finance` the former accountant
+  grants; the organization `admin`, `sales_manager`, `accountant` and
+  `auditor` roles are removed (stored role lists migrated); every member
+  carries the base `member` role, added by the backend; only the owner
+  invites, reads the audit log and reopens a period; freelancer gets assigned
+  projects, tool borrowing and advances; warehouse reads PO/SO; the invite
+  form picks several roles. Verified: backend 1686, web-admin 234, locales
+  110, UAT `uat/P7-4.md` all Valid (over HTTP).
 
 - ERP-0170 opening-balance row dialog (2026-11-27): the inline add-row form on
   `/finance/opening-balances` moved to `opening-balance-row-dialog.tsx`; the

@@ -120,7 +120,7 @@ check(
 );
 
 // ---- member is denied the admin surfaces --------------------------------
-const member = await signIn('member.seed@entragate.local', 'member123456');
+const member = await signIn('freelancer.seed@entragate.local', 'freelancer123456');
 const memberUsers = await call(member, 'GET', '/admin/users');
 check(
 	'member denied GET /admin/users (403)',

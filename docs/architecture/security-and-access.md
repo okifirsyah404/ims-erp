@@ -78,9 +78,17 @@ Source of truth: `apps/backend/src/providers/better-auth/ac/auth-hooks.ts`.
 
 ## ERP roles (organization membership)
 
-`owner, admin, member, operations_manager, sales_manager, sales,
-project_manager, technician, freelancer, purchasing, warehouse, finance,
-accountant, hr, customer_service, marketing, investor, customer, auditor`
+Since P7-4 (ERP-0185, 2026-11-28) the closed enum holds 13 roles:
+
+`owner, member, operations_manager, sales, project_manager, technician,
+freelancer, purchasing, warehouse, finance, hr, customer_service, marketing`
+
+The organization roles `admin`, `sales_manager`, `accountant` and `auditor`
+were removed (a data migration rewrote stored role lists: `sales_manager`
+became `sales`, the other three were dropped). `investor` and `customer` are
+application roles (ADR-0018), not organization roles. Every stored role list
+starts with the base `member` role, which the backend adds on every role
+write; forms offer every role except `member` (`offeredOrganizationRoles`).
 
 Key separations encoded in the matrix (full grants in
 `erpRoleGrants`, verified by `test/authorization/permission-matrix.test.ts`):
@@ -88,23 +96,27 @@ Key separations encoded in the matrix (full grants in
 - **owner**: full ERP + organization administration; still subject to
   organization boundaries, valid state transitions, and no self-approval.
   The owner grant is **per organization** — owning one organization confers
-  nothing in another.
-- **admin** (org): membership/invitations/general settings/non-sensitive
-  master data; NO payroll, payment execution, accounting, investor-finance,
-  or integration secrets. Cannot grant the `owner` role (hook-enforced).
-- **member**: baseline only; employee self-service additionally requires an
-  actual employee relationship (record-level, when HR module lands).
-- **sales** creates/submits; cannot approve (even own submissions).
-- **finance** executes payments; no HR record access; payroll *payment*
-  access ≠ payroll *record* access.
+  nothing in another. Only the owner invites (OA12), reads the audit log
+  (OA8) and reopens an accounting period (RO4).
+- **member**: the base role every member carries; grants only `ac:read`, so
+  it never widens another role.
+- **sales**: the only sales role (K2b); holds the former sales manager grants
+  (approve quotations and returns, cancel orders, archive customers, portal
+  accounts, licenses and their API keys, catalog, WhatsApp). The services
+  still refuse approving one's own document.
+- **finance**: executes payments and holds the former accountant grants
+  (chart of accounts, journals, tax, investor reports, periods `create` and
+  `close`; K2d, RO1); no `reopen`; no HR record access beyond the salary
+  summary; payroll *payment* access ≠ payroll *record* access.
 - **hr** (the role key; the module and schema are `human_resource`) prepares
-  payroll; approval and execution stay separate.
+  payroll; approval and execution stay separate. Sees members, does not
+  invite.
 - **purchasing/warehouse**: preparation and stock operations; no self-approval
-  of their own requests/adjustments.
-- **auditor**: read/export only; sensitive HR/payroll scope must be assigned
-  explicitly (record-level policy, enforced when those modules land).
-- **investor / customer**: portal roles only (`investor_portal.*` /
-  `customer_portal.*`); no broad internal resource permissions.
+  of their own requests/adjustments. Warehouse reads purchase and sales
+  orders (B4).
+- **freelancer**: assigned work only, plus the projects they are assigned to
+  (record scope in the project service), tool borrowing and cash advances
+  (KL-6).
 - **marketing**: no integration secrets, no automation execution.
 
 ## Protecting a new Elysia route
@@ -251,10 +263,14 @@ Three complementary layers, all reading one shared ladder
 
 | Caller | may invite / assign |
 | --- | --- |
-| `owner` | everything except `owner` on an *invitation* (owner is born with the organization; member management may still promote another owner) |
-| org `admin` | every role except `owner` and `admin` |
-| org `hr` | every role except `owner`, `admin` and `hr` |
-| platform `admin` (`user.role`) | every role except `owner`, unless they also hold an owner membership |
+| `owner` | every offered role; `owner` never on an *invitation* (owner is born with the organization; member management may still promote another owner) |
+| any other member manager | every offered role except `owner` and `hr` |
+| platform `admin` (`user.role`) | every offered role except `owner`, unless they also hold an owner membership |
+
+The base `member` role is never offered and always accepted: the backend adds
+it itself. Since only the owner holds `invitation:create` and
+`member:create|update` (P7-4), the middle row only applies to a future role
+that is given those grants.
 
 1. **Better Auth hooks.** `auth-hooks.ts` installs `hooks.before` middleware that:
 
@@ -420,9 +436,8 @@ Code Number module was removed by ADR-0024). The document **signature request** 
 one document's signature section, `document:signature_request` creates and
 cancels requests, `document:signature_sign` acts on a request addressed to the
 caller (sign, decline) and owns that caller's signature image. Every role that
-holds `document:read` also holds `signature_read` + `signature_sign`; only owner,
-admin, operations_manager, sales_manager, project_manager, finance and hr hold
-`signature_request`. Those are the guard's first gate, never the only one: the
+holds `document:read` also holds `signature_read` + `signature_sign`, and
+`signature_request` too (Phase C). Those are the guard's first gate, never the only one: the
 service re-checks that the caller *is* the addressed signer (sign/decline) or
 *is* the requester (cancel) and that the row is still pending and unexpired, so a
 stolen permission only ever produces a 403/409. Signing writes the immutable

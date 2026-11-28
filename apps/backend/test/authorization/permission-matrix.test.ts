@@ -42,28 +42,90 @@ describe('organization access control', () => {
 		).toBe(true);
 	});
 
-	test('org admin has membership administration but NOT payroll/payment', () => {
-		expect(authorizeErpPermissions(['admin'], { member: ['create'] })).toBe(true);
-		expect(authorizeErpPermissions(['admin'], { invitation: ['create'] })).toBe(true);
-		expect(authorizeErpPermissions(['admin'], { payroll: ['read'] })).toBe(false);
-		expect(authorizeErpPermissions(['admin'], { payment: ['execute'] })).toBe(false);
-		expect(authorizeErpPermissions(['admin'], { integration: ['rotate_secret'] })).toBe(false);
-	});
-
-	test('member has only baseline access', () => {
-		expect(authorizeErpPermissions(['member'], { dashboard: ['read'] })).toBe(true);
+	test('the base member role only reads its own access (P7-4)', () => {
+		expect(authorizeErpPermissions(['member'], { ac: ['read'] })).toBe(true);
+		expect(authorizeErpPermissions(['member'], { dashboard: ['read'] })).toBe(false);
+		expect(authorizeErpPermissions(['member'], { master_data: ['read'] })).toBe(false);
+		expect(authorizeErpPermissions(['member'], { self_service: ['read_payslip'] })).toBe(false);
 		expect(authorizeErpPermissions(['member'], { quotation: ['create'] })).toBe(false);
-		expect(authorizeErpPermissions(['member'], { employee: ['read'] })).toBe(false);
 	});
 
-	test('sales can create but not approve quotations', () => {
-		expect(authorizeErpPermissions(['sales'], { quotation: ['create', 'submit'] })).toBe(true);
-		expect(authorizeErpPermissions(['sales'], { quotation: ['approve'] })).toBe(false);
+	test('adding the base member role never widens another role (P7-4)', () => {
+		expect(authorizeErpPermissions(['member', 'freelancer'], { dashboard: ['read'] })).toBe(false);
+		expect(authorizeErpPermissions(['member', 'freelancer'], { customer: ['read'] })).toBe(false);
 	});
 
-	test('sales_manager can approve but not execute payments', () => {
-		expect(authorizeErpPermissions(['sales_manager'], { quotation: ['approve'] })).toBe(true);
-		expect(authorizeErpPermissions(['sales_manager'], { payment: ['execute'] })).toBe(false);
+	test('the removed roles grant nothing (P7-4)', () => {
+		for (const removed of ['admin', 'sales_manager', 'accountant', 'auditor']) {
+			expect(authorizeErpPermissions([removed], { ac: ['read'] })).toBe(false);
+		}
+	});
+
+	test('sales holds the former sales manager grants (K2b)', () => {
+		expect(authorizeErpPermissions(['sales'], { quotation: ['create', 'submit', 'approve', 'reject'] })).toBe(true);
+		expect(authorizeErpPermissions(['sales'], { sales_return: ['approve'] })).toBe(true);
+		expect(authorizeErpPermissions(['sales'], { sales_order: ['cancel'] })).toBe(true);
+		expect(authorizeErpPermissions(['sales'], { customer: ['archive'] })).toBe(true);
+		expect(authorizeErpPermissions(['sales'], { portal_account: ['invite', 'revoke'] })).toBe(true);
+		expect(authorizeErpPermissions(['sales'], { license: ['manage_api', 'revoke', 'activate'] })).toBe(true);
+		expect(authorizeErpPermissions(['sales'], { apiKey: ['create', 'update'] })).toBe(true);
+		expect(authorizeErpPermissions(['sales'], { catalog: ['publish'] })).toBe(true);
+		expect(authorizeErpPermissions(['sales'], { whatsapp: ['reply'] })).toBe(true);
+		expect(authorizeErpPermissions(['sales'], { payment: ['execute'] })).toBe(false);
+	});
+
+	test('finance holds the former accountant grants (K2d, RO1)', () => {
+		expect(
+			authorizeErpPermissions(['finance'], {
+				chart_of_account: ['read', 'create', 'update', 'archive'],
+				journal: ['read', 'create', 'post', 'reverse'],
+				accounting_period: ['read', 'create', 'close'],
+				asset: ['read'],
+				project: ['read'],
+				budget: ['read'],
+				investor_report: ['read', 'create', 'publish'],
+				tax: ['verify'],
+			}),
+		).toBe(true);
+	});
+
+	test('reopening a period is owner-only (RO4)', () => {
+		expect(authorizeErpPermissions(['owner'], { accounting_period: ['reopen'] })).toBe(true);
+		for (const role of erpRoleNames.filter((name) => name !== 'owner')) {
+			expect(authorizeErpPermissions([role], { accounting_period: ['reopen'] })).toBe(false);
+		}
+	});
+
+	test('the audit log is owner-only (OA8)', () => {
+		expect(authorizeErpPermissions(['owner'], { audit_log: ['read'] })).toBe(true);
+		for (const role of erpRoleNames.filter((name) => name !== 'owner')) {
+			expect(authorizeErpPermissions([role], { audit_log: ['read'] })).toBe(false);
+		}
+	});
+
+	test('only the owner invites (OA12)', () => {
+		expect(authorizeErpPermissions(['owner'], { invitation: ['create'] })).toBe(true);
+		for (const role of erpRoleNames.filter((name) => name !== 'owner')) {
+			expect(authorizeErpPermissions([role], { invitation: ['create'] })).toBe(false);
+		}
+	});
+
+	test('freelancer sees assigned projects, borrows tools and asks for advances (KL-6)', () => {
+		expect(
+			authorizeErpPermissions(['freelancer'], {
+				project: ['read'],
+				asset_borrowing: ['read', 'create'],
+				advance: ['read', 'create'],
+			}),
+		).toBe(true);
+		expect(authorizeErpPermissions(['freelancer'], { project: ['read_cost'] })).toBe(false);
+		expect(authorizeErpPermissions(['freelancer'], { advance: ['approve'] })).toBe(false);
+	});
+
+	test('warehouse reads purchase and sales orders (B4)', () => {
+		expect(authorizeErpPermissions(['warehouse'], { purchase_order: ['read'], sales_order: ['read'] })).toBe(true);
+		expect(authorizeErpPermissions(['warehouse'], { purchase_order: ['create'] })).toBe(false);
+		expect(authorizeErpPermissions(['warehouse'], { sales_order: ['update'] })).toBe(false);
 	});
 
 	test('finance executes payments and enters salary summaries, but has no other HR record access', () => {
@@ -84,10 +146,10 @@ describe('organization access control', () => {
 		expect(authorizeErpPermissions(['hr'], { payroll_payment: ['execute'] })).toBe(false);
 	});
 
-	test('auditor is read/export only', () => {
-		expect(authorizeErpPermissions(['auditor'], { journal: ['read', 'export'] })).toBe(true);
-		expect(authorizeErpPermissions(['auditor'], { journal: ['create'] })).toBe(false);
-		expect(authorizeErpPermissions(['auditor'], { payment: ['execute'] })).toBe(false);
+	test('hr sees members but neither invites nor cancels invitations (OA12)', () => {
+		expect(authorizeErpPermissions(['hr'], { member: ['read'] })).toBe(true);
+		expect(authorizeErpPermissions(['hr'], { invitation: ['create'] })).toBe(false);
+		expect(authorizeErpPermissions(['hr'], { invitation: ['cancel'] })).toBe(false);
 	});
 
 	test('technician has no customer database access', () => {
