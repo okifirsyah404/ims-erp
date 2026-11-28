@@ -38,7 +38,7 @@ zona Asia/Jakarta.
 | BAST | `{SEQ:3}/{TYPE}/{COMPANY}/{MM_ROMAN}/{YYYY}` | `001/BAST/IMS/XII/2026` | tahunan |
 | Garansi | `{SEQ:3}/{TYPE}/{COMPANY}-{CUSTOMER}/{YYYY}` | `001/SG-GARANSI/IMS-APP/2025` | tahunan |
 | Referensi website (RFQ, MSG, DEMO) | `{TYPE}-{YYYY}-{SEQ:5}` | `RFQ-2026-00123` | tahunan |
-| Pemasok | `{COMPANY}-{ORG}-{TYPE}-{SEQ:5}` | `IMS-PT-ENTRAGATE-SUP-00001` | tidak pernah |
+| Pemasok | `{TYPE}-{SEQ:5}` (sejak P7-5, 2026-11-28; sebelumnya `{COMPANY}-{ORG}-{TYPE}-{SEQ:5}`) | `SUP-00001` | tidak pernah |
 | Pelanggan, perusahaan pelanggan, karyawan | `{TYPE}-{SEQ:5}` | `CUS-00001` | tidak pernah |
 | Barang, gudang | `{TYPE}-{COMPANY}-{SEQ:5}` / `{SEQ:4}` | `PRD-IMS-00001` | tidak pernah |
 | Mutasi stok, aset, peminjaman, dll. | pola tetap ERP-0009 | `MV-202611-000042` | sesuai jenis |
@@ -54,15 +54,22 @@ zona Asia/Jakarta.
   `PUT .../:codeType`.
 - Akses: `adminOrErpGuard`; admin aplikasi selalu lolos; anggota butuh
   `code_number:read` / `code_number:update`. Seksi gudang `appAdminOnly`.
-- Pratinjau memakai konteks contoh `PREVIEW_CONTEXT` (`supplier: 'SUP'`,
+- Pratinjau PO memakai **kode pemasok asli yang terpanjang** (atau pemasok
+  yang dipilih lewat `supplierCompanyId`), sejak P7-5 (K6). Jenis lain tetap
+  memakai konteks contoh `PREVIEW_CONTEXT` (`supplier: 'SUP'`,
   `category: 'HW'`, `customer: 'CUS'`) dan `ORG` bila tidak ada organisasi
-  aktif. Respons memuat `maxLength` untuk jenis yang dibatasi.
+  aktif. Respons memuat `maxLength` dan `sampleContext` (nilai token yang
+  dipakai contoh); halaman menampilkan "Lebih dari 32 karakter" dan "Contoh
+  memakai kode pemasok …".
 
 ### Batas panjang
 
 `CODE_MAX_LENGTH` di `domain.ts`: pelanggan, perusahaan pelanggan, pemasok =
-32 (kolom `varchar(32)`), dan **PO = 32** (ditambahkan 2026-11-25). Kode yang
-lebih panjang ditolak 422 `numbering.codeTooLong`, bukan dipotong.
+32 (kolom `varchar(32)`), **PO = 32** (ditambahkan 2026-11-25) dan **garansi =
+32** (P7-5). Kode yang lebih panjang ditolak 422, bukan dipotong: nomor PO
+dengan pesan FU6 `numbering.purchaseOrderTooLong` ("Nomor PO … melebihi 32
+karakter. Persingkat kode pemasok di Pengaturan → Nomor Kode."), jenis lain
+`numbering.codeTooLong`.
 
 ## Alur lintas modul
 
@@ -85,7 +92,7 @@ bukan kolom tabel pemiliknya.
 
 ## Catatan dan temuan
 
-1. **Masalah panjang kode PO (UAT M05 D3, 2026-11-25).** Kode pemasok
+1. **[Selesai P7-5, 2026-11-28: pola bawaan pemasok `{TYPE}-{SEQ:5}`; PO baru ±28 karakter]** **Masalah panjang kode PO (UAT M05 D3, 2026-11-25).** Kode pemasok
    otomatis `DEV-ENTRAGATE-SUP-00001` (pola `{COMPANY}-{ORG}-{TYPE}-{SEQ:5}`)
    masuk ke token `{SUPPLIER}`, sehingga nomor PO menjadi
    `PO/DEV-DEV-ENTRAGATE-SUP-00001/HW/1126/005` (42 karakter).
@@ -97,16 +104,16 @@ bukan kolom tabel pemiliknya.
    sudah 23+ karakter, padahal pola PO menyisakan ±17 karakter untuk
    `{SUPPLIER}` di batas 32. Contoh PO di komentar kode (`IMS-HIT`) memakai
    kode pemasok pendek gaya lama.
-3. **Pratinjau menyesatkan.** Pratinjau PO memakai `SUP`, jadi peringatan
+3. **[Selesai P7-5: pratinjau PO memakai kode pemasok asli terpanjang]** **Pratinjau menyesatkan.** Pratinjau PO memakai `SUP`, jadi peringatan
    "terlalu panjang" tidak muncul walau kode pemasok asli panjang.
 4. **Kolom tidak seragam:** `purchase_orders.code` 40, register 32,
    `goods_receipts.code` dan `purchase_returns.code` 32.
-5. **Garansi juga dekat batas.** `customerNumberCode` membuang tanda hubung
+5. **[Selesai P7-5: `warranty: 32` di `CODE_MAX_LENGTH`, diuji]** **Garansi juga dekat batas.** `customerNumberCode` membuang tanda hubung
    (`CUS-00001` → `CUS00001`), sehingga `001/SG-GARANSI/IMS-CUS00001/2026`
    tepat 32 karakter. Kode perusahaan lebih dari 3 huruf, atau urutan di atas
    999, akan melewati batas; `warranty` tidak ada di `CODE_MAX_LENGTH`.
    Belum diuji, perlu dicek.
-6. **Nomor dialokasikan di luar transaksi.** Bila penyimpanan gagal setelah
+6. **[Selesai P7-5: semua penerbit nomor (24 titik di 11 modul) mengambil nomor di dalam transaksi penyimpanan; diuji di unit test dan UAT]** **Nomor dialokasikan di luar transaksi.** Bila penyimpanan gagal setelah
    nomor diambil, urutan tetap maju (PO 5 → 6 pada uji 2026-11-25). Invoice
    draf juga langsung bernomor, dan nomornya hilang bila di-void
    (`../uat-modul/catatan-skema-dan-alur.md` A8).
@@ -121,11 +128,11 @@ bukan kolom tabel pemiliknya.
 
 | Perubahan | Sumber | Dampak | Status |
 |---|---|---|---|
-| Opsi 1: ubah pola bawaan pemasok menjadi pendek, misalnya `{TYPE}-{SEQ:5}` (`SUP-00001`) | `../catatan-progres.md` 2026-11-25 "Belum dilakukan" | Hanya untuk pemasok baru; kode lama tetap. PO jadi ±28 karakter. Satu baris di `domain.ts` + test | usulan |
+| Opsi 1: ubah pola bawaan pemasok menjadi pendek, misalnya `{TYPE}-{SEQ:5}` (`SUP-00001`) | `../catatan-progres.md` 2026-11-25 "Belum dilakukan" | Hanya untuk pemasok baru; kode lama tetap. PO jadi ±28 karakter. Satu baris di `domain.ts` + test | **selesai P7-5 (2026-11-28)** |
 | Opsi 2: Pemilik mengatur pola di Administrasi → Nomor Kode (pemasok pendek atau PO tanpa `{SUPPLIER}`) | idem | Tanpa kode; perlu panduan; data pemasok lama yang panjang perlu kode manual | usulan (bisa langsung, tanpa rilis) |
 | Opsi 3: perlebar `document.documents.code` (dan kolom nomor lain) ke 40–64 lewat migrasi append-only + `docs.dbml` | temuan 4 | Menyentuh schema `document` (pemilik belum jelas) dan semua modul yang mendaftarkan dokumen; perlu ADR kecil | usulan |
 | Opsi 4: token `{SUPPLIER}` memakai kolom singkatan pemasok (kolom baru) bukan kode penuh | temuan 2 | Kolom baru di `supplier.suppliers` + form; `docs.dbml` | usulan |
-| Pratinjau memakai kode pemasok/pelanggan terpanjang yang ada, atau validasi saat pola pemasok disimpan | temuan 3 | `service-base.ts` / controller bersama + web-admin | usulan |
-| Tambah `warranty` (dan jenis lain yang masuk register) ke `CODE_MAX_LENGTH` | temuan 5 | `domain.ts` + test | usulan |
-| Alokasi nomor di dalam transaksi dokumen (atau terima celah nomor) | temuan 6 | `service-base.ts`, semua service penerbit; keputusan bisnis soal celah nomor | diputuskan 27/11 (T-1): **tanpa celah**, nomor diambil di dalam transaksi penyimpanan dokumen (bagian bersama, K11) |
+| Pratinjau memakai kode pemasok/pelanggan terpanjang yang ada, atau validasi saat pola pemasok disimpan | temuan 3 | `service-base.ts` / controller bersama + web-admin | **selesai P7-5 untuk PO (pemasok terpanjang atau dipilih)**; garansi tetap memakai contoh `CUS` |
+| Tambah `warranty` (dan jenis lain yang masuk register) ke `CODE_MAX_LENGTH` | temuan 5 | `domain.ts` + test | **`warranty` selesai P7-5**; jenis lain yang masuk register (SPH, SO, dll.) memakai pola umum ±17 karakter |
+| Alokasi nomor di dalam transaksi dokumen (atau terima celah nomor) | temuan 6 | `service-base.ts`, semua service penerbit; keputusan bisnis soal celah nomor | diputuskan 27/11 (T-1): **tanpa celah**, nomor diambil di dalam transaksi penyimpanan dokumen (bagian bersama, K11). **Selesai P7-5 (2026-11-28)** |
 | Perbaiki komentar usang dan kalimat AGENTS.md | temuan 7, 8 | Dokumen/komentar saja | usulan |

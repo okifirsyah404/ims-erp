@@ -146,7 +146,7 @@ export abstract class CodeNumberingRepositoryBase {
 		// Thrown after the allocation on purpose: the caller's transaction
 		// rolls the counter back with it.
 		if (max !== undefined && code.length > max) {
-			throw new GeneratedCodeTooLongError(code, max);
+			throw new GeneratedCodeTooLongError(code, max, codeType);
 		}
 		return code;
 	}

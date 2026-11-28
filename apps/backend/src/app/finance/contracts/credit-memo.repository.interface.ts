@@ -20,7 +20,7 @@ export interface ICreditMemoRepository {
 		taxAmount: number;
 		reason: string;
 		createdBy: string;
-	}): Promise<TCreditMemoSelect>;
+	}, tx?: TTx): Promise<TCreditMemoSelect>;
 	findById(organizationId: string, id: string, tx?: TTx): Promise<TCreditMemoSelect | null>;
 	paginate(request: TCreditMemoPaginationRequest): Promise<TPaginationResult<TCreditMemoSelect>>;
 	update(

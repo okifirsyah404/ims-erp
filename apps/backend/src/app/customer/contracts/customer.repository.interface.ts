@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import type {
 	PortalRole,
 	TCustomerAddressSelect,
@@ -52,7 +53,8 @@ export interface ICompanyRepository {
 
 	findByCode(code: string): Promise<TCustomerCompanySelect | null>;
 
-	create(data: TNewCompany): Promise<TCustomerCompanySelect>;
+	/** `tx` joins the caller's transaction (number allocation, P7-5). */
+	create(data: TNewCompany, tx?: TTx): Promise<TCustomerCompanySelect>;
 
 	update(id: string, patch: Partial<TCustomerCompanyInsert>): Promise<TCustomerCompanySelect | null>;
 
@@ -81,7 +83,8 @@ export interface ICustomerPersonRepository {
 	/** The live person behind a portal login, or `null`. */
 	findByUserId(userId: string): Promise<TCustomerSelect | null>;
 
-	create(data: TNewCustomer): Promise<TCustomerSelect>;
+	/** `tx` joins the caller's transaction (number allocation, P7-5). */
+	create(data: TNewCustomer, tx?: TTx): Promise<TCustomerSelect>;
 
 	update(id: string, patch: Partial<TCustomerInsert>): Promise<TCustomerSelect | null>;
 

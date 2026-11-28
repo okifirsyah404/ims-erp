@@ -181,9 +181,12 @@ const FIXED_PATTERNS: Partial<
 	item_component: { pattern: '{TYPE}-{COMPANY}-{SEQ:5}', reset: 'never' },
 	customer: { pattern: '{TYPE}-{SEQ:5}', reset: 'never' },
 	customer_company: { pattern: '{TYPE}-{SEQ:5}', reset: 'never' },
-	// Generated supplier codes name the company and the organization that
-	// registered the supplier, e.g. `IMS-PT-ENTRAGATE-SUP-00001`.
-	supplier_company: { pattern: '{COMPANY}-{ORG}-{TYPE}-{SEQ:5}', reset: 'never' },
+	// Short on purpose (K6, L-2): the supplier code is the `{SUPPLIER}` token
+	// of the PO number, which must fit 32 characters. `SUP-00001` keeps
+	// `PO/IMS-SUP-00001/HW/1126/001` at 28. The old default
+	// `{COMPANY}-{ORG}-{TYPE}-{SEQ:5}` rendered 23+ characters and pushed every
+	// PO past the limit; codes already issued keep their value.
+	supplier_company: { pattern: '{TYPE}-{SEQ:5}', reset: 'never' },
 	lead_reference: { pattern: '{TYPE}-{YYYY}-{SEQ:5}', reset: 'yearly' },
 	employee: { pattern: '{TYPE}-{SEQ:5}', reset: 'never' },
 };
@@ -202,6 +205,10 @@ export const CODE_MAX_LENGTH: Partial<Record<CodeType, number>> = {
 	// code, so a long generated supplier code made approval fail with a raw SQL
 	// error; refuse it with a numbering error the owner can act on instead.
 	purchase_order: 32,
+	// A warranty certificate is registered in `document.documents.code`
+	// (varchar(32)) as well; `001/SG-GARANSI/IMS-CUS00001/2026` is exactly 32,
+	// so a longer company code or a sequence above 999 must be refused here.
+	warranty: 32,
 };
 
 /** Default pattern per code type (used until the owner overrides it). */

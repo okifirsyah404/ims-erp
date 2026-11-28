@@ -40,12 +40,20 @@ export class OrganizationRequiredForCodeError extends AppError {
 	}
 }
 
-/** The rendered code does not fit the column it is stored in. */
+/**
+ * The rendered code does not fit the column it is stored in.
+ *
+ * @remarks
+ * A PO number gets its own message (FU6): the usual cause is a long supplier
+ * code, and the fix is in Settings → Code Number.
+ */
 export class GeneratedCodeTooLongError extends AppError {
-	constructor(code: string, max: number) {
-		super(422, 'numbering.codeTooLong', `Generated code exceeds ${max} characters`, {
-			code,
-			max,
-		});
+	constructor(code: string, max: number, codeType?: string) {
+		super(
+			422,
+			codeType === 'purchase_order' ? 'numbering.purchaseOrderTooLong' : 'numbering.codeTooLong',
+			`Generated code exceeds ${max} characters`,
+			{ code, max },
+		);
 	}
 }

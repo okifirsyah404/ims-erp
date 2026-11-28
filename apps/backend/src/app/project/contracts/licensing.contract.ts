@@ -98,7 +98,8 @@ export interface ILicensingRepository {
 
 	paginateContracts(query: TContractListQuery & { dueBefore?: string }): Promise<TPaginationResult<TContractRow>>;
 	findContract(id: string): Promise<TContractRow | null>;
-	createContract(data: TContractData): Promise<TLicenseContractSelect>;
+	/** `tx` joins the caller's transaction (number allocation, P7-5). */
+	createContract(data: TContractData, tx?: TTx): Promise<TLicenseContractSelect>;
 	updateDraft(id: string, data: Partial<TContractData>): Promise<TLicenseContractSelect | null>;
 	transition(
 		id: string,

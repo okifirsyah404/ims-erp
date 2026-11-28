@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import type {
 	ProjectStage,
 	TaskStatus,
@@ -72,7 +73,8 @@ export interface IProjectRepository {
 	/** Which of these orders already have a live project. */
 	salesOrdersWithProject(salesOrderIds: string[]): Promise<Set<string>>;
 	/** Inserts the project and its default tasks in one transaction. */
-	create(data: TProjectCreateData, tasks: TTaskData[]): Promise<TProjectSelect>;
+	/** `tx` joins the caller's transaction (number allocation, P7-5). */
+	create(data: TProjectCreateData, tasks: TTaskData[], tx?: TTx): Promise<TProjectSelect>;
 	update(id: string, data: TProjectHeaderData): Promise<TProjectSelect | null>;
 	transition(id: string, data: TProjectTransition): Promise<TProjectSelect | null>;
 

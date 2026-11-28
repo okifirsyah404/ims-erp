@@ -9,6 +9,7 @@
  *
  * - `GET    {prefix}/code-numberings`                     every series + next number
  * - `POST   {prefix}/code-numberings/:codeType/preview`   renders a pattern, saves nothing
+ *   (answers `{ nextNumber, sampleContext, maxLength }`)
  * - `PUT    {prefix}/code-numberings/:codeType`           saves pattern + reset policy
  *
  * Authorization rides `adminOrErpGuard`: an application admin always passes;
@@ -30,6 +31,17 @@ const codeTypeParamSchema = z.object({ codeType: z.string().min(1).max(32) });
 export const codeNumberSettingSchema = z.object({
 	pattern: z.string().trim().min(1).max(PATTERN_MAX_LENGTH),
 	resetPolicy: z.enum(RESET_POLICIES),
+});
+
+/**
+ * Body of the preview route: the setting plus optional preview hints.
+ *
+ * @remarks
+ * `supplierCompanyId` renders the PO example with that supplier's code
+ * instead of the longest live one (K6). Series without `{SUPPLIER}` ignore it.
+ */
+export const codeNumberPreviewSchema = codeNumberSettingSchema.extend({
+	supplierCompanyId: z.uuid().nullish(),
 });
 
 /** Options of {@link codeNumberingController}. */
@@ -71,13 +83,15 @@ export function codeNumberingController(options: TCodeNumberingControllerOptions
 			'/:codeType/preview',
 			async (context) => {
 				const { erp, params, body } = ctxOf(context);
-				return ok({
-					nextNumber: await service.previewSetting(
+				const { supplierCompanyId, ...setting } = codeNumberPreviewSchema.parse(body);
+				return ok(
+					await service.previewSetting(
 						codeTypeParamSchema.parse(params).codeType,
-						codeNumberSettingSchema.parse(body),
+						setting,
 						erp.organizationId,
+						{ supplierCompanyId },
 					),
-				});
+				);
 			},
 			{
 				adminOrErp: read,

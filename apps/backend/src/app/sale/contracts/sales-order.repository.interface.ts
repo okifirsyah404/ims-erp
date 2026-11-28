@@ -52,6 +52,8 @@ export interface ISalesOrderRepository {
 		header: TSalesOrderHeaderData,
 		items: TSalesOrderItemData[],
 		actorUserId: string,
+		/** Joins the caller's transaction (number allocation, P7-5). */
+		tx?: TTx,
 	): Promise<TOrderSelect | null>;
 
 	/**

@@ -7,6 +7,7 @@ import type { TPurchaseRequestSelect } from '@drizzle/schemas/procurement.schema
 import { businessDateOf } from '@utils/business-date.util';
 import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
+import { inTransaction, type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import { PURCHASE_REQUEST_REPOSITORY_TOKEN } from '../constants/di';
 import type {
 	IPurchaseRequestRepository,
@@ -66,6 +67,9 @@ export class PurchaseRequestService {
 		private readonly items: Pick<ProductService, 'getActiveProducts' | 'paginate'>,
 		@inject(PROCUREMENT_NUMBERING_SERVICE_TOKEN)
 		private readonly numbering: Pick<ProcurementNumberingService, 'next'>,
+		/** P7-5: document number + write in one transaction; optional for unit tests built by hand. */
+		@inject(TRANSACTION_RUNNER_TOKEN)
+		private readonly transactions?: ITransactionRunner,
 	) {}
 
 	private async require(id: string): Promise<TPurchaseRequestSelect> {
@@ -182,18 +186,27 @@ export class PurchaseRequestService {
 	async submit(actorUserId: string, id: string): Promise<TPurchaseRequestSelect> {
 		const request = await this.requireOwn(actorUserId, id);
 		if (request.status !== 'draft') throw new PurchaseRequestStateError('notDraft');
-		const code =
-			request.code ?? (await this.numbering.next('purchase_request', { date: new Date(`${request.requestDate}T12:00:00+07:00`) }));
+		// P7-5 (T-1): number and submission commit together; a failed submit
+		// rolls the counter back (no gap).
+		const allocated: { code: string | null } = { code: request.code };
 		try {
-			const updated = await this.requests.transition(id, ['draft'], 'submitted', {
-				code,
-				submittedAt: new Date(),
-				rejectionReason: null,
+			return await inTransaction(this.transactions, async (tx) => {
+				const code =
+					request.code ??
+					(await this.numbering.next('purchase_request', { date: new Date(`${request.requestDate}T12:00:00+07:00`), tx }));
+				allocated.code = code;
+				const updated = await this.requests.transition(
+					id,
+					['draft'],
+					'submitted',
+					{ code, submittedAt: new Date(), rejectionReason: null },
+					tx,
+				);
+				if (!updated) throw new PurchaseRequestStateError('notDraft');
+				return updated;
 			});
-			if (!updated) throw new PurchaseRequestStateError('notDraft');
-			return updated;
 		} catch (error) {
-			if (isUniqueViolation(error)) throw new PurchaseRequestCodeTakenError(code);
+			if (allocated.code && isUniqueViolation(error)) throw new PurchaseRequestCodeTakenError(allocated.code);
 			throw error;
 		}
 	}

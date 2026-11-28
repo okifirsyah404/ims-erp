@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import { CACHE_CLIENT_TOKEN, DRIZZLE_TOKEN } from '@di/provider';
 import {
 	customerCompanies,
@@ -122,9 +123,9 @@ export class CompanyRepository implements ICompanyRepository {
 		);
 	}
 
-	async create(data: TNewCompany): Promise<TCustomerCompanySelect> {
+	async create(data: TNewCompany, tx?: TTx): Promise<TCustomerCompanySelect> {
 		const now = new Date();
-		const [row] = await this.database
+		const [row] = await (tx ?? this.database)
 			.insert(customerCompanies)
 			.values({ ...data, createdAt: now, updatedAt: now })
 			.returning();

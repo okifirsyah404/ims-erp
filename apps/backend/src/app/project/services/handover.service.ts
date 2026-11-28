@@ -11,6 +11,7 @@ import type { UserService } from '@app/user/services/user.service';
 import type { THandoverSelect, TProjectSelect } from '@drizzle/schemas/project.schema';
 import { businessDateOf } from '@utils/business-date.util';
 import { inject, injectable } from 'tsyringe';
+import { inTransaction, type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import { HANDOVER_REPOSITORY_TOKEN, PROJECT_SERVICE_TOKEN } from '../constants/di';
 import type { TBastBodyRequest } from '../contracts/handover.contract';
 import type { IHandoverRepository, TBastData, TBastRow } from '../contracts/handover.repository.interface';
@@ -43,6 +44,9 @@ export class HandoverService {
 		@inject(PROJECT_NUMBERING_SERVICE_TOKEN) private readonly numbering: Pick<ProjectNumberingService, 'next'>,
 		/** ERP-0044: issued BAST is recorded in the registry. */
 		@inject(DOCUMENT_SERVICE_TOKEN) private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
+		/** P7-5: document number + write in one transaction; optional for unit tests built by hand. */
+		@inject(TRANSACTION_RUNNER_TOKEN)
+		private readonly transactions?: ITransactionRunner,
 	) {}
 
 	// Contract for After-Sales -------------------------------------------------
@@ -118,21 +122,24 @@ export class HandoverService {
 
 	async create(ctx: TProjectContext, projectId: string, body: TBastBodyRequest): Promise<THandoverSelect> {
 		const project = await this.requireActive(ctx, projectId);
-		const code = await this.numbering.next('bast', undefined, new Date(`${body.bastDate}T12:00:00+07:00`));
-		const bast = await this.basts.create(projectId, code, ctx.actorUserId, body);
-		// ERP-0044: the signed handover is the document the customer keeps.
-		await this.documents.register({
-			code: bast.code,
-			title: `BAST - ${project.customerName} - ${project.code}`,
-			documentType: 'bast',
-			module: 'projects',
-			sourceType: 'bast',
-			sourceId: bast.id,
-			organizationId: null,
-			issuedOn: bast.bastDate,
-			issuedByUserId: ctx.actorUserId,
+		// P7-5 (T-1): number, BAST and registry entry commit together (no gap).
+		return inTransaction(this.transactions, async (tx) => {
+			const code = await this.numbering.next('bast', tx, new Date(`${body.bastDate}T12:00:00+07:00`));
+			const bast = await this.basts.create(projectId, code, ctx.actorUserId, body, tx);
+			// ERP-0044: the signed handover is the document the customer keeps.
+			await this.documents.register({
+				code: bast.code,
+				title: `BAST - ${project.customerName} - ${project.code}`,
+				documentType: 'bast',
+				module: 'projects',
+				sourceType: 'bast',
+				sourceId: bast.id,
+				organizationId: null,
+				issuedOn: bast.bastDate,
+				issuedByUserId: ctx.actorUserId,
+			}, tx);
+			return bast;
 		});
-		return bast;
 	}
 
 	async update(ctx: TProjectContext, projectId: string, handoverId: string, body: TBastBodyRequest): Promise<THandoverSelect> {

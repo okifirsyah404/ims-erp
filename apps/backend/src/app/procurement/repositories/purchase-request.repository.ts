@@ -145,8 +145,9 @@ export class PurchaseRequestRepository implements IPurchaseRequestRepository {
 		from: readonly PurchaseRequestStatus[],
 		to: PurchaseRequestStatus,
 		patch: TPurchaseRequestTransitionPatch,
+		tx?: TTx,
 	): Promise<TPurchaseRequestSelect | null> {
-		const [row] = await this.database
+		const [row] = await (tx ?? this.database)
 			.update(purchaseRequests)
 			.set({ ...patch, status: to, updatedAt: new Date() })
 			.where(and(this.live(id), inArray(purchaseRequests.status, [...from])))

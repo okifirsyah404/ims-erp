@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import {
 	warehouseAddresses,
@@ -353,11 +354,11 @@ export class WarehouseRepository implements IWarehouseRepository {
 	 *
 	 * @param data - Warehouse columns plus an optional nested `address`
 	 */
-	async create(data: TWarehouseCreateData): Promise<TWarehouseSelect> {
+	async create(data: TWarehouseCreateData, outer?: TTx): Promise<TWarehouseSelect> {
 		const { address, createdAt, ...warehouseColumns } = data;
 		const createdAtValue = createdAt ?? new Date();
 
-		return this.database.transaction(async (tx) => {
+		return (outer ?? this.database).transaction(async (tx) => {
 			const [row] = await tx
 				.insert(warehouses)
 				.values({ ...warehouseColumns, createdAt: createdAtValue })

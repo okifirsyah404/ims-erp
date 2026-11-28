@@ -19,6 +19,7 @@ import type { TDocumentItem } from '@drizzle/schemas/project.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import { businessDateOf } from '@utils/business-date.util';
 import { inject, injectable } from 'tsyringe';
+import { inTransaction, type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import { WARRANTY_REPOSITORY_TOKEN } from '../constants/di';
 import type {
 	IWarrantyRepository,
@@ -75,6 +76,9 @@ export class WarrantyService {
 		@inject(PROJECT_LOOKUP_SERVICE_TOKEN) private readonly lookup: Pick<ProjectLookupService, 'liveProjectOfOrder' | 'getProject'>,
 		/** ERP-0044: issued certificates are registered documents. */
 		@inject(DOCUMENT_SERVICE_TOKEN) private readonly documents: Pick<DocumentService, 'register'>,
+		/** P7-5: document number + write in one transaction; optional for unit tests built by hand. */
+		@inject(TRANSACTION_RUNNER_TOKEN)
+		private readonly transactions?: ITransactionRunner,
 	) {}
 
 	/** The project's certificate, or `null`. */
@@ -148,24 +152,28 @@ export class WarrantyService {
 		const customer = project.customerId
 			? await this.customers.getSnapshot({ customerId: project.customerId }).catch(() => null)
 			: null;
-		const code = await this.numbering.next('warranty', undefined, new Date(`${body.issueDate}T12:00:00+07:00`), {
-			customer: customerNumberCode(customer?.code),
-		});
 		try {
-			const certificate = await this.certificates.create(code, ctx.actorUserId, data);
-			// ERP-0044: the certificate the customer holds is a registered document.
-			await this.documents.register({
-				code: certificate.code,
-				title: `Garansi - ${customer?.name ?? project.customerName} - ${project.code}`,
-				documentType: 'warranty',
-				module: 'project',
-				sourceType: 'warranty',
-				sourceId: certificate.id,
-				organizationId: null,
-				issuedOn: certificate.issueDate,
-				issuedByUserId: ctx.actorUserId,
+			// P7-5 (T-1): number, certificate and registry entry commit together;
+			// a code over 32 characters is refused and rolls the counter back.
+			return await inTransaction(this.transactions, async (tx) => {
+				const code = await this.numbering.next('warranty', tx, new Date(`${body.issueDate}T12:00:00+07:00`), {
+					customer: customerNumberCode(customer?.code),
+				});
+				const certificate = await this.certificates.create(code, ctx.actorUserId, data, tx);
+				// ERP-0044: the certificate the customer holds is a registered document.
+				await this.documents.register({
+					code: certificate.code,
+					title: `Garansi - ${customer?.name ?? project.customerName} - ${project.code}`,
+					documentType: 'warranty',
+					module: 'project',
+					sourceType: 'warranty',
+					sourceId: certificate.id,
+					organizationId: null,
+					issuedOn: certificate.issueDate,
+					issuedByUserId: ctx.actorUserId,
+				}, tx);
+				return certificate;
 			});
-			return certificate;
 		} catch (error) {
 			if (isUniqueViolation(error)) throw new WarrantyExistsError();
 			throw error;

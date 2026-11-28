@@ -23,6 +23,7 @@ import {
 import { businessDateOf } from '@utils/business-date.util';
 import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
+import { inTransaction, type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import { PURCHASE_ORDER_REPOSITORY_TOKEN } from '../constants/di';
 import type {
 	IPurchaseOrderRepository,
@@ -108,6 +109,9 @@ export class PurchaseOrderService {
 		/** ERP-0165: letterhead validation and the letterhead a print uses; optional for older tests. */
 		@inject(EXPORTED_COMPANY_SERVICE_TOKEN)
 		private readonly company?: Pick<ExportedCompanyService, 'assertLetterhead' | 'getLetterheadForPrint'>,
+		/** P7-5: number + approval + registry in one transaction; optional for older tests. */
+		@inject(TRANSACTION_RUNNER_TOKEN)
+		private readonly transactions?: ITransactionRunner,
 	) {}
 
 	private async assertProject(projectId: string | null): Promise<string | null> {
@@ -246,34 +250,47 @@ export class PurchaseOrderService {
 		}
 		// ERP-0146: an approved order commits the project budget.
 		if (order.projectId) await this.budgets?.check({ projectId: order.projectId, amount: order.subtotal, excludePurchaseOrderId: order.id });
-		const code = await this.numbering.next('purchase_order', {
-			date: new Date(`${order.orderDate}T12:00:00+07:00`),
-			context: { supplier: order.supplierSnapshot.code, category: PURCHASE_CATEGORY_CODES[order.category] },
-		});
+		// P7-5 (T-1): the number, the approval and the registry entry commit
+		// together. A failure anywhere (a code longer than 32 characters, a
+		// registry conflict, a lost race) rolls the counter back, so the next
+		// approved PO gets the number this one would have had: no gap.
+		const allocated: { code: string | null } = { code: null };
 		try {
-			const approved = await this.orders.transition(id, ['submitted'], 'approved', {
-				code,
-				approvedBy: actorUserId,
-				approvedAt: new Date(),
-				rejectionReason: null,
+			return await inTransaction(this.transactions, async (tx) => {
+				const code = await this.numbering.next('purchase_order', {
+					date: new Date(`${order.orderDate}T12:00:00+07:00`),
+					context: { supplier: order.supplierSnapshot.code, category: PURCHASE_CATEGORY_CODES[order.category] },
+					tx,
+				});
+				allocated.code = code;
+				const approved = await this.orders.transition(
+					id,
+					['submitted'],
+					'approved',
+					{ code, approvedBy: actorUserId, approvedAt: new Date(), rejectionReason: null },
+					tx,
+				);
+				if (!approved) throw new PurchaseOrderStateError('notSubmitted');
+				// ERP-0044: the approved PO is the outward-facing document; the
+				// registry copies its code verbatim.
+				await this.documents.register(
+					{
+						code: approved.code ?? code,
+						title: `Pesanan Pembelian - ${order.supplierSnapshot.name}`,
+						documentType: 'purchase_order',
+						module: 'procurement',
+						sourceType: 'purchase_order',
+						sourceId: approved.id,
+						organizationId: null,
+						issuedOn: approved.orderDate,
+						issuedByUserId: actorUserId,
+					},
+					tx,
+				);
+				return approved;
 			});
-			if (!approved) throw new PurchaseOrderStateError('notSubmitted');
-			// ERP-0044: the approved PO is the outward-facing document; the
-			// code is allocated above, so the registry copies it verbatim.
-			await this.documents.register({
-				code: approved.code ?? code,
-				title: `Pesanan Pembelian - ${order.supplierSnapshot.name}`,
-				documentType: 'purchase_order',
-				module: 'procurement',
-				sourceType: 'purchase_order',
-				sourceId: approved.id,
-				organizationId: null,
-				issuedOn: approved.orderDate,
-				issuedByUserId: actorUserId,
-			});
-			return approved;
 		} catch (error) {
-			if (isUniqueViolation(error)) throw new PurchaseOrderCodeTakenError(code);
+			if (allocated.code && isUniqueViolation(error)) throw new PurchaseOrderCodeTakenError(allocated.code);
 			throw error;
 		}
 	}

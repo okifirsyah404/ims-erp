@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import type {
 	PurchaseOrderStatus,
 	PurchaseRequestStatus,
@@ -85,12 +86,13 @@ export interface IPurchaseOrderRepository extends IPurchaseOrderReceiving {
 	replaceDraft(id: string, header: TPurchaseOrderHeaderData, items: TPurchaseOrderItemData[]): Promise<TPurchaseOrderWrite>;
 	/** Re-derives `approved` / `ordered` of the requests this PO's lines order (after a cancel). */
 	syncRequestsOfOrder(id: string): Promise<void>;
-	/** `from` → `to`; `null` when the status was not in `from` (race). */
+	/** `from` → `to`; `null` when the status was not in `from` (race). `tx` joins the approval transaction (P7-5). */
 	transition(
 		id: string,
 		from: readonly PurchaseOrderStatus[],
 		to: PurchaseOrderStatus,
 		patch: TPurchaseOrderTransitionPatch,
+		tx?: TTx,
 	): Promise<TPurchaseOrderSelect | null>;
 	/** Whether anything was received on the PO. */
 	hasReceipts(id: string): Promise<boolean>;
@@ -163,6 +165,7 @@ export interface IPurchaseRequestRepository {
 		from: readonly PurchaseRequestStatus[],
 		to: PurchaseRequestStatus,
 		patch: TPurchaseRequestTransitionPatch,
+		tx?: TTx,
 	): Promise<TPurchaseRequestSelect | null>;
 	/** Whether any line is on a live (not cancelled) purchase order. */
 	hasOrderedLines(id: string): Promise<boolean>;

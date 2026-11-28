@@ -319,6 +319,64 @@ describe('purchase orders', () => {
 		expect((await orders.markSent('purchasing', order.id)).status).toBe('sent');
 	});
 
+	test('P7-5 (T-1): a failed approval does not use a PO number up; the next approval gets it', async () => {
+		// A counter that behaves like `procurement.code_numberings` inside a
+		// transaction: the runner rolls it back when the work throws.
+		const counter = { next: 1 };
+		const TX = { tx: 'approval' } as never;
+		const seenTx: unknown[] = [];
+		let failRegistry = true;
+		const runner = {
+			run: async <T,>(work: (tx: never) => Promise<T>): Promise<T> => {
+				const snapshot = counter.next;
+				try {
+					return await work(TX);
+				} catch (error) {
+					counter.next = snapshot;
+					throw error;
+				}
+			},
+		};
+		const gapless = new PurchaseOrderService(
+			orderRepo,
+			suppliers,
+			{ getActiveProducts: async (ids: string[]) => (ids.includes(ITEM) ? ([{ id: ITEM, sku: 'QR50', name: 'QR50 Mifare', specification: null, unitLabel: 'pcs', purchasePrice: 190_000_000 }] as never) : []) },
+			{
+				next: async (_type: string, options?: { tx?: unknown }) => {
+					seenTx.push(options?.tx);
+					const seq = counter.next++;
+					return `PO/IMS-SUP-00001/HW/1126/${String(seq).padStart(3, '0')}`;
+				},
+			},
+			{
+				register: async (_input, tx) => {
+					seenTx.push(tx);
+					if (failRegistry) throw new Error('registry down');
+					return {} as never;
+				},
+				voidBySource: async () => 0,
+			},
+			undefined,
+			undefined,
+			undefined,
+			runner,
+		);
+		const supplier = suppliers.addCompany();
+		const first = await gapless.create('purchasing', body(supplier.id));
+		await gapless.submit('purchasing', first.id);
+		await expect(gapless.decide('owner', first.id, { decision: 'approve' })).rejects.toThrow('registry down');
+		expect(counter.next).toBe(1);
+		// Allocation and registry joined the same transaction.
+		expect(seenTx).toEqual([TX, TX]);
+
+		failRegistry = false;
+		const second = await gapless.create('purchasing', body(supplier.id));
+		await gapless.submit('purchasing', second.id);
+		const approved = await gapless.decide('owner', second.id, { decision: 'approve' });
+		expect(approved.code).toBe('PO/IMS-SUP-00001/HW/1126/001');
+		expect(counter.next).toBe(2);
+	});
+
 	test('cancel needs nothing received', async () => {
 		const supplier = suppliers.addCompany();
 		const order = await orders.create('purchasing', body(supplier.id));

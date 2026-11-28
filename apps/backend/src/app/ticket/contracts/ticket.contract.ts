@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import { z } from 'zod';
 import {
 	COMMENT_VISIBILITIES,
@@ -139,7 +140,8 @@ export interface ITicketRepository {
 	findById(id: string): Promise<TTicketSelect | null>;
 	/** Every live ticket of a customer, newest first (portal, ERP-0022). */
 	listByCustomer(customerId: string): Promise<TTicketSelect[]>;
-	create(data: TTicketCreateData): Promise<TTicketSelect>;
+	/** `tx` joins the caller's transaction (number allocation, P7-5). */
+	create(data: TTicketCreateData, tx?: TTx): Promise<TTicketSelect>;
 	transition(
 		id: string,
 		from: TTicketSelect['status'][],

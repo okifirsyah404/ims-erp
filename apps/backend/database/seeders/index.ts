@@ -27,6 +27,7 @@ import { seedHrSalaries } from './seed/hr-salaries.seeder';
 import { seedHrDocuments } from './seed/hr-documents.seeder';
 import { seedDemoProject } from './seed/project-demo.seeder';
 import { seedDemoLeads } from './seed/lead-demo.seeder';
+import { seedDemoSuppliers } from './seed/supplier-demo.seeder';
 import { seedPortalDemo } from './seed/portal-demo.seeder';
 import { seedNotificationTemplates } from './seed/notification-templates.seeder';
 import { seedNotificationDemo } from './seed/notification-demo.seeder';
@@ -93,6 +94,8 @@ export async function runSeeders(): Promise<void> {
 	await seedDemoProject();
 	// Demo leads for the lead form (P7-6 / FU1): passed, upcoming and no follow-up.
 	await seedDemoLeads();
+	// Demo suppliers for document numbering (P7-5): two short codes, one long legacy code.
+	await seedDemoSuppliers();
 	// A pending leave request, an approved overtime record and the portal account
 	// printed for a manual walk-through.
 	await seedPortalDemo();

@@ -308,6 +308,9 @@ const api = {
 		'This number uses {ORG}: pick an active organization first',
 	'numbering.codeTooLong':
 		'The generated code {{code}} is longer than {{max}} characters; shorten the numbering pattern or a code it contains, such as the supplier code',
+	// FU6 (P7-5): a PO number longer than the registry column.
+	'numbering.purchaseOrderTooLong':
+		'The PO number {{code}} is longer than {{max}} characters. Shorten the supplier code in Settings → Code Number.',
 	'numbering.pattern.length': 'The pattern must be 1-100 characters',
 	'numbering.pattern.unknownToken': 'Unknown token {{token}}',
 	'numbering.pattern.tokenNotForType':

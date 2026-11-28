@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import { likePattern } from '@drizzle/search';
 import { warranties } from '@drizzle/schemas/project.schema';
@@ -89,9 +90,9 @@ export class WarrantyRepository implements IWarrantyRepository {
 		return paginationResult(request, total, data);
 	}
 
-	async create(code: string, actorUserId: string, data: TWarrantyData) {
+	async create(code: string, actorUserId: string, data: TWarrantyData, tx?: TTx) {
 		const now = new Date();
-		const [row] = await this.database
+		const [row] = await (tx ?? this.database)
 			.insert(warranties)
 			.values({ ...data, code, createdBy: actorUserId, createdAt: now, updatedAt: now })
 			.returning();

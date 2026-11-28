@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import { likePattern } from '@drizzle/search';
 import { tickets, type TTicketSelect } from '@drizzle/schemas/ticket.schema';
@@ -57,9 +58,9 @@ export class TicketRepository implements ITicketRepository {
 			.limit(200);
 	}
 
-	async create(data: TTicketCreateData) {
+	async create(data: TTicketCreateData, tx?: TTx) {
 		const now = new Date();
-		const [row] = await this.database
+		const [row] = await (tx ?? this.database)
 			.insert(tickets)
 			.values({ ...data, createdAt: now, updatedAt: now })
 			.returning();

@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import type { TPaginationResult } from '@ims-erp/common';
 import type {
 	ProductKind,
@@ -124,7 +125,8 @@ export interface IProductRepository {
 	): Promise<TProductSelect | null>;
 
 	/** Inserts an item; the `code` comes from the numbering authority. */
-	create(data: TProductCreateData, code: string): Promise<TProductSelect>;
+	/** `tx` joins the caller's transaction (number allocation, P7-5). */
+	create(data: TProductCreateData, code: string, tx?: TTx): Promise<TProductSelect>;
 
 	/** Applies a partial update to an alive item. */
 	update(id: string, data: TProductUpdateData): Promise<TProductSelect | null>;

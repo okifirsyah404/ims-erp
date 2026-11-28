@@ -17,6 +17,7 @@ import type { TicketChannel, TTicketSelect } from '@drizzle/schemas/ticket.schem
 import { businessDateOf } from '@utils/business-date.util';
 import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
+import { inTransaction, type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import type { TTicketMessageSelect } from '@drizzle/schemas/ticket.schema';
 import { TICKET_MESSAGE_REPOSITORY_TOKEN, TICKET_REPOSITORY_TOKEN } from '../constants/di';
 import { WARRANTY_SERVICE_TOKEN } from '@app/project/constants/di';
@@ -82,6 +83,9 @@ export class TicketService {
 		@inject(DOCUMENT_SERVICE_TOKEN) private readonly documents: Pick<DocumentService, 'register'>,
 		/** ERP-0022: the ticket's message thread (staff notes and replies, customer messages). */
 		@inject(TICKET_MESSAGE_REPOSITORY_TOKEN) private readonly comments: ITicketMessageRepository,
+		/** P7-5: document number + write in one transaction; optional for unit tests built by hand. */
+		@inject(TRANSACTION_RUNNER_TOKEN)
+		private readonly transactions?: ITransactionRunner,
 	) {}
 
 	private async view(ticket: TTicketSelect): Promise<TTicketView> {
@@ -159,24 +163,26 @@ export class TicketService {
 		const reportedAt = body.reportedAt ?? new Date();
 		const check = await this.warranty.check({ serialNumber: body.serialNumber, projectId: body.projectId }, businessDateOf(reportedAt));
 		if (check.customerId && check.customerId !== customer.id) throw new TicketReferenceError('serial');
-		const code = await this.numbering.next('ticket', undefined, reportedAt);
-		const ticket = await this.tickets.create({
-			code,
-			customerId: customer.id,
-			customerName: customer.name,
-			projectId: body.projectId ?? check.projectId,
-			serialNumber: body.serialNumber,
-			deviceDescription: body.deviceDescription ?? check.deviceDescription,
-			channel: body.channel,
-			reporterName: body.reporterName,
-			reporterContact: body.reporterContact,
-			complaint: body.complaint,
-			reportedAt,
-			inWarranty: check.inWarranty,
-			warrantyEndsOn: check.warrantyEndsOn,
-			warrantyCode: check.warrantyCode,
-			createdBy: actorUserId,
-		});
+		// P7-5 (T-1): the number is taken in the insert's transaction (no gap).
+		const ticket = await inTransaction(this.transactions, async (tx) =>
+			this.tickets.create({
+				code: await this.numbering.next('ticket', tx, reportedAt),
+				customerId: customer.id,
+				customerName: customer.name,
+				projectId: body.projectId ?? check.projectId,
+				serialNumber: body.serialNumber,
+				deviceDescription: body.deviceDescription ?? check.deviceDescription,
+				channel: body.channel,
+				reporterName: body.reporterName,
+				reporterContact: body.reporterContact,
+				complaint: body.complaint,
+				reportedAt,
+				inWarranty: check.inWarranty,
+				warrantyEndsOn: check.warrantyEndsOn,
+				warrantyCode: check.warrantyCode,
+				createdBy: actorUserId,
+			}, tx),
+		);
 		return this.changed(ticket, 'created');
 	}
 

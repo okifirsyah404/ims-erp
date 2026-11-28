@@ -104,6 +104,14 @@ const settings: Record<keyof typeof en, string> = {
 	'numbering.preview': 'Pratinjau',
 	'numbering.saved': 'Penomoran disimpan',
 	'numbering.tooLong': 'Pratinjau lebih dari {{max}} karakter; kode baru akan ditolak.',
+	// P7-5 (K6, RF-30/31).
+	'numbering.purchaseOrderTooLong':
+		'Nomor PO melebihi {{max}} karakter. Persingkat kode pemasok di Pengaturan → Nomor Kode.',
+	'numbering.sampleSupplier': 'Contoh memakai kode pemasok {{code}} (yang terpanjang saat ini).',
+	'numbering.sampleSupplierNone': 'Belum ada pemasok: contoh memakai {{code}}.',
+	'numbering.overLimit': 'Lebih dari {{max}} karakter',
+	'numbering.nextNumberHelp':
+		'Nomor berikutnya hanya contoh dan tidak memesan nomor. Nomor baru diambil saat dokumen disimpan; simpan yang gagal tidak memakan nomor.',
 	'numbering.tokensHelp':
 		'Token: {SEQ} atau {SEQ:4} (nomor, diisi nol), {TYPE}, {COMPANY}, {ORG} (slug organisasi aktif), {MM}, {MM_ROMAN}, {YY}, {YYYY}; PO juga {SUPPLIER} dan {CATEGORY}; sertifikat garansi {CUSTOMER}.',
 	'numbering.reset.never': 'Tidak pernah',

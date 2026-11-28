@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import { type ProductKind, type TProductSelect, products } from '@drizzle/schemas/product.schema';
 import { EXPORTED_INVENTORY_SERVICE_TOKEN } from '@app/inventory/constants/di';
@@ -240,8 +241,8 @@ export class ProductRepository implements IProductRepository {
 	}
 
 	/** Inserts a product; the `code` comes from the numbering authority. */
-	async create(data: TProductCreateData, code: string): Promise<TProductSelect> {
-		const [row] = await this.database
+	async create(data: TProductCreateData, code: string, tx?: TTx): Promise<TProductSelect> {
+		const [row] = await (tx ?? this.database)
 			.insert(products)
 			.values({
 				...data,

@@ -167,8 +167,8 @@ export class ProjectRepository implements IProjectRepository {
 		return ids;
 	}
 
-	create(data: TProjectCreateData, taskRows: TTaskData[]) {
-		return this.database.transaction(async (tx) => {
+	create(data: TProjectCreateData, taskRows: TTaskData[], outer?: TTx) {
+		return (outer ?? this.database).transaction(async (tx) => {
 			const now = new Date();
 			const [project] = await tx
 				.insert(projects)

@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import type { THandoverInsert, THandoverSelect } from '@drizzle/schemas/project.schema';
 import type { TPaginationRequest, TPaginationResult } from '@ims-erp/common';
 
@@ -18,7 +19,8 @@ export interface IHandoverRepository {
 	/** Fetches one page of BASTs across projects (only projects the user leads or works in, when given). */
 	paginate(request: TBastPaginationRequest): Promise<TPaginationResult<TBastRow>>;
 	find(projectId: string, handoverId: string): Promise<THandoverSelect | null>;
-	create(projectId: string, code: string, actorUserId: string, data: TBastData): Promise<THandoverSelect>;
+	/** `tx` joins the caller's transaction (number allocation, P7-5). */
+	create(projectId: string, code: string, actorUserId: string, data: TBastData, tx?: TTx): Promise<THandoverSelect>;
 	/** Updates an issued BAST; `null` when missing or cancelled. */
 	update(handoverId: string, data: TBastData): Promise<THandoverSelect | null>;
 	/** `issued → cancelled`; `null` when missing or already cancelled. */

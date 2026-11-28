@@ -10,10 +10,12 @@
 import { describe, expect, test } from 'bun:test';
 import type { TTx } from '@drizzle/types';
 import {
+	CODE_MAX_LENGTH,
 	CODE_TYPES_BY_SCHEMA,
 	CodeNumberingRepositoryBase,
 	CodeNumberingServiceBase,
 	type CodeType,
+	defaultPattern,
 	GeneratedCodeTooLongError,
 	NumberingPatternError,
 	OrganizationRequiredForCodeError,
@@ -24,6 +26,7 @@ import {
 	UnknownCodeTypeError,
 	validatePattern,
 } from '@shared/numbering';
+import { ProcurementNumberingService } from '../../src/app/procurement/services/procurement-numbering.service';
 
 type TRow = {
 	id: string;
@@ -180,10 +183,50 @@ describe('CodeNumberingRepositoryBase.next', () => {
 
 	test('a code longer than its column is refused', async () => {
 		const repository = new MemoryRepository();
+		// The old long default, saved as a custom pattern.
+		repository.rows.set('supplier_company', makeRow('supplier_company', { pattern: '{COMPANY}-{ORG}-{TYPE}-{SEQ:5}' }));
 		const longOrg = async () => 'A-VERY-LONG-ORGANIZATION-SLUG-NAME';
 		await expect(
 			repository.next('supplier_company', 'IMS', new Date(), undefined, undefined, longOrg),
 		).rejects.toBeInstanceOf(GeneratedCodeTooLongError);
+	});
+
+	test('P7-5: the default supplier code is short and keeps the PO number within 32 characters', async () => {
+		const repository = new MemoryRepository();
+		const supplier = await repository.next('supplier_company', 'IMS', new Date('2026-11-28T12:00:00+07:00'));
+		expect(supplier).toBe('SUP-00001');
+		expect(defaultPattern('supplier_company')).toBe('{TYPE}-{SEQ:5}');
+		const order = await repository.next('purchase_order', 'IMS', new Date('2026-11-28T12:00:00+07:00'), undefined, {
+			supplier,
+			category: 'HW',
+		});
+		expect(order).toBe('PO/IMS-SUP-00001/HW/1126/001');
+		expect(order.length).toBeLessThanOrEqual(32);
+		// Even a five-letter company code and a five-digit supplier sequence fit.
+		expect('PO/ABCDE-SUP-99999/SVC/1226/999'.length).toBeLessThanOrEqual(32);
+	});
+
+	test('P7-5: a PO number over 32 characters is refused with the FU6 message key', async () => {
+		const repository = new MemoryRepository();
+		const error = await repository
+			.next('purchase_order', 'IMS', new Date(), undefined, { supplier: 'DEV-ENTRAGATE-SUP-00001', category: 'HW' })
+			.catch((caught: unknown) => caught);
+		expect(error).toBeInstanceOf(GeneratedCodeTooLongError);
+		expect((error as GeneratedCodeTooLongError).key).toBe('numbering.purchaseOrderTooLong');
+		expect((error as GeneratedCodeTooLongError).params).toMatchObject({ max: 32 });
+	});
+
+	test('P7-5: a warranty number over 32 characters is refused', async () => {
+		expect(CODE_MAX_LENGTH.warranty).toBe(32);
+		const repository = new MemoryRepository();
+		// 001/SG-GARANSI/IMSID-CUS00001/2026 = 34 characters with a 5-letter company code.
+		await expect(
+			repository.next('warranty', 'IMSID', new Date('2026-11-28T12:00:00+07:00'), undefined, { customer: 'CUS00001' }),
+		).rejects.toBeInstanceOf(GeneratedCodeTooLongError);
+		// The usual 3-letter company code fits exactly.
+		expect(
+			await repository.next('warranty', 'IMS', new Date('2026-11-28T12:00:00+07:00'), undefined, { customer: 'CUS00001' }),
+		).toHaveLength(32);
 	});
 });
 
@@ -194,17 +237,19 @@ describe('CodeNumberingServiceBase', () => {
 		return { repository, supplier: new SupplierNumbering(store, company, organizations) };
 	}
 
-	test('the default supplier code names company, organization and type', async () => {
+	test('the default supplier code is the short type + sequence (K6)', async () => {
 		const { supplier } = setup();
-		expect(await supplier.next('supplier_company', 'hit')).toBe('IMS-SLUG-HIT-SUP-00001');
-		expect(await supplier.next('supplier_company', 'hit')).toBe('IMS-SLUG-HIT-SUP-00002');
+		expect(await supplier.next('supplier_company', 'hit')).toBe('SUP-00001');
+		expect(await supplier.next('supplier_company')).toBe('SUP-00002');
 	});
 
-	test('the default supplier code needs an organization', async () => {
-		const { supplier } = setup();
+	test('a pattern with {ORG} needs an organization', async () => {
+		const { repository, supplier } = setup();
+		repository.rows.set('supplier_company', makeRow('supplier_company', { pattern: '{ORG}-{TYPE}-{SEQ:3}' }));
 		await expect(supplier.next('supplier_company')).rejects.toBeInstanceOf(
 			OrganizationRequiredForCodeError,
 		);
+		expect(await supplier.next('supplier_company', 'hit')).toBe('SLUG-HIT-SUP-001');
 	});
 
 	test('listSettings returns only the schema code types, with defaults', async () => {
@@ -213,11 +258,11 @@ describe('CodeNumberingServiceBase', () => {
 		expect(settings.map((setting) => setting.codeType)).toEqual(['supplier_company']);
 		expect(settings[0]).toMatchObject({
 			typeCode: 'SUP',
-			pattern: '{COMPANY}-{ORG}-{TYPE}-{SEQ:5}',
+			pattern: '{TYPE}-{SEQ:5}',
 			resetPolicy: 'never',
 			isDefault: true,
 			maxLength: 32,
-			nextNumber: 'IMS-SLUG-HIT-SUP-00001',
+			nextNumber: 'SUP-00001',
 		});
 	});
 
@@ -227,7 +272,7 @@ describe('CodeNumberingServiceBase', () => {
 			pattern: '{ORG}-{TYPE}-{SEQ:3}',
 			resetPolicy: 'never',
 		});
-		expect(preview).toBe('ORG-SUP-001');
+		expect(preview.nextNumber).toBe('ORG-SUP-001');
 	});
 
 	test('a code type of another schema is unknown here', async () => {
@@ -257,5 +302,54 @@ describe('CodeNumberingServiceBase', () => {
 		expect(await sale.next('quotation')).toBe('SPH/001');
 		const [listed] = await sale.listSettings();
 		expect(listed).toMatchObject({ codeType: 'quotation', nextNumber: 'SPH/002' });
+	});
+});
+
+describe('PO preview with real supplier codes (P7-5, K6)', () => {
+	function setup(codes: Record<string, string>) {
+		const repository = new MemoryRepository();
+		const suppliers = {
+			findLongestCompanyCode: async () =>
+				Object.values(codes).sort((a, b) => b.length - a.length)[0] ?? null,
+			assertActiveCompany: async (id: string) => ({ code: codes[id] }) as never,
+		};
+		return new ProcurementNumberingService(repository as never, company, undefined, suppliers);
+	}
+
+	test('the example uses the longest live supplier code, and says so', async () => {
+		const service = setup({ a: 'SUP-00001', b: 'HIT' });
+		const settings = await service.listSettings();
+		const order = settings.find((setting) => setting.codeType === 'purchase_order')!;
+		expect(order.sampleContext.supplier).toBe('SUP-00001');
+		expect(order.nextNumber.startsWith('PO/IMS-SUP-00001/HW/')).toBe(true);
+		expect(order.nextNumber.length).toBeLessThanOrEqual(32);
+		// Series without {SUPPLIER} keep the placeholder set.
+		expect(settings.find((setting) => setting.codeType === 'goods_receipt')!.sampleContext.supplier).toBe('SUP');
+	});
+
+	test('a long real supplier code makes the PO example exceed 32 characters (visible before approval)', async () => {
+		const service = setup({ a: 'DEV-ENTRAGATE-SUP-00001' });
+		const order = (await service.listSettings()).find((setting) => setting.codeType === 'purchase_order')!;
+		expect(order.nextNumber.length).toBeGreaterThan(32);
+		expect(order.maxLength).toBe(32);
+	});
+
+	test('a preview can use the supplier the owner picked', async () => {
+		const service = setup({ a: 'SUP-00001', b: 'HIT' });
+		const preview = await service.previewSetting(
+			'purchase_order',
+			{ pattern: '{TYPE}/{COMPANY}-{SUPPLIER}/{CATEGORY}/{MM}{YY}/{SEQ:3}', resetPolicy: 'monthly' },
+			null,
+			{ supplierCompanyId: 'b' },
+		);
+		expect(preview.sampleContext.supplier).toBe('HIT');
+		expect(preview.nextNumber.startsWith('PO/IMS-HIT/HW/')).toBe(true);
+		expect(preview.maxLength).toBe(32);
+	});
+
+	test('without suppliers the placeholder stays', async () => {
+		const service = setup({});
+		const order = (await service.listSettings()).find((setting) => setting.codeType === 'purchase_order')!;
+		expect(order.sampleContext.supplier).toBe('SUP');
 	});
 });

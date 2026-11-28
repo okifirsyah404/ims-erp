@@ -902,6 +902,12 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   required `*`, and the lead form (FU1) runs on TanStack Form with the shared
   `@ims-erp/common` lead schema. Verified: backend 1660, web-admin 228,
   locales 110, tsc + lint clean, UAT `uat/P7-6.md` all Valid.
+- ERP-0182 P7-5 gap-free numbering (2026-11-28): every document number is
+  taken in the transaction that saves the document (24 call sites), the default
+  supplier code is `SUP-00001` so PO numbers fit 32 characters, a longer PO
+  number is refused with the FU6 message, and the Code Number page renders the
+  PO example with the longest real supplier code. Verified: backend 1664,
+  web-admin 230, locales 110, UAT `uat/P7-5.md` all Valid.
 
 - ERP-0170 opening-balance row dialog (2026-11-27): the inline add-row form on
   `/finance/opening-balances` moved to `opening-balance-row-dialog.tsx`; the

@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import type { TPaginationResult } from '@ims-erp/common';
 import type {
 	TWarehouseInsert,
@@ -187,7 +188,8 @@ export interface IWarehouseRepository {
 	 * Both rows are written in a single transaction, so a warehouse is never
 	 * left addressless by a partial failure.
 	 */
-	create(data: TWarehouseCreateData): Promise<TWarehouseSelect>;
+	/** `tx` joins the caller's transaction (number allocation, P7-5). */
+	create(data: TWarehouseCreateData, tx?: TTx): Promise<TWarehouseSelect>;
 
 	/** Applies a partial update to an alive warehouse. */
 	update(
