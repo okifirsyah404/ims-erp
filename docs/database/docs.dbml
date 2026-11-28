@@ -2320,7 +2320,7 @@ Table sale.invoices {
   term_kind text [note: "down_payment = first live invoice of its order that does not settle it; settlement = the one that settles it; installment otherwise."]
   customer_id uuid [note: "Logical reference to customer.customers.id. Cross-module FK intentionally omitted. Validated through the Customer module contract."]
   company_id uuid [note: "Logical reference to customer.companies.id. Cross-module FK intentionally omitted. Validated through the Customer module contract."]
-  customer_snapshot jsonb [note: "Customer data copied from the sales order. Null when the invoice has no order."]
+  customer_snapshot jsonb [note: "Customer data copied from the sales order, or from the customer contract for an invoice without an order (B-42)."]
   order_id uuid [note: "Plain id of a row in sale.orders (same module). Nullable: proforma and recurring invoices may have no order."]
   project_id uuid [note: "Logical reference to project.projects.id. Cross-module FK intentionally omitted. Validated through the Project module contract. The live project of the order, stamped when the invoice is issued (ERP-0141)."]
   order_code varchar(32)

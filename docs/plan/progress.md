@@ -12,6 +12,56 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-29 - B-42 invoice without a sales order (ERP-0189)
+
+**Scope.** Step 8 task B-42 (KF-S6, FU9), from `main` (`33dcb615`, after
+P7-4 #185). ERP-0188 is left for B-30 (#186), which needs renumbering from
+ERP-0187 (taken by P7-4 on main).
+
+**Gate 1.** Read `docs/database/docs.dbml` (`sale.invoices`,
+`sale.invoice_items`, `customer.customers`), `module-ownership.md` (sale,
+customer), `integrity-and-consistency.md`, `data-dictionary.md` (money).
+No schema change: `order_id` and `customer_id` are already nullable; only the
+`customer_snapshot` note changed. `logical-references.md` regenerated, no
+diff.
+
+**Gate 2 (manual grill, answers).** Ownership: sale writes the invoice; the
+customer is checked (`getActiveCustomer`) and snapshotted (`getSnapshot`)
+through the customer contract. Tenant: the invoice keeps `organization_id`.
+Money: integer minor units; VAT per line = round(base x bps / 10000), 11% by
+default, computed by the server when the caller sends `vatEnabled` (legacy
+callers keep their line tax). Dates: due date is a business date; FU9 makes it
+required at issue for every invoice (term invoices included). Status
+vocabulary unchanged. Picker: finance has no `customer:read`, so
+`GET /sales/invoices/customer-options` is gated by `invoice:create`.
+Prefill: `?ticketId=` (B-31); license-contract prefill not built.
+
+**Backend.** `invoice.contract.ts` (`title`, `vatEnabled`, `vatRateBps`),
+`InvoiceService.create` / `issue` / `customerOptions`,
+`ExportedCustomerService.activeCustomerOptions`, three errors (`api` keys
+en+id), the new GET route. `module-ownership.md` updated.
+
+**Web-admin.** `/sales/invoices/new` and `components/sales/invoice-form.tsx`
+(P7-6 components, help texts RF-28–RF-34, totals preview), "New invoice" on
+the invoices list (`invoice.create`), the invoice page without a term badge,
+breadcrumbs. Locales `sales`, `finance`, `api`, `nav` en+id.
+
+**Checks.**
+- `bun test test/unit/invoice-billing.service.test.ts`: 16 pass (5 new).
+- `bun run test` (root): 8/8 (backend 1701, web-admin 234, locales 110). `bun run lint`: 7/7, 0 errors. tsc backend and web-admin clean; web-admin build clean.
+- `bun docs/architecture/gen-role-permission.ts`: 818 routes (adds `GET /sales/invoices/customer-options`).
+- `bun docs/database/validate-dbml.ts`: OK.
+- Browser UAT `docs/adjustment/5-pengerjaan/uat/B-42.md`: 3/3 Valid as `finance_seed`: 0002/INV/DEV/XI/26 (Rp 500.000 + VAT Rp 55.000) saved, issued (invoice journal posted, AR item opened), paid in full (receipt journal posted, AR item paid).
+
+**Seed (A-10).** `invoice-demo.seeder.ts`: one draft invoice without an
+order for the first active customer (skipped when none); run twice through
+`seedInvoiceDemo()` only: 1, then 0.
+
+**docs/database/.** Updated (`docs.dbml` note, `module-ownership.md`).
+
+**Next task.** B-31 (paid ticket can be billed; needs B-30 #186 merged) or
+B-13 (damaged sales return does not add sellable stock).
+
 ## 2026-11-28 - `/admin/users` hides the base `member` role (ERP-0187 follow-up)
 
 The organization column showed the raw stored list (`Entragate (member,finance)`,

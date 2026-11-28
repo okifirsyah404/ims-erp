@@ -511,7 +511,8 @@ describe('InvoiceService (F4)', () => {
 			orderId: null,
 			paymentTermId: null,
 			issueDate: '2026-01-05',
-			dueDate: null,
+			// FU9 (B-42): an invoice is issued only with a due date.
+			dueDate: '2026-02-04',
 			currencyCode: 'IDR',
 			notes: null,
 			items: [

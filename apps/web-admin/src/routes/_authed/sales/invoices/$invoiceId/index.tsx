@@ -134,11 +134,11 @@ function InvoiceDetailPage() {
 				<div>
 					<h1 className='text-2xl font-bold'>{data.code ?? t('finance:invoice.draftNumber')}</h1>
 					<p className='text-sm text-muted-foreground'>
-						{data.description} · {data.title}
+						{[data.description, data.title].filter(Boolean).join(' · ')}
 					</p>
 					<div className='mt-2 flex flex-wrap gap-1'>
 						<Badge variant={INVOICE_STATUS_VARIANT[data.status]}>{t(`finance:status.${data.status}`)}</Badge>
-						<Badge variant='outline'>{t(`finance:termKind.${data.termKind}`)}</Badge>
+						{data.termKind && <Badge variant='outline'>{t(`finance:termKind.${data.termKind}`)}</Badge>}
 						{isOverdue(data, todayBusinessDate()) && <Badge variant='destructive'>{t('finance:invoice.overdue')}</Badge>}
 					</div>
 				</div>

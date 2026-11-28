@@ -107,6 +107,7 @@ const nav = {
 	'breadcrumb.projectNew': 'New project',
 	'breadcrumb.bastNew': 'New BAST',
 	'breadcrumb.ticketNew': 'New ticket',
+	'breadcrumb.invoiceNew': 'New invoice',
 	'breadcrumb.contractNew': 'New contract',
 	'breadcrumb.warranty': 'Warranty certificate',
 	'item.borrowings': 'Borrowings',

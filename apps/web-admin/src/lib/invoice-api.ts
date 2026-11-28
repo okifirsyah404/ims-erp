@@ -1,6 +1,7 @@
 import type { TApiPaginatedResponse, TApiResponse } from '@ims-erp/common';
 import { queryOptions } from '@tanstack/react-query';
 import { currentLanguage } from '@/i18n';
+import { networkError, readEnvelope } from '@/lib/api-error';
 import { organizationHeaders } from './organization-store';
 import type { TQuotationCustomerSnapshot } from './quotation-api';
 import type { TSalesOrderItem } from './sales-order-api';
@@ -32,7 +33,8 @@ export type TReceiptMethod = (typeof RECEIPT_METHODS)[number];
 export type TInvoice = {
 	id: string;
 	code: string | null;
-	termKind: TInvoiceTermKind;
+	/** `null` for an invoice without a sales order (B-42). */
+	termKind: TInvoiceTermKind | null;
 	customerId: string | null;
 	companyId: string | null;
 	customerSnapshot: TQuotationCustomerSnapshot | null;
@@ -212,6 +214,54 @@ export const createInvoice = (input: {
 	dueDate: string | null;
 	notes: string | null;
 }) => send<TInvoice>('/sales/invoices', 'POST', input);
+/** A customer the invoice-without-order picker offers (B-42). */
+export type TInvoiceCustomerOption = { id: string; code: string; name: string };
+
+/** Active customers for an invoice without a sales order; gated by `invoice:create` (finance has no `customer:read`). */
+export function invoiceCustomerOptionsQueryOptions(search: string) {
+	return queryOptions({
+		queryKey: ['finance', 'invoices', 'customer-options', search] as const,
+		queryFn: async () =>
+			(await request<TInvoiceCustomerOption[]>(`/sales/invoices/customer-options${query({ search })}`)).data as TInvoiceCustomerOption[],
+	});
+}
+
+/** The standard VAT rate in basis points (11%); the server applies the same. */
+export const STANDARD_VAT_RATE_BPS = 1100;
+
+/** One line of an invoice without a sales order; `unitPrice` in IDR minor units. */
+export type TStandaloneInvoiceLine = { productId: string | null; description: string; quantity: number; unitPrice: number };
+
+/** Body of an invoice without a sales order (B-42): the server computes VAT and totals. */
+export type TStandaloneInvoiceInput = {
+	customerId: string;
+	title: string | null;
+	dueDate: string;
+	vatEnabled: boolean;
+	notes: string | null;
+	items: TStandaloneInvoiceLine[];
+};
+
+/**
+ * Creates a draft invoice without a sales order (B-42, KF-S6).
+ *
+ * @throws {ApiError} With field errors (`customerId`, `items.0.unitPrice`, ...) the form shows in place
+ */
+export async function createStandaloneInvoice(input: TStandaloneInvoiceInput): Promise<TInvoice> {
+	let response: Response;
+	try {
+		response = await fetch(`${API_URL}/sales/invoices`, {
+			method: 'POST',
+			credentials: 'include',
+			headers: { ...organizationHeaders(), 'Accept-Language': currentLanguage(), 'Content-Type': 'application/json' },
+			body: JSON.stringify({ ...input, items: input.items.map((item) => ({ ...item, discountAmount: 0, taxAmount: 0 })) }),
+		});
+	} catch (cause) {
+		throw networkError(cause);
+	}
+	return (await readEnvelope<TInvoice>(response)).data as TInvoice;
+}
+
 export const issueInvoice = (id: string, input: { issueDate: string; dueDate: string | null }) =>
 	send<TInvoice>(`/sales/invoices/${id}/issue`, 'POST', input);
 export const voidInvoice = (id: string, reason: string) => send<TInvoice>(`/sales/invoices/${id}/void`, 'POST', { reason });

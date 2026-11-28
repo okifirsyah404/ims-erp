@@ -918,6 +918,12 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   columns); it leaves Goods receipts, stays billable for what arrived, and the
   project budget keeps only the received value. Verified: backend 1667,
   web-admin 230, locales 110, migration applied, UAT `uat/B-32.md` all Valid.
+- ERP-0189 B-42 invoice without a sales order (2026-11-29): Invoices → New
+  invoice bills an active customer directly (catalogue or free lines, 11% VAT
+  computed by the server, due date required); the draft is issued and paid
+  like a term invoice, and can be prefilled from a paid ticket. Every invoice
+  now needs a due date to be issued (FU9). Verified: backend 1701, web-admin
+  234, locales 110, UAT `uat/B-42.md` all Valid.
 - ERP-0187 P7-4 new role grants (2026-11-28): 13 organization roles; `sales`
   holds the former sales manager grants, `finance` the former accountant
   grants; the organization `admin`, `sales_manager`, `accountant` and

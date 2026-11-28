@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { container } from 'tsyringe';
 import type { ErpContext } from '@authorization/elysia-auth';
 import { domainPlugin } from '@http/plugin';
@@ -79,6 +80,18 @@ export class InvoiceController {
 				{
 					erp: { permission: ['invoice:read'] },
 					detail: { description: "An order's billing state: invoiced, paid, left to invoice, next planned term" },
+				},
+			)
+			.get(
+				'/invoices/customer-options',
+				async ({ query }) =>
+					ok(await invoices.customerOptions(z.object({ search: z.string().trim().max(100).optional() }).parse(query).search)),
+				{
+					erp: { permission: ['invoice:create'] },
+					detail: {
+						description:
+							'Active customers for an invoice without a sales order (B-42); gated by invoice:create because finance has no customer:read',
+					},
 				},
 			)
 			.get(

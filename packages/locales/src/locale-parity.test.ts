@@ -143,6 +143,9 @@ describe('locale values', () => {
 			// Same word in both languages.
 			'sales:quotation.status',
 			'sales:quotation.subtotal',
+			// "Subtotal" and "Total" are the Indonesian words too (B-42 invoice form).
+			'sales:freeInvoice.subtotal',
+			'sales:freeInvoice.total',
 			'sales:detail.email',
 			'sales:status.won',
 			// The printed SPH keeps the company's own (partly English) labels.

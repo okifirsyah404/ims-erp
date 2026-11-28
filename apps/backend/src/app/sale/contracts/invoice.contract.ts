@@ -35,6 +35,15 @@ export const invoiceCreateSchema = z.object({
 	dueDate: isoDate.nullish().transform((v) => v ?? null),
 	currencyCode: z.string().length(3).default('IDR'),
 	notes: z.string().nullish().transform((v) => v ?? null),
+	/** B-42: the invoice's heading (a free invoice has no order title). */
+	title: z.string().trim().max(200).nullish().transform((v) => (v ? v : null)),
+	/**
+	 * B-42: when sent, the server computes every line's VAT from the rate
+	 * (`false` = no VAT); absent keeps the lines' own tax amounts (legacy API).
+	 */
+	vatEnabled: z.boolean().optional(),
+	/** Basis points (1100 = 11%); defaults to the standard rate. */
+	vatRateBps: z.number().int().min(0).max(10_000).nullish().transform((v) => v ?? null),
 	items: z.array(invoiceItemSchema).min(1).max(500),
 });
 

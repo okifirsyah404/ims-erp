@@ -6,11 +6,11 @@ import type en from '../en/finance';
  */
 const finance: Record<keyof typeof en, string> = {
 	'invoices.title': 'Invoice',
-	'invoices.description': 'Semua termin tagihan dari setiap sales order: draf, terbit, dan lunas.',
+	'invoices.description': 'Semua faktur: termin tagihan sales order dan faktur tanpa sales order (jasa, biaya tambahan, perpanjangan lisensi).',
 	'invoices.search': 'Cari invoice, order, penawaran, atau pelanggan…',
 	'invoices.allStatuses': 'Semua status',
 	'invoices.overdueOnly': 'Hanya yang lewat jatuh tempo',
-	'invoices.empty': 'Belum ada invoice. Buat dari halaman sales order.',
+	'invoices.empty': 'Belum ada faktur. Tagih sales order dari halamannya, atau pakai Faktur baru untuk jasa atau biaya tambahan.',
 	'invoices.noResults': 'Tidak ada invoice yang cocok.',
 	'invoices.back': 'Kembali ke daftar invoice',
 	'invoices.backToInvoice': 'Kembali ke invoice',

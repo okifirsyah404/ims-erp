@@ -668,6 +668,9 @@ const api: Record<keyof typeof en, string> = {
 		'Faktur memerlukan minimal satu baris item untuk diterbitkan',
 	'sales.invoiceDueBeforeIssue':
 		'Tanggal jatuh tempo tidak boleh sebelum tanggal terbit',
+	'sales.invoiceDueDateRequired': 'Jatuh tempo wajib diisi.',
+	'sales.invoiceCustomerRequired': 'Pilih pelanggan untuk faktur tanpa sales order.',
+	'sales.invoiceCustomerInactive': 'Pelanggan tidak ditemukan atau tidak aktif. Pilih pelanggan yang aktif.',
 	'sales.receiptNotFound': 'Kwitansi tidak ditemukan',
 	'sales.receiptExceeds':
 		'Pembayaran melebihi sisa tagihan',
