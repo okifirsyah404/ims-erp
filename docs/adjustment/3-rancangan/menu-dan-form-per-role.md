@@ -28,7 +28,7 @@ Dokumen ini menjawab dua pertanyaan:
 |---|---|---|
 | Pemilik | `owner` | Aqim (juga **admin aplikasi**) |
 | SDM | `hr` | Aqim |
-| Penjualan (gabungan, K2b) | `sales_manager` | Agus MD, Bilal |
+| Penjualan (gabungan, K2b) | `sales` | Agus MD, Bilal |
 | Gudang | `warehouse` | Bilal, Agus |
 | Layanan Pelanggan | `customer_service` | Bilal |
 | Pemasaran | `marketing` | Bilal |
@@ -37,9 +37,10 @@ Dokumen ini menjawab dua pertanyaan:
 | Keuangan (gabungan Keuangan + Akuntan, K2d) | `finance` | Bella |
 | Pekerja Lepas | `freelancer` | Dafrin, Oki |
 
-Role yang ada di kode tetapi **tidak diberikan**: Manajer Operasional,
-Pembelian, dan Penjualan biasa (`sales`). Role Admin, Anggota, dan Auditor
-**dihapus**.
+Role yang ada di kode tetapi **tidak diberikan**: Manajer Operasional dan
+Pembelian. Role Admin, Anggota, dan Auditor **dihapus**. Role Manajer
+Penjualan (`sales_manager`) **dihapus** (K2b, diubah 28/11): `sales`
+("Penjualan") memegang semua haknya, dan data anggota dipindah ke `sales`.
 
 Satu orang boleh memegang beberapa role (D2). Menu yang ia lihat adalah
 **gabungan** menu semua rolenya.

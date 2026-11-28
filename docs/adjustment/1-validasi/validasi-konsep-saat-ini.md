@@ -468,8 +468,9 @@ sudah tercakup role lain dihapus supaya daftar anggota mudah dibaca.
 
 Role yang dipakai turun dari 16 menjadi 11, setelah Manajer Penjualan dan
 Penjualan digabung menjadi satu role **Penjualan** (K2b, permintaan
-programmer B 2026-11-26; di kode: `sales_manager` diberi label "Penjualan",
-`sales` tidak ditawarkan lagi). Tidak terpakai: Admin, Manajer Operasional,
+programmer B 2026-11-26; di kode, diubah 28/11: role `sales_manager`
+dihapus, `sales` ("Penjualan") memegang semua haknya, dan data anggota
+`sales_manager` dipindah ke `sales`). Tidak terpakai: Admin, Manajer Operasional,
 Pembelian, Keuangan (bisa diberikan lagi bila ada orang baru), dan Auditor.
 
 Diperbarui 2026-11-27 sesuai keputusan tanya-jawab: dengan K2d (Akuntan digabung ke Keuangan) dan Anggota dihapus, role yang dipakai menjadi **10**: Pemilik, SDM, Penjualan, Gudang, Layanan Pelanggan, Pemasaran, Manajer Proyek, Teknisi, Pekerja Lepas, Keuangan (Bella). Admin (role organisasi) dihapus; Manajer Operasional dan Pembelian tidak dipakai (K2c).

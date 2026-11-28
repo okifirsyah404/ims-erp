@@ -258,7 +258,7 @@ pun (C2). Bilal boleh mengirim SO-nya sendiri, diawasi lewat laporan (K7).
 
 | Keputusan | Isi | Status |
 |---|---|---|
-| K2b | Satu role Penjualan (label `sales_manager` = "Penjualan", `sales` tidak ditawarkan) | jawaban programmer B 27/11: (a) gabung |
+| K2b | Satu role Penjualan: `sales_manager` dihapus, `sales` ("Penjualan") memegang semua haknya (diubah 28/11) | jawaban programmer B 27/11: (a) gabung |
 | C1 | SO otomatis Terkirim saat semua barang terkirim, Selesai saat lunas | jawaban programmer B 27/11: (a) |
 | K7 | Bilal boleh membuat SO lalu mengirim barangnya sendiri | jawaban programmer B 27/11: (a) |
 | C2 | Menu Uang Muka dibuka untuk pemegang hak baca invoice | jawaban programmer B 27/11: (a) |
@@ -331,8 +331,9 @@ stateDiagram-v2
 
 **Yang perlu diubah di kode:**
 
-- Label role `sales_manager` = "Penjualan" dan `sales` tidak ditawarkan di
-  daftar role (`erp-permissions.ts`, locale, Oki: OA11/M12-5).
+- Role `sales_manager` dihapus; `sales` ("Penjualan") mendapat semua haknya,
+  dan data anggota `sales_manager` dipindah ke `sales` lewat migrasi data
+  (`erp-permissions.ts`, locale, seeder, Oki: OA11/M12-5/P7-4; diubah 28/11).
 - Status SO otomatis Terkirim/Selesai dari surat jalan dan pelunasan invoice
   (`sale`, programmer B). Kolom status sudah mengenal `delivered` dan
   `completed`; yang belum ada adalah transisinya.
