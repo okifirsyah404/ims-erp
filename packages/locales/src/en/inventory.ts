@@ -11,6 +11,41 @@
  * is never `ready` (ADR-0008); only the label changed.
  */
 const inventory = {
+	// B-29 (KF-G1): manual stock receipt / issue screens.
+	'manualStock.receiveTitle': 'Receive stock',
+	'manualStock.receiveDescription':
+		'Record stock coming into a warehouse outside a purchase order: material back from a project site, own stock, items found in a count.',
+	'manualStock.issueTitle': 'Issue stock',
+	'manualStock.issueDescription':
+		'Record stock leaving a warehouse for project material or own use. Stock issued to a project counts as that project\'s material cost.',
+	'manualStock.receiptFormTitle': 'Stock coming in',
+	'manualStock.issueFormTitle': 'Stock going out',
+	'manualStock.warehouse': 'Warehouse',
+	'manualStock.pickWarehouse': 'Pick a warehouse',
+	'manualStock.bin': 'Storage location',
+	'manualStock.binHelp': 'Leave empty when the warehouse has no storage locations.',
+	'manualStock.noBin': 'No storage location',
+	'manualStock.product': 'Item',
+	'manualStock.searchProduct': 'Search code or item name',
+	'manualStock.quantity': 'Quantity',
+	'manualStock.quantityHelp': 'In the item\'s unit, more than 0. For a serialized item the quantity follows the serial numbers.',
+	'manualStock.project': 'Project',
+	'manualStock.searchProject': 'Search project code or title',
+	'manualStock.noProjects': 'No active project matches.',
+	'manualStock.projectHelpIssue': 'Pick the project the material is for; leave empty for own use.',
+	'manualStock.projectHelpReceipt': 'Pick the project the material comes back from; it lowers that project\'s material cost.',
+	'manualStock.serials': 'Serial numbers',
+	'manualStock.serialsHelpIssue': 'Tick the serial numbers leaving this warehouse.',
+	'manualStock.serialsHelpReceipt': 'One serial number per line. Serial numbers issued earlier can be clicked in.',
+	'manualStock.serialsIssued': 'Issued earlier:',
+	'manualStock.pickWarehouseFirst': 'Pick the warehouse first.',
+	'manualStock.noSerialsInStock': 'No serial number of this item is ready in this warehouse.',
+	'manualStock.notes': 'Notes',
+	'manualStock.submitReceipt': 'Receive',
+	'manualStock.submitIssue': 'Issue',
+	'manualStock.receivedDone': 'Stock received: movement {{code}}.',
+	'manualStock.issuedDone': 'Stock issued: movement {{code}}.',
+	'manualStock.viewMovements': 'Open stock movements',
 	// Shell.
 	'adminOnly': 'Inventory management is available to application administrators only.',
 

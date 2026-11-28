@@ -1,6 +1,6 @@
 # Roles, Permissions and Endpoints
 
-> **Background.** This page describes the **current code**. Since P7-4 (ERP-0185, 2026-11-28) that is 13 organization roles: one Sales role, Finance holding the former Accountant grants, the organization `admin`/`accountant`/`auditor`/`sales_manager` roles removed, `member` kept as the base role every member carries, an extended Freelancer. The target role design stays in `docs/adjustment/`. The working scope is
+> **Background.** This page describes the **current code**. Since P7-4 (ERP-0187, 2026-11-28) that is 13 organization roles: one Sales role, Finance holding the former Accountant grants, the organization `admin`/`accountant`/`auditor`/`sales_manager` roles removed, `member` kept as the base role every member carries, an extended Freelancer. The target role design stays in `docs/adjustment/`. The working scope is
 > `docs/adjustment/` (target behaviour approved by the owner) and the code
 > (current behaviour); see `AGENTS.md` "Source of truth".
 
@@ -8,7 +8,7 @@ Who may call which backend endpoint, and why. The first half of this page is
 written by hand. The second half (role list, grants per role, every endpoint
 with its guard and the roles that pass it) is **generated from code** by
 `bun docs/architecture/gen-role-permission.ts`. Re-run it whenever a route, a guard option
-or a role grant changes. Last regenerated for ERP-0185 / P7-4 (2026-11-28).
+or a role grant changes. Last regenerated for ERP-0187 / P7-4 (2026-11-28).
 
 Authoritative sources, in this order: the code
 (`packages/common/src/authorization/erp-permissions.ts`,
@@ -518,7 +518,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-816 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+817 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -998,6 +998,7 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | POST | `/stock/issues` | org member + permission | `stock:issue` | `owner`, `warehouse` |
 | GET | `/stock/movements` | org member + permission | `stock:read` | `owner`, `operations_manager`, `purchasing`, `warehouse`, `finance` |
 | POST | `/stock/movements/:id/reverse` | org member + permission | `stock_adjustment:post` | `owner`, `operations_manager` |
+| GET | `/stock/project-options` | org member + permission | `stock:issue` | `owner`, `warehouse` |
 | POST | `/stock/receipts` | org member + permission | `stock:receive` | `owner`, `warehouse` |
 | GET | `/stock/valuation` | org member + permission | `stock:read` `product:read_cost` | `owner`, `purchasing`, `finance` |
 

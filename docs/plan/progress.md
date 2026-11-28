@@ -12,7 +12,7 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
-## 2026-11-28 - `/admin/users` hides the base `member` role (ERP-0185 follow-up)
+## 2026-11-28 - `/admin/users` hides the base `member` role (ERP-0187 follow-up)
 
 The organization column showed the raw stored list (`Entragate (member,finance)`,
 the label lookup only knows single keys). `routes/_authed/admin/users/index.tsx`
@@ -29,7 +29,7 @@ browser.
 with `Export named 'errorRef' not found in module packages/common/dist/index.js`.
 The package's `main`/`types` pointed at `dist/`, which is gitignored and only
 rebuilt by `prepare` during `bun install`; a pull without a rebuild left a
-`dist/` older than P7-6 (ERP-0181) and P7-4 (ERP-0185).
+`dist/` older than P7-6 (ERP-0181) and P7-4 (ERP-0187).
 
 **Fix.** `packages/common/package.json`: `main`, `types` and `exports["."]`
 point at `./src/index.ts`, like `@ims-erp/locales`. Every consumer bundles or
@@ -45,7 +45,14 @@ CI and the Dockerfiles; the backend Dockerfile comment was updated.
 7/7. `bun run backend:drizzle:migrate-reset` on a throwaway database: exit 0
 twice (seeded 41 role accounts each run). `docs/database/` unchanged.
 
-## 2026-11-28 - P7-4 new role grants (ERP-0185)
+## 2026-11-28 - P7-4 new role grants (ERP-0187)
+
+> **Renumbered 2026-11-29.** This work was opened as ERP-0185, which B-29
+> (#184) took on `main` first. On syncing PR #185 with `main` it became
+> ERP-0187, and its data migration was regenerated after B-29's migration as
+> `20261128170839_erp0187_sales_role` (same SQL; the old
+> `20261128153813_erp0185_sales_role` was never merged). The branch name keeps
+> `erp-0185`.
 
 **Scope.** Step 7 task P7-4 (K2, K2b, K2d, RO1, RO4, OA8, OA9, OA12, KL-6,
 B4). Branch `feat/erp-0185-p7-4-hak-role` from `43020626`.
@@ -90,8 +97,8 @@ Agus project_manager+technician+warehouse, Dafrin and Oki freelancer;
 `@example.com`); `organization.seeder.ts` gives the first owner the base role.
 Smoke scripts and e2e accounts moved off the removed seed accounts.
 
-**Migration.** `bunx --bun drizzle-kit generate --custom --name=erp0185_sales_role`
-→ `20261128153813_erp0185_sales_role` (data only, three `UPDATE`s on
+**Migration.** `bunx --bun drizzle-kit generate --custom --name=erp0187_sales_role`
+→ `20261128170839_erp0187_sales_role` (data only, three `UPDATE`s on
 `auth.members.role`, `auth.user_invitations.org_role`, `auth.invitations.role`:
 `sales_manager` → `sales`, drop `admin`/`accountant`/`auditor`, `member` first,
 no duplicates, no spaces). Applied with `bunx --bun drizzle-kit migrate` to a
@@ -119,6 +126,71 @@ labels, hint (A-11), "pick at least one role".
 **Next task.** Oki: M12-2 / PH-UNDANG and M12-14 (role dialog on the Users
 page can reuse `RoleCombobox`), M09-1/M09-4, then M09-7 (KL-10 advance rule in
 the service). L-16 (full per-person seeder) is unblocked.
+
+## 2026-11-28 - B-29 manual stock receipt and issue screens (ERP-0185)
+
+**Scope.** Step 8 task B-29 (KF-G1, KF-1), after B-32 (#182) was merged.
+
+**Gate 1.** Read `docs/database/docs.dbml` (`inventory.movements`,
+`inventory.item_serials`, `project.projects`), `module-ownership.md`
+(inventory and project contracts), `integrity-and-consistency.md` (status
+vocabularies) and `data-dictionary.md` (quantity numeric(18,3), money bigint).
+`logical-references.md` only regenerated: no new cross-module column (the
+project id rides on the existing `reference_type`/`reference_id` pair).
+
+**Gate 2 (manual grill, answers; design choices confirmed by the user).**
+Ownership: inventory writes movements and serials; the project is checked
+through `ProjectLookupService.getProject` (must be `active`), never the
+project repository. Project link: `reference_type = 'project'`,
+`reference_id = project id`. Serials: new status `issued` (from `in_stock`;
+back to `in_stock` or `lost`), warehouse/bin cleared while issued. Serialized
+items: integer quantity equal to the serial count; non-serialized items take no
+serials. Everything in one transaction (missing serials roll the movement
+back). Picker: the warehouse role has no `project:read`, so
+`GET /stock/project-options` (gated by `stock:issue`) returns active projects.
+Cost: project materials = shipped materials + manual project movements
+(issue positive, receipt back negative, qty x unit cost, integer minor units).
+No GL posting yet (note for Oki). Tenant: company-wide. Soft delete: unchanged.
+
+**Schema.** `docs.dbml` first (`item_serials` note + CHECK `issued`,
+`movements.reference_type` note `project`), then `inventory.schema.ts`.
+`bun docs/database/gen-logical-references.ts` and
+`bun docs/database/validate-dbml.ts`: OK.
+`bunx --bun drizzle-kit generate --name erp0185_serial_issued` →
+`20261128145617_erp0185_serial_issued` (status CHECK re-created only;
+inspected). `bun run drizzle:migrate` applied it to the local dev DB.
+
+**Backend.** `stock.contract.ts` (`projectId`, `serialNumbers`),
+`StockService.postManual` / `projectOptions`, `ManualStockError`
+(`api` keys en+id), `SerialUnitService.issueUnits` / `receiveManualUnits`,
+`ItemSerialRepository.issue` / `receiveIssued`,
+`MovementRepository.listForProject`,
+`ExportedInventoryService.projectMaterialMovements`,
+`ProjectLookupService.activeProjectOptions`, `ProjectService` materials.
+`module-ownership.md` lists the new contract methods.
+
+**Web-admin.** `/inventory/stock/receive` and `/inventory/stock/issue` with the
+shared `stock-movement-form.tsx` (P7-6 components, help texts RF-28–RF-34),
+menu items and breadcrumb labels, `lib/stock-api.ts` (error reader, project
+options, serial lists), `lib/inventory-api.ts` status `issued`. Locales
+`inventory`, `nav`, `product`, `api` en+id; dead-key prefix
+`inventory.manualStock.`.
+
+**Checks.**
+- `bun test test/unit/stock.service.test.ts test/authorization/stock-authorization.test.ts`: 69 pass.
+- `bun run test` (root): 8/8 (backend 1677, web-admin 230, locales 110). `bun run lint`: 7/7, 0 errors. tsc backend and web-admin clean; web-admin build clean.
+- `bun docs/architecture/gen-role-permission.ts`: 817 routes (adds `GET /stock/project-options`).
+- Browser UAT `docs/adjustment/5-pengerjaan/uat/B-29.md`: 4/4 Valid as `warehouse_seed`: received 100 m cable and serial SN-UAT-B29-01, issued 50 m and the serial to PRJ-DEMO-001 (stock 50.000, movements `project:<id>`, serial `issued`).
+
+**Seed (A-10).** No new seeder; existing seed items, warehouse and the active
+demo project were used. Pre-existing seed gap: CTRL-DOOR-01 has in-stock
+serials without a stock balance.
+
+**docs/database/.** Updated (`docs.dbml`, `module-ownership.md`,
+`logical-references.md` regenerated, no diff).
+
+**Next task.** B-30 (warranty check without a project), B-42 (invoice
+without an SO) or B-13 (damaged sales return does not add sellable stock).
 
 ## 2026-11-28 - B-32 close a short-delivered purchase order (ERP-0184)
 

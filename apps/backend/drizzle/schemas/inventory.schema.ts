@@ -57,6 +57,8 @@ export const SERIAL_STATUSES = [
 	'applied_warranty',
 	'returned',
 	'damaged',
+	/** Out of the warehouse by a manual stock issue (project material or own use, B-29). */
+	'issued',
 ] as const;
 export type SerialStatus = (typeof SERIAL_STATUSES)[number];
 
@@ -515,7 +517,7 @@ export const itemSerials = inventorySchema.table(
 		index('item_serials_warehouse_id_idx').on(table.warehouseId),
 		check(
 			'item_serials_status_check',
-			sql`status IN ('pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged')`,
+			sql`status IN ('pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged', 'issued')`,
 		),
 		check(
 			'item_serials_provisional_check',

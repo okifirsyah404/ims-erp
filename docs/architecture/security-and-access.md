@@ -78,7 +78,7 @@ Source of truth: `apps/backend/src/providers/better-auth/ac/auth-hooks.ts`.
 
 ## ERP roles (organization membership)
 
-Since P7-4 (ERP-0185, 2026-11-28) the closed enum holds 13 roles:
+Since P7-4 (ERP-0187, 2026-11-28) the closed enum holds 13 roles:
 
 `owner, member, operations_manager, sales, project_manager, technician,
 freelancer, purchasing, warehouse, finance, hr, customer_service, marketing`

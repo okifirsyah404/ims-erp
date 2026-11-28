@@ -2239,7 +2239,7 @@ tidak dipakai.
 
 Tidak ada perubahan kode.
 
-## 2026-11-28 - P7-4 Hak role baru (ERP-0185)
+## 2026-11-28 - P7-4 Hak role baru (ERP-0187)
 
 Branch `feat/erp-0185-p7-4-hak-role`, belum di-push.
 
@@ -2253,7 +2253,7 @@ Branch `feat/erp-0185-p7-4-hak-role`, belum di-push.
 - **Hanya Pemilik:** mengundang, membaca Log Audit, membuka kembali periode
   (sebelumnya opsi `ownership` di rute periode tidak pernah dibaca guard).
 - **Form undang:** combobox banyak role (chips) dengan teks bantuan.
-- **Migrasi data** `20261128153813_erp0185_sales_role`: `sales_manager` →
+- **Migrasi data** `20261128170839_erp0187_sales_role`: `sales_manager` →
   `sales`, role yang dihapus dibuang, `member` di depan, tanpa duplikat;
   diuji di database sekali pakai (9 kasus, jalan kedua 0 baris).
 - **Seeder:** akun per orang Aqim, Bella, Agus MD, Bilal, Agus, Dafrin, Oki;
@@ -2262,6 +2262,22 @@ Branch `feat/erp-0185-p7-4-hak-role`, belum di-push.
   matriks saja); `role-permission.md` dibuat ulang.
 - UAT: [`5-pengerjaan/uat/P7-4.md`](5-pengerjaan/uat/P7-4.md), 7/7 Valid
   (lewat API dan test; tidak di browser atas permintaan Oki).
+
+## 2026-11-28 - B-29 Layar terima/keluarkan stok manual (ERP-0185)
+
+Branch `feat/b-29-stok-manual`, belum di-push.
+
+- Menu baru **Terima Stok** dan **Keluarkan Stok** (Inventaris → Barang) untuk
+  bahan proyek dan pemakaian sendiri: gudang, lokasi penyimpanan, barang,
+  jumlah, proyek (opsional), nomor seri, catatan.
+- Barang bernomor seri wajib memilih seri; jumlah mengikuti seri. Seri yang
+  dikeluarkan berstatus baru **Dikeluarkan (proyek / pakai sendiri)** dan bisa
+  diterima kembali.
+- Barang keluar ke proyek dihitung sebagai biaya bahan di halaman proyek.
+  Jurnal akuntansinya belum dibuat (catatan untuk Oki).
+- Skema: status seri `issued` di `inventory.item_serials`; migrasi diterapkan
+  di DB dev.
+- UAT: [`5-pengerjaan/uat/B-29.md`](5-pengerjaan/uat/B-29.md), 4/4 Valid.
 
 ## 2026-11-28 - B-32 Tutup PO kurang kirim (ERP-0184)
 

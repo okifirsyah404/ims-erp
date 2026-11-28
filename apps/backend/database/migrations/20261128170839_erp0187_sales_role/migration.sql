@@ -1,4 +1,4 @@
--- ERP-0185 / P7-4 (K2, K2b, K2d): data-only migration, no DDL.
+-- ERP-0187 / P7-4 (K2, K2b, K2d): data-only migration, no DDL.
 --
 -- The organization roles `admin`, `sales_manager`, `accountant` and `auditor`
 -- left the closed role catalog (`erpRoleNames`, a zod enum), so any stored

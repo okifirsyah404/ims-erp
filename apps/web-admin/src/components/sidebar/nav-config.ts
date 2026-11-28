@@ -390,6 +390,17 @@ export const navSections: {
 						url: '/inventory/stock',
 						permission: 'stock.read',
 					},
+					// B-29 (KF-G1): manual receipt and issue (project material, own use).
+					{
+						titleKey: 'item.stockReceive',
+						url: '/inventory/stock/receive',
+						permission: 'stock.receive',
+					},
+					{
+						titleKey: 'item.stockIssue',
+						url: '/inventory/stock/issue',
+						permission: 'stock.issue',
+					},
 					{
 						titleKey: 'item.stockAdjustments',
 						url: '/inventory/stock/adjustments',

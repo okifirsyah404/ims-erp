@@ -55,12 +55,17 @@ import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import {
 	InsufficientStockError,
 	InventoryReferenceError,
+	ManualStockError,
 	MovementAlreadyReversedError,
 } from '../../src/app/inventory/errors/inventory.errors';
+import { ExportedInventoryService } from '../../src/app/inventory/services/exported-inventory.service';
 
 const ORG_A = 'org-a';
 const ORG_B = 'org-b';
 const ITEM_ID = '01920000-0000-7000-8000-000000000001';
+/** B-29: a serialized product (one serial per unit). */
+const SERIAL_ITEM_ID = '01920000-0000-7000-8000-000000000002';
+const PROJECT_ID = '01920000-0000-7000-8000-0000000000p1';
 const GLOBAL_WAREHOUSE = '01920000-0000-7000-8000-0000000000ga';
 const ORG_A_WAREHOUSE = '01920000-0000-7000-8000-0000000000wa';
 const ORG_B_WAREHOUSE = '01920000-0000-7000-8000-0000000000wb';
@@ -166,6 +171,15 @@ function fakeMovements(): IMovementRepository & { rows: TProductMovementSelect[]
 					quantity,
 					unitCost,
 				}));
+		},
+		async listForProject(projectId: string) {
+			return rows.filter(
+				(row) =>
+					row.referenceType === 'project' &&
+					row.referenceId === projectId &&
+					row.status === 'posted' &&
+					(row.movementType === 'receipt' || row.movementType === 'issue'),
+			);
 		},
 		async ledgerTotals(warehouseIds: string[]) {
 			const signed = new Map<string, number>();
@@ -323,8 +337,13 @@ function fakeProducts(): Pick<ExportedProductService, 'productsById' | 'getNameM
 	asyncProducts?: never;
 } {
 	return {
-		async productsById() {
-			return new Map();
+		// B-29: postManual reads whether a product is serialized.
+		async productsById(ids: string[]) {
+			const known = new Map([
+				[ITEM_ID, { id: ITEM_ID, isSerialized: false }],
+				[SERIAL_ITEM_ID, { id: SERIAL_ITEM_ID, isSerialized: true }],
+			]);
+			return new Map(ids.filter((id) => known.has(id)).map((id) => [id, known.get(id)!])) as never;
 		},
 		async getNameMap() {
 			return new Map<string, string>();
@@ -385,6 +404,9 @@ export type TStockTestProductRepository = IProductRepository;
 let balances: BalanceStore;
 let movements: ReturnType<typeof fakeMovements>;
 let service: StockService;
+/** B-29: serial calls the service made, and serials the fake will refuse. */
+let serialCalls: { op: 'issue' | 'receive'; productId: string; serials: readonly string[]; movementId: string | null }[];
+let unavailableSerials: string[];
 
 beforeEach(() => {
 	balances = new Map();
@@ -427,8 +449,23 @@ beforeEach(() => {
 			createNumberingDouble(),
 			new AuditWriterDouble(),
 			database,
+			{
+				async issueUnits(productId, serials, data) {
+					serialCalls.push({ op: 'issue', productId, serials, movementId: data.movementId });
+					return serials.filter((serial) => unavailableSerials.includes(serial));
+				},
+				async receiveManualUnits(productId, serials, data) {
+					serialCalls.push({ op: 'receive', productId, serials, movementId: data.movementId });
+				},
+			},
+			{
+				getProject: async (id: string) => (id === PROJECT_ID ? ({ id, status: 'active' } as never) : null),
+				activeProjectOptions: async () => [],
+			},
 		),
 	});
+	serialCalls = [];
+	unavailableSerials = [];
 	service = container.resolve<StockService>(STOCK_SERVICE_TOKEN);
 });
 
@@ -895,5 +932,88 @@ describe('stock — moving-average cost (ADR-0011 §5)', () => {
 			averageCost: before!.averageCost,
 			totalValue: before!.totalValue,
 		});
+	});
+});
+
+describe('stock — manual receipt and issue (B-29, KF-G1)', () => {
+	const manual = (overrides: Record<string, unknown> = {}) => ({
+		actorOrganizationId: ORG_A,
+		warehouseId: ORG_A_WAREHOUSE,
+		productId: ITEM_ID,
+		quantity: '5.000',
+		createdBy: 'warehouse-user',
+		...overrides,
+	});
+
+	test('an issue to a project names the project on the movement and lowers the stock', async () => {
+		await service.postManual('receipt', manual({ quantity: '50.000' }));
+		const posted = await service.postManual('issue', manual({ projectId: PROJECT_ID }));
+		expect(posted.movement).toMatchObject({ movementType: 'issue', referenceType: 'project', referenceId: PROJECT_ID });
+		expect(await balanceOf(ORG_A, ORG_A_WAREHOUSE)).toBe('45.000');
+	});
+
+	test('an unknown project is refused before anything is posted', async () => {
+		await service.postManual('receipt', manual({ quantity: '10.000' }));
+		const before = movements.rows.length;
+		await expect(
+			service.postManual('issue', manual({ projectId: '01920000-0000-7000-8000-0000000000zz' })),
+		).rejects.toBeInstanceOf(ManualStockError);
+		expect(movements.rows).toHaveLength(before);
+	});
+
+	test('a serialized item needs one serial per unit and a whole quantity', async () => {
+		await expect(
+			service.postManual('receipt', manual({ productId: SERIAL_ITEM_ID, quantity: '2.000', serialNumbers: ['SN-1'] })),
+		).rejects.toBeInstanceOf(ManualStockError);
+		await expect(
+			service.postManual('receipt', manual({ productId: SERIAL_ITEM_ID, quantity: '1.500', serialNumbers: ['SN-1'] })),
+		).rejects.toBeInstanceOf(ManualStockError);
+		// A non-serialized item refuses serials.
+		await expect(service.postManual('receipt', manual({ serialNumbers: ['SN-X'] }))).rejects.toBeInstanceOf(ManualStockError);
+		expect(movements.rows).toHaveLength(0);
+	});
+
+	test('serials follow the movement: receipt brings them in, issue takes them out with the movement id', async () => {
+		const received = await service.postManual(
+			'receipt',
+			manual({ productId: SERIAL_ITEM_ID, quantity: '2.000', serialNumbers: ['SN-1', 'SN-2'] }),
+		);
+		const issued = await service.postManual(
+			'issue',
+			manual({ productId: SERIAL_ITEM_ID, quantity: '1.000', serialNumbers: ['SN-1'], projectId: PROJECT_ID }),
+		);
+		expect(serialCalls).toEqual([
+			{ op: 'receive', productId: SERIAL_ITEM_ID, serials: ['SN-1', 'SN-2'], movementId: received.movement.id },
+			{ op: 'issue', productId: SERIAL_ITEM_ID, serials: ['SN-1'], movementId: issued.movement.id },
+		]);
+	});
+
+	test('a serial not in stock fails the whole issue: no movement, stock unchanged', async () => {
+		await service.postManual('receipt', manual({ productId: SERIAL_ITEM_ID, quantity: '1.000', serialNumbers: ['SN-1'] }));
+		unavailableSerials = ['SN-9'];
+		const before = movements.rows.length;
+		await expect(
+			service.postManual('issue', manual({ productId: SERIAL_ITEM_ID, quantity: '1.000', serialNumbers: ['SN-9'] })),
+		).rejects.toBeInstanceOf(ManualStockError);
+		expect(movements.rows).toHaveLength(before);
+	});
+
+	test('project material: posted issues count at quantity x unit cost, receipts back from site subtract', async () => {
+		const exported = new ExportedInventoryService(
+			{} as never,
+			{} as never,
+			{} as never,
+			{} as never,
+			{} as never,
+			{
+				listForProject: async () => [
+					{ id: 'm1', code: 'MV-1', movementType: 'issue', quantity: '5.000', unitCost: 1_000_00, occurredAt: new Date(0) },
+					{ id: 'm2', code: 'MV-2', movementType: 'receipt', quantity: '1.000', unitCost: 1_000_00, occurredAt: new Date(0) },
+				],
+			} as never,
+		);
+		const rows = await exported.projectMaterialMovements(PROJECT_ID);
+		expect(rows.map((row) => row.value)).toEqual([5_000_00, -1_000_00]);
+		expect(rows[0]).toMatchObject({ id: 'm1', code: 'MV-1' });
 	});
 });

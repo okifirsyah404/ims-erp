@@ -18,9 +18,9 @@ import { SERIAL_STATUS_TRANSITIONS } from './serial-status';
 import { InventoryRuleViolationError } from '../errors/inventory.errors';
 
 const STATUSES_BY_KIND: Record<ProductKind, readonly SerialStatus[]> = {
-	product: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged'],
-	component: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged'],
-	material: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged'],
+	product: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged', 'issued'],
+	component: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged', 'issued'],
+	material: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged', 'issued'],
 };
 
 /**

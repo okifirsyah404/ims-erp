@@ -110,6 +110,8 @@ const DYNAMIC_PREFIXES = [
 	// the web form composes `formError.${key}` (common) from the shared key (P7-6).
 	'validation.',
 	'formError.',
+	// B-29: the backend composes `inventory.manualStock.${kind}` errors.
+	'inventory.manualStock.',
 	// The code number settings page labels server values (schema, code type,
 	// reset policy) by composing the key.
 	'settings:numbering.section.',

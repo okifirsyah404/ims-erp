@@ -918,7 +918,7 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   columns); it leaves Goods receipts, stays billable for what arrived, and the
   project budget keeps only the received value. Verified: backend 1667,
   web-admin 230, locales 110, migration applied, UAT `uat/B-32.md` all Valid.
-- ERP-0185 P7-4 new role grants (2026-11-28): 13 organization roles; `sales`
+- ERP-0187 P7-4 new role grants (2026-11-28): 13 organization roles; `sales`
   holds the former sales manager grants, `finance` the former accountant
   grants; the organization `admin`, `sales_manager`, `accountant` and
   `auditor` roles are removed (stored role lists migrated); every member
@@ -932,6 +932,12 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   `dist/` rebuild (a stale `dist/` broke `drizzle:migrate-reset` on another
   machine). Verified with `dist/` deleted: backend tests 1686, builds and
   `migrate-reset` OK.
+
+- ERP-0185 B-29 manual stock receipt/issue (2026-11-28): new Receive stock and
+  Issue stock screens with an optional project and serial numbers; issued
+  serials get the new status `issued`, and manual issues to a project count as
+  project material cost. Verified: backend 1677, web-admin 230, locales 110,
+  migration applied, UAT `uat/B-29.md` all Valid. GL posting still open (Oki).
 
 - ERP-0170 opening-balance row dialog (2026-11-27): the inline add-row form on
   `/finance/opening-balances` moved to `opening-balance-row-dialog.tsx`; the
