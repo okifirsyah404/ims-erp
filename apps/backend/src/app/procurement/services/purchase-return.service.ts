@@ -346,33 +346,48 @@ export class PurchaseReturnService {
 			await this.changed(id, 'rejected', actorUserId);
 			return rejected;
 		}
-		const code = await this.numbering.next('purchase_return', { date: new Date(`${row.returnDate}T12:00:00+07:00`) });
+		// P7-5 (T-1): number, approval and registry entry commit together; the
+		// outbox event is published only after the commit.
+		const allocated: { code: string | null } = { code: null };
+		let approved: TPurchaseReturnSelect;
 		try {
-			const approved = await this.returns.transition(id, ['submitted'], 'approved', {
-				code,
-				approvedBy: actorUserId,
-				approvedAt: new Date(),
-				rejectionReason: null,
+			approved = await this.transactions.run(async (tx) => {
+				const code = await this.numbering.next('purchase_return', {
+					date: new Date(`${row.returnDate}T12:00:00+07:00`),
+					tx,
+				});
+				allocated.code = code;
+				const done = await this.returns.transition(
+					id,
+					['submitted'],
+					'approved',
+					{ code, approvedBy: actorUserId, approvedAt: new Date(), rejectionReason: null },
+					tx,
+				);
+				if (!done) throw new PurchaseReturnStateError('notSubmitted');
+				// ERP-0044: the approved return goes to the supplier with the goods.
+				await this.documents.register(
+					{
+						code: done.code ?? code,
+						title: `Retur Pembelian - ${row.supplierName}`,
+						documentType: 'purchase_return',
+						module: 'procurement',
+						sourceType: 'purchase_return',
+						sourceId: done.id,
+						organizationId: null,
+						issuedOn: done.returnDate,
+						issuedByUserId: actorUserId,
+					},
+					tx,
+				);
+				return done;
 			});
-			if (!approved) throw new PurchaseReturnStateError('notSubmitted');
-			// ERP-0044: the approved return goes to the supplier with the goods.
-			await this.documents.register({
-				code: approved.code ?? code,
-				title: `Retur Pembelian - ${row.supplierName}`,
-				documentType: 'purchase_return',
-				module: 'procurement',
-				sourceType: 'purchase_return',
-				sourceId: approved.id,
-				organizationId: null,
-				issuedOn: approved.returnDate,
-				issuedByUserId: actorUserId,
-			});
-			await this.changed(id, 'approved', actorUserId);
-			return approved;
 		} catch (error) {
-			if (isUniqueViolation(error)) throw new PurchaseReturnCodeTakenError(code);
+			if (allocated.code && isUniqueViolation(error)) throw new PurchaseReturnCodeTakenError(allocated.code);
 			throw error;
 		}
+		await this.changed(id, 'approved', actorUserId);
+		return approved;
 	}
 
 	/**

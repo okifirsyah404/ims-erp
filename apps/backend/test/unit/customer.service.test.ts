@@ -480,8 +480,31 @@ describe('CustomerService: account per person (ERP-0114)', () => {
 		expect(people.rows).toHaveLength(1);
 	});
 
-	test('a failed person insert removes the new account and the inline company', async () => {
-		const { service, people, users, companies } = setup();
+	test('a failed person insert removes the new account and rolls back the inline company (P7-5)', async () => {
+		const { companies, people, numbering, users, service: _plain } = setup();
+		// A runner that behaves like a database transaction for the fakes:
+		// rows written inside it disappear when the work throws.
+		const runner = {
+			run: async <T,>(work: (tx: never) => Promise<T>): Promise<T> => {
+				const before = companies.rows.length;
+				try {
+					return await work({} as never);
+				} catch (error) {
+					companies.rows.length = before;
+					throw error;
+				}
+			},
+		};
+		const service = new CustomerService(
+			companies,
+			people,
+			unusedCompanyAddresses,
+			unusedCustomerAddresses,
+			numbering as never,
+			_plain['accounts' as never],
+			users as never,
+			runner,
+		);
 		people.failNextCreate = true;
 		await expect(
 			service.createCustomer(
@@ -491,7 +514,7 @@ describe('CustomerService: account per person (ERP-0114)', () => {
 		).rejects.toThrow('insert failed');
 		expect(users.users).toHaveLength(0);
 		expect(users.deleted).toHaveLength(1);
-		expect(companies.rows[0]!.deletedAt).not.toBeNull();
+		expect(companies.rows).toHaveLength(0);
 	});
 
 	test('an unverified email can be corrected and the credentials are re-sent', async () => {

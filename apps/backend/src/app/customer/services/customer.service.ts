@@ -10,6 +10,7 @@ import type {
 } from '@drizzle/schemas/customer.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
+import { inTransaction, type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 
 import {
 	COMPANY_ADDRESS_REPOSITORY_TOKEN,
@@ -118,6 +119,9 @@ export class CustomerService {
 			ExportedUserService,
 			'findById' | 'summaries' | 'findIdsByEmail' | 'updateProfile' | 'setAvatar' | 'clearAvatar'
 		>,
+		/** P7-5: document number + write in one transaction; optional for unit tests built by hand. */
+		@inject(TRANSACTION_RUNNER_TOKEN)
+		private readonly transactions?: ITransactionRunner,
 	) {}
 
 	/* ------------------------------ companies ------------------------------ */
@@ -150,9 +154,12 @@ export class CustomerService {
 		actorUserId: string,
 		organizationId?: string | null,
 	): Promise<TCustomerCompanySelect> {
-		const code = input.code ?? (await this.numbering.next('customer_company', undefined, new Date(), organizationId));
-		await this.assertCodeFree(code);
-		return this.companies.create({ ...input, code, createdBy: actorUserId });
+		// P7-5 (T-1): a generated code is taken in the insert's transaction (no gap).
+		return inTransaction(this.transactions, async (tx) => {
+			const code = input.code ?? (await this.numbering.next('customer_company', tx, new Date(), organizationId));
+			await this.assertCodeFree(code);
+			return this.companies.create({ ...input, code, createdBy: actorUserId }, tx);
+		});
 	}
 
 	/** Updates a company; `ownerCustomerId` moves ownership to one of its contacts. */
@@ -228,33 +235,49 @@ export class CustomerService {
 		organizationId?: string | null,
 	): Promise<TCustomerCreated> {
 		if (input.companyId) await this.assertCompany(input.companyId);
-		const code = input.code ?? (await this.numbering.next('customer', undefined, new Date(), organizationId));
-		await this.assertCodeFree(code);
-		const companyCode = input.newCompany
-			? (input.newCompany.code ??
-				(await this.numbering.next('customer_company', undefined, new Date(), organizationId)))
-			: null;
-		if (companyCode) {
-			if (companyCode === code) throw new CustomerCodeTakenError(companyCode);
-			await this.assertCodeFree(companyCode);
+		// Typed codes are checked before the account exists; generated ones
+		// are taken inside the transaction below.
+		if (input.code) await this.assertCodeFree(input.code);
+		if (input.newCompany?.code) {
+			if (input.newCompany.code === input.code) throw new CustomerCodeTakenError(input.newCompany.code);
+			await this.assertCodeFree(input.newCompany.code);
 		}
 
 		const { user, credentials } = await this.accounts.provision({ name: input.name, email: input.email });
 		let inlineCompany: TCustomerCompanySelect | null = null;
 		let person: TCustomerSelect;
 		try {
-			if (input.newCompany && companyCode) {
-				inlineCompany = await this.companies.create({
-					code: companyCode,
-					name: input.newCompany.name,
-					companyType: input.newCompany.companyType,
-					status: 'active',
-					createdBy: actorUserId,
-				});
-			}
-			const companyId = inlineCompany?.id ?? input.companyId;
-			const owner = Boolean(inlineCompany) || (Boolean(companyId) && input.isOwner);
-			person = await this.people.create({
+			// P7-5 (T-1): codes, company and person commit together, so a
+			// failed insert rolls the counters back (no gap). Ownership is set
+			// after the commit: it reads the rows back through the repositories.
+			const written = await inTransaction(this.transactions, async (tx) => {
+				const code = input.code ?? (await this.numbering.next('customer', tx, new Date(), organizationId));
+				if (!input.code) await this.assertCodeFree(code);
+				if (input.newCompany?.code === code) throw new CustomerCodeTakenError(code);
+				const companyCode = input.newCompany
+					? (input.newCompany.code ?? (await this.numbering.next('customer_company', tx, new Date(), organizationId)))
+					: null;
+				if (companyCode && !input.newCompany?.code) {
+					if (companyCode === code) throw new CustomerCodeTakenError(companyCode);
+					await this.assertCodeFree(companyCode);
+				}
+				const company =
+					input.newCompany && companyCode
+						? await this.companies.create(
+								{
+									code: companyCode,
+									name: input.newCompany.name,
+									companyType: input.newCompany.companyType,
+									status: 'active',
+									createdBy: actorUserId,
+								},
+								tx,
+							)
+						: null;
+				const companyId = company?.id ?? input.companyId;
+				const owner = Boolean(company) || (Boolean(companyId) && input.isOwner);
+				const created = await this.people.create(
+					{
 				code,
 				companyId,
 				name: input.name,
@@ -269,9 +292,15 @@ export class CustomerService {
 				portalInvitedBy: actorUserId,
 				portalPasswordChangeRequired: true,
 				createdBy: actorUserId,
+					},
+					tx,
+				);
+				return { company, companyId, owner, person: created };
 			});
-			if (companyId && owner) {
-				const company = inlineCompany ?? (await this.companies.findById(companyId));
+			inlineCompany = written.company;
+			person = written.person;
+			if (written.companyId && written.owner) {
+				const company = inlineCompany ?? (await this.companies.findById(written.companyId));
 				if (company) await this.setOwner(company, person.id);
 			}
 		} catch (error) {

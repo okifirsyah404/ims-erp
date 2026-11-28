@@ -26,9 +26,9 @@ export class CreditMemoRepository implements ICreditMemoRepository {
 		taxAmount: number;
 		reason: string;
 		createdBy: string;
-	}): Promise<TCreditMemoSelect> {
+	}, tx?: TTx): Promise<TCreditMemoSelect> {
 		const now = new Date();
-		const [created] = await this.database
+		const [created] = await (tx ?? this.database)
 			.insert(creditMemos)
 			.values({ ...row, status: 'draft', currencyCode: 'IDR', createdAt: now, updatedAt: now })
 			.returning();

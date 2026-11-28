@@ -5,7 +5,8 @@ import {
 } from '@drizzle/schemas/supplier.schema';
 import { likePattern } from '@drizzle/search';
 import type { TPaginationResult } from '@ims-erp/common';
-import { and, asc, count, desc, eq, ilike, isNull, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, isNull, or, sql } from 'drizzle-orm';
+import type { TTx } from '@drizzle/types';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import { cacheIdKey } from '@utils/cache.util';
@@ -128,11 +129,22 @@ export class SupplierCompanyRepository implements ISupplierCompanyRepository {
 		);
 	}
 
+	async findLongestCode(): Promise<string | null> {
+		const [row] = await this.database
+			.select({ code: supplierCompanies.code })
+			.from(supplierCompanies)
+			.where(isNull(supplierCompanies.deletedAt))
+			.orderBy(desc(sql`length(${supplierCompanies.code})`), asc(supplierCompanies.code))
+			.limit(1);
+		return row?.code ?? null;
+	}
+
 	async create(
 		data: TSupplierCompanyCreateInput & { code: string; createdBy: string },
+		tx?: TTx,
 	): Promise<TSupplierCompanySelect> {
 		const now = new Date();
-		const [row] = await this.database
+		const [row] = await (tx ?? this.database)
 			.insert(supplierCompanies)
 			.values({ ...data, status: 'active', createdAt: now, updatedAt: now })
 			.returning();

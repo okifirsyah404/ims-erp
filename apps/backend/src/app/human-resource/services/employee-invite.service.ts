@@ -1,4 +1,5 @@
 import { inject, injectable } from 'tsyringe';
+import { inTransaction, type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import {
 	INVITATION_SERVICE_TOKEN,
 } from '@app/user/constants/di';
@@ -92,6 +93,9 @@ export class EmployeeInviteService {
 		/** ERP-0121: the draft employment agreement opened with every employee. */
 		@inject(EMPLOYEE_DOCUMENT_SERVICE_TOKEN)
 		private readonly documents: Pick<EmployeeDocumentService, 'ensureAgreement'>,
+		/** P7-5: document number + write in one transaction; optional for unit tests built by hand. */
+		@inject(TRANSACTION_RUNNER_TOKEN)
+		private readonly transactions?: ITransactionRunner,
 	) {}
 
 	/** Single invite: errors propagate to the caller (HTTP status mapping). */
@@ -174,19 +178,26 @@ export class EmployeeInviteService {
 		try {
 			const organizationId = row.organizationId ?? null;
 			const body = defaultProfile(row);
-			const employeeCode = body.employeeCode ?? (await this.numbering.next('employee'));
-			if (await this.employees.codeTaken(organizationId, employeeCode)) {
-				throw new EmployeeEmailTakenError();
-			}
-			const inserted = await this.employees.insert({
-				...toRow(body),
-				employmentStatus: body.employmentStatus,
-				employmentType: body.employmentType,
-				workType: body.workType,
-				employeeCode,
-				organizationId,
-				userId: invited.userId,
-				createdAt: new Date(),
+			// P7-5 (T-1): a generated employee code is taken in the insert's
+			// transaction, so a refused or failed insert does not use it up.
+			const inserted = await inTransaction(this.transactions, async (tx) => {
+				const employeeCode = body.employeeCode ?? (await this.numbering.next('employee', tx));
+				if (await this.employees.codeTaken(organizationId, employeeCode)) {
+					throw new EmployeeEmailTakenError();
+				}
+				return this.employees.insert(
+					{
+						...toRow(body),
+						employmentStatus: body.employmentStatus,
+						employmentType: body.employmentType,
+						workType: body.workType,
+						employeeCode,
+						organizationId,
+						userId: invited.userId,
+						createdAt: new Date(),
+					},
+					tx,
+				);
 			});
 			await this.personalFields.update(invited.userId, personalPatchFrom(body));
 			// ERP-0121 (grill-me Q11/Q12): the draft agreement belongs to the invite;

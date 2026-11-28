@@ -31,7 +31,7 @@ function fakeService(calls: TCall[]) {
 		};
 	return {
 		listSettings: record('listSettings', []),
-		previewSetting: record('previewSetting', 'QT-001'),
+		previewSetting: record('previewSetting', { nextNumber: 'QT-001', sampleContext: {}, maxLength: null }),
 		updateSetting: record('updateSetting', { codeType: 'quotation' }),
 	};
 }
@@ -106,7 +106,8 @@ describe('code numbering: organization members', () => {
 			request('POST', '/sales/code-numberings/quotation/preview', 'admin', SETTING),
 		);
 		expect(preview.status).toBe(200);
-		expect((await preview.json()).data).toEqual({ nextNumber: 'QT-001' });
+		// P7-5: the preview also says which sample values it used and the limit.
+		expect((await preview.json()).data).toMatchObject({ nextNumber: 'QT-001' });
 		const save = await app.handle(request('PUT', '/sales/code-numberings/quotation', 'admin', SETTING));
 		expect(save.status).toBe(200);
 		expect(calls.map((call) => call.method)).toEqual(['listSettings', 'previewSetting', 'updateSetting']);

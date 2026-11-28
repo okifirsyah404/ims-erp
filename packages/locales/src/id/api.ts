@@ -301,6 +301,9 @@ const api: Record<keyof typeof en, string> = {
 		'Nomor ini memakai {ORG}: pilih organisasi aktif terlebih dahulu',
 	'numbering.codeTooLong':
 		'Kode yang dihasilkan {{code}} lebih dari {{max}} karakter; persingkat pola penomorannya atau kode di dalamnya, misalnya kode pemasok',
+	// FU6 (P7-5).
+	'numbering.purchaseOrderTooLong':
+		'Nomor PO {{code}} melebihi {{max}} karakter. Persingkat kode pemasok di Pengaturan → Nomor Kode.',
 	'numbering.pattern.length': 'Pola harus 1-100 karakter',
 	'numbering.pattern.unknownToken': 'Token {{token}} tidak dikenal',
 	'numbering.pattern.tokenNotForType':

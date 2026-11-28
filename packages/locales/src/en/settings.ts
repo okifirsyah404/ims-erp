@@ -100,6 +100,14 @@ const settings = {
 	'numbering.preview': 'Preview',
 	'numbering.saved': 'Numbering saved',
 	'numbering.tooLong': 'The preview is longer than {{max}} characters; new codes would be refused.',
+	// P7-5 (K6, RF-30/31): the example uses a real supplier code.
+	'numbering.purchaseOrderTooLong':
+		'The PO number is longer than {{max}} characters. Shorten the supplier code in Settings → Code Number.',
+	'numbering.sampleSupplier': 'Example uses supplier code {{code}} (the longest one in use).',
+	'numbering.sampleSupplierNone': 'No supplier yet: the example uses {{code}}.',
+	'numbering.overLimit': 'Over {{max}} characters',
+	'numbering.nextNumberHelp':
+		'The next number is an example and reserves nothing. A number is taken only when the document is saved; a failed save does not use one up.',
 	'numbering.tokensHelp':
 		'Tokens: {SEQ} or {SEQ:4} (number, zero-padded), {TYPE}, {COMPANY}, {ORG} (active organization slug), {MM}, {MM_ROMAN}, {YY}, {YYYY}; purchase orders also {SUPPLIER} and {CATEGORY}; warranty certificates {CUSTOMER}.',
 	'numbering.reset.never': 'Never',

@@ -12,6 +12,76 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-28 - P7-5 gap-free numbering and short supplier codes (ERP-0182)
+
+**Scope.** Step 7 task P7-5 (`docs/adjustment/5-pengerjaan/peta-kode-dafrin.md`):
+T-1 (no gaps: the number is allocated in the document's transaction), K6 / L-2
+(short default supplier code, preview with real supplier codes), `warranty`
+in `CODE_MAX_LENGTH`, FU6 message. On the user's decision every numbering
+call site was moved, not only the PO.
+
+**Shared numbering.** `domain.ts`: `supplier_company` default
+`{TYPE}-{SEQ:5}` (was `{COMPANY}-{ORG}-{TYPE}-{SEQ:5}`); `warranty: 32`.
+`service-base.ts`: overridable `previewContext(codeType, hint)`;
+`listSettings`/`updateSetting` return `sampleContext`;
+`previewSetting` returns `{ nextNumber, sampleContext, maxLength }`.
+`controller.ts`: preview body accepts optional `supplierCompanyId`.
+`errors.ts`: a too-long PO number uses `numbering.purchaseOrderTooLong`.
+`ProcurementNumberingService` overrides the preview with the longest live
+supplier code (`ExportedSupplierService.findLongestCompanyCode`, new
+contract method, `module-ownership.md` updated) or the chosen supplier.
+
+**Transactions.** `providers/database/transaction-runner.ts` gained
+`inTransaction(runner, work)`. Number + write now share one `tx` in:
+PO approval, purchase request submit, purchase return approval, goods receipt,
+quotation, sales order, sales return approval, delivery note, receipt, license
+contract create + renew, project, BAST, warranty, ticket, customer company,
+customer person (+ inline company; ownership set after commit), supplier
+company, product, warehouse, employee invite, credit memo, gateway payment.
+Registry entries (`DocumentService.register(…, tx)`) join the same
+transaction; outbox events stay after commit. Repositories gained an optional
+`tx` (or use `(tx ?? this.database).transaction(...)`, a savepoint when
+nested). A script audit found no numbering call left without `tx`.
+
+**Web-admin.** `lib/code-numbering-api.ts` (`sampleContext`, preview
+result, `exceedsMaxLength`, `usesSupplierToken`, errors via
+`readEnvelope`); `numbering-settings.tsx`: next-number cell flags
+"Lebih dari 32 karakter" and names the sample supplier code, a help line under
+every card (RF-30/31), the edit dialog shows the FU6 text for the PO.
+
+**Locales.** `api` `numbering.purchaseOrderTooLong`; `settings`
+`numbering.purchaseOrderTooLong`, `sampleSupplier`, `sampleSupplierNone`,
+`overLimit`, `nextNumberHelp` (en + id). FU6 names "Pengaturan → Nomor
+Dokumen"; the menu is "Nomor Kode", so the message uses the real menu name.
+
+**Seed (A-10).** `database/seeders/seed/supplier-demo.seeder.ts`: suppliers
+`HIT`, `ZKT` (short typed codes) and `LEGACY-ENTRAGATE-SUP-001` (a long
+legacy code that shows the warning and the refused approval). Run twice
+against the dev DB: 3 then 0 inserted.
+
+**Tests.** `test/preload.ts` registers a pass-through transaction runner
+(hand-built test containers never registered one). Updated: code-numbering
+(new defaults, preview shape, P7-5 cases), procurement (failed approval after
+allocation rolls the counter back), customer (inline company rolls back),
+supplier fake (`findLongestCode`), code-numbering authorization (preview
+shape); web-admin code-numbering-api (preview with supplier context).
+
+**Checks.**
+- `bun test test/unit/code-numbering.test.ts test/unit/procurement.service.test.ts` (backend): 40 pass; `bun test test/unit/code-numbering-api.test.ts` (web-admin): 8 pass.
+- `bun run test` (root): 8/8 tasks (backend 1664, web-admin 230, locales 110). The locale dead-key `api` scan can hit bun's 5 s test timeout on a loaded machine (seen once standalone; passes with `--timeout 60000` and in the root run).
+- `bunx tsc --noEmit -p tsconfig.json` (backend), `bunx tsc -p tsconfig.app.json --noEmit` (web-admin): clean. `bun run lint`: 7/7, 0 errors.
+- `bun docs/database/validate-dbml.ts`: OK. `docs/database/docs.dbml` unchanged (no table, column, index or status change); `module-ownership.md` lists the new supplier contract method.
+- `bun run drizzle:migrate` (apps/backend, dev DB): applied the two pending migrations ERP-0165/0166 the dev DB was missing (needed for PO inserts).
+- UAT `docs/adjustment/5-pengerjaan/uat/P7-5.md`: 4/4 Valid. Live: new supplier `SUP-00002` → `PO/DEV-SUP-00002/HW/1126/001` (28); a PO to the long-code supplier refused 422 with the FU6 text; the next approval got `PO/DEV-HIT/HW/1126/002`; counter at 3.
+
+**Out of scope, noted.** Three finance code types render raw locale keys on
+the Code Number page (`numbering.type.expense_claim`, `employee_advance`,
+`expense_settlement`).
+
+**Next task.** P7-3 (K1 approval rules) once P7-1/P7-2 are merged; this PR
+needs Oki's review (K11: `src/shared/numbering`, `providers/database`, and
+his modules customer, product, warehouse, finance, payment, human_resource).
+
 ## 2026-11-28 - P7-6 form foundation (ERP-0181)
 
 **Scope.** Step 7 task P7-6 (`docs/adjustment/5-pengerjaan/peta-kode-dafrin.md`):

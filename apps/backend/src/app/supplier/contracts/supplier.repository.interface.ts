@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import type {
 	TSupplierAddressInsert,
 	TSupplierAddressSelect,
@@ -46,8 +47,13 @@ export interface ISupplierCompanyRepository {
 
 	findByCode(code: string): Promise<TSupplierCompanySelect | null>;
 
+	/** The longest code of a live company, `null` without companies (P7-5 preview). */
+	findLongestCode(): Promise<string | null>;
+
+	/** `tx` joins the caller's transaction, so the code allocation rolls back with a failed insert (P7-5). */
 	create(
 		data: TSupplierCompanyCreateInput & { code: string; createdBy: string },
+		tx?: TTx,
 	): Promise<TSupplierCompanySelect>;
 
 	update(

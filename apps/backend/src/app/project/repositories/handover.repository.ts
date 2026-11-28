@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import { likePattern } from '@drizzle/search';
 import { handover, projects, tasks } from '@drizzle/schemas/project.schema';
@@ -82,9 +83,9 @@ export class HandoverRepository implements IHandoverRepository {
 		return row ?? null;
 	}
 
-	async create(projectId: string, code: string, actorUserId: string, data: TBastData) {
+	async create(projectId: string, code: string, actorUserId: string, data: TBastData, tx?: TTx) {
 		const now = new Date();
-		const [row] = await this.database
+		const [row] = await (tx ?? this.database)
 			.insert(handover)
 			.values({ ...data, projectId, code, createdBy: actorUserId, createdAt: now, updatedAt: now })
 			.returning();

@@ -154,8 +154,9 @@ export class SalesOrderRepository implements ISalesOrderRepository {
 		header: TSalesOrderHeaderData,
 		items: TSalesOrderItemData[],
 		actorUserId: string,
+		outer?: TTx,
 	): Promise<TOrderSelect | null> {
-		return this.database.transaction(async (tx) => {
+		return (outer ?? this.database).transaction(async (tx) => {
 			const now = new Date();
 			const won = await this.moveQuotation(
 				tx,

@@ -223,10 +223,11 @@ export class GoodsReceiptService {
 		);
 
 		const receiptDate = body.receiptDate ?? businessDateOf();
-		const code = await this.numbering.next('goods_receipt', { date: new Date(`${receiptDate}T12:00:00+07:00`) });
 		const occurredAt = new Date(`${receiptDate}T12:00:00+07:00`);
 
 		const created = await this.transactions.run(async (tx) => {
+			// P7-5 (T-1): numbered inside the receipt's transaction (no gap).
+			const code = await this.numbering.next('goods_receipt', { date: new Date(`${receiptDate}T12:00:00+07:00`), tx });
 			const progress = await this.orders.receive(
 				order.id,
 				lines.map(({ line }) => ({ purchaseOrderItemId: line.purchaseOrderItemId, quantity: line.quantity })),

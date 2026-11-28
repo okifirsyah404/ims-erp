@@ -1,4 +1,5 @@
 import { inject, injectable } from 'tsyringe';
+import { inTransaction, type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import type { TPaymentSelect } from '@drizzle/schemas/payment.schema';
 import type { TReceiptSelect } from '@drizzle/schemas/sale.schema';
 import { DOCUMENT_SERVICE_TOKEN } from '@app/document/constants/di';
@@ -67,6 +68,9 @@ export class GatewayCheckoutService {
 		private readonly numbering: Pick<PaymentNumberingService, 'next'>,
 		@inject(DOCUMENT_SERVICE_TOKEN)
 		private readonly documents: Pick<DocumentService, 'register'>,
+		/** P7-5: document number + write in one transaction; optional for unit tests built by hand. */
+		@inject(TRANSACTION_RUNNER_TOKEN)
+		private readonly transactions?: ITransactionRunner,
 	) {}
 
 	/** Whether new checkouts can be opened, and with which provider. */
@@ -110,26 +114,32 @@ export class GatewayCheckoutService {
 				((row.config as Record<string, unknown> | null)?.successRedirectUrl as string | undefined) ?? null,
 		};
 		const expiresAt = new Date(now + expiryHours * 3_600_000);
-		const code = await this.numbering.next('payment', { date: new Date() });
-		const created = await this.payments.insert({
-			organizationId: ctx.organizationId,
-			code,
-			paymentType: 'receipt',
-			direction: 'in',
-			channel: 'gateway',
-			gatewayId: row.id,
-			provider: row.provider,
-			amount,
-			currencyCode: invoice.currencyCode,
-			expiresAt,
-			paymentMethod: 'bank_transfer',
-			status: 'pending',
-			requestedBy: ctx.actorUserId,
-			requestedAt: new Date(),
+		// P7-5 (T-1): number, payment row and allocation commit together (no gap).
+		const created = await inTransaction(this.transactions, async (tx) => {
+			const payment = await this.payments.insert({
+				organizationId: ctx.organizationId,
+				code: await this.numbering.next('payment', { date: new Date(), tx }),
+				paymentType: 'receipt',
+				direction: 'in',
+				channel: 'gateway',
+				gatewayId: row.id,
+				provider: row.provider,
+				amount,
+				currencyCode: invoice.currencyCode,
+				expiresAt,
+				paymentMethod: 'bank_transfer',
+				status: 'pending',
+				requestedBy: ctx.actorUserId,
+				requestedAt: new Date(),
+			}, tx);
+			await this.payments.syncAllocations(
+				ctx.organizationId,
+				payment.id,
+				[{ payableType: 'sale_invoice', payableId: invoiceId, amount }],
+				tx,
+			);
+			return payment;
 		});
-		await this.payments.syncAllocations(ctx.organizationId, created.id, [
-			{ payableType: 'sale_invoice', payableId: invoiceId, amount },
-		]);
 
 		const customer = invoice.customerSnapshot;
 		try {

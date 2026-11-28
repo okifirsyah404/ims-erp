@@ -138,6 +138,7 @@ masuk P7-5; B-1 = P7-3.
 | locale | `packages/locales/src/{en,id}/settings.ts`, `packages/locales/src/{en,id}/api.ts` | Teks peringatan dan pesan `numbering.codeTooLong` sesuai FU6 |
 | test | `apps/backend/test/unit/code-numbering.test.ts`, `apps/backend/test/unit/procurement.service.test.ts` | Nomor tidak maju bila simpan gagal (mock transaksi melempar); pola pemasok bawaan → nomor PO ≤ 32; `warranty` > 32 ditolak |
 | test | `apps/web-admin/test/unit/code-numbering-api.test.ts` | Pratinjau dengan konteks pemasok |
+| tambahan (dikerjakan 28/11) | `apps/backend/src/shared/numbering/errors.ts`, `repository-base.ts`; `apps/backend/src/providers/database/transaction-runner.ts` (`inTransaction`); `apps/backend/src/app/procurement/services/procurement-numbering.service.ts` (pratinjau PO); `apps/backend/src/app/supplier/` (`findLongestCompanyCode`, `create(…, tx)`); service + repository penerbit nomor lain: `quotation`, `invoice` (kwitansi), `delivery-note`, `goods-receipt`, `receivable-adjustment` (nota kredit), `gateway-checkout`, `handover` (BAST), `warranty`; `apps/backend/database/seeders/seed/supplier-demo.seeder.ts` + `index.ts`; `apps/backend/test/preload.ts`; `docs/database/module-ownership.md` | Daftar "Sekarang" ditambah 8 titik dari audit (SPH, kwitansi, BPB, SJ, nota kredit, pembayaran gateway, BAST, garansi); semua 24 titik mengambil nomor dengan `tx` |
 | docs | `docs/adjustment/3-rancangan/lintas-modul/penomoran-dokumen.md` | Tandai temuan 1, 3, 5, 6 selesai |
 
 - **Skema/migrasi:** Tidak (perubahan pola bawaan dan alur transaksi).

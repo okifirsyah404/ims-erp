@@ -92,6 +92,11 @@ class FakeCompanies implements ISupplierCompanyRepository {
 		);
 	}
 
+	async findLongestCode() {
+		const live = this.rows.filter((row) => row.deletedAt === null).map((row) => row.code);
+		return live.sort((a, b) => b.length - a.length || a.localeCompare(b))[0] ?? null;
+	}
+
 	async create(data: TSupplierCompanyCreateInput & { createdBy: string }) {
 		const row = this.row({ ...data } as Partial<TSupplierCompanySelect>);
 		this.rows.push(row);

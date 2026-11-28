@@ -51,6 +51,10 @@ stale state. `build` stays out of the hook (too slow).
 3. **Validation** — zod boundary rejects malformed bodies with field-clear
    400s; phone/address rules respect Indonesian conventions (no international
    phone-format obsession).
+   Services that number documents take the transaction runner (P7-5);
+   `test/preload.ts` registers a pass-through runner for hand-built test
+   containers. A "no gap" test passes a fake runner that restores the
+   counter when the work throws (`procurement.service.test.ts`).
    Since P7-6 a validation test asserts the `field` and `key` of **every**
    error, not only the status (`test/unit/http-plugin-validation.test.ts`
    mounts the plugin behind the real i18next wiring and checks the

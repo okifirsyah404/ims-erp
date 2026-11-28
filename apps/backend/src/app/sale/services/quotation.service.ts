@@ -23,6 +23,7 @@ import type { TPaginationResult } from '@ims-erp/common';
 import { documentImageUrl } from '@providers/s3/document-image';
 import { type IObjectStorage, OBJECT_STORAGE_TOKEN } from '@providers/s3/object-storage';
 import { inject, injectable } from 'tsyringe';
+import { inTransaction, type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import { pinoLogger } from '@providers/logger/logger';
 import type { IQuotationSentDispatcher } from '../queues/quotation-sent.queue';
 import { QUOTATION_REPOSITORY_TOKEN, QUOTATION_SENT_DISPATCHER_TOKEN, SALES_ORDER_REPOSITORY_TOKEN } from '../constants/di';
@@ -134,6 +135,9 @@ export class QuotationService {
 		/** ERP-0067: a sent quotation gets its PDF and `quotation.sent` in a queue. */
 		@inject(QUOTATION_SENT_DISPATCHER_TOKEN)
 		private readonly sentDispatcher: IQuotationSentDispatcher,
+		/** P7-5: document number + write in one transaction; optional for unit tests built by hand. */
+		@inject(TRANSACTION_RUNNER_TOKEN)
+		private readonly transactions?: ITransactionRunner,
 	) {}
 
 	/**
@@ -319,22 +323,29 @@ export class QuotationService {
 	async create(ctx: TQuotationContext, body: TQuotationBodyRequest): Promise<TQuotationSelect> {
 		const { header, items } = await this.build(body);
 		if (header.leadId && !(await this.leads.noteQuotation(header.leadId))) throw new QuotationLeadNotFoundError();
-		// Numbered on creation; gaps from abandoned drafts are accepted.
-		const code = await this.numbering.next('quotation', { date: new Date() });
-		const quotation = await this.quotations.create({ ...header, code, createdBy: ctx.actorUserId }, items);
-		// ERP-0044: the printed SPH is registered with the same code.
-		await this.documents.register({
-			code: quotation.code,
-			title: `Penawaran - ${quotation.customerSnapshot.name}`,
-			documentType: 'quotation',
-			module: 'sale',
-			sourceType: 'quotation',
-			sourceId: quotation.id,
-			organizationId: null,
-			issuedOn: quotation.quotationDate,
-			issuedByUserId: ctx.actorUserId,
+		// Numbered on creation (an abandoned draft keeps its number). P7-5
+		// (T-1): number, draft and registry entry commit together, so a failed
+		// save does not use a number up.
+		return inTransaction(this.transactions, async (tx) => {
+			const code = await this.numbering.next('quotation', { date: new Date(), tx });
+			const quotation = await this.quotations.create({ ...header, code, createdBy: ctx.actorUserId }, items, tx);
+			// ERP-0044: the printed SPH is registered with the same code.
+			await this.documents.register(
+				{
+					code: quotation.code,
+					title: `Penawaran - ${quotation.customerSnapshot.name}`,
+					documentType: 'quotation',
+					module: 'sale',
+					sourceType: 'quotation',
+					sourceId: quotation.id,
+					organizationId: null,
+					issuedOn: quotation.quotationDate,
+					issuedByUserId: ctx.actorUserId,
+				},
+				tx,
+			);
+			return quotation;
 		});
-		return quotation;
 	}
 
 	async update(ctx: TQuotationContext, id: string, body: TQuotationBodyRequest): Promise<TQuotationSelect> {

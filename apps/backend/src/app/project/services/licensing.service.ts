@@ -240,17 +240,22 @@ export class LicensingService {
 
 	async create(ctx: TLicenseContext, body: TContractBody): Promise<TContractView> {
 		const { customerName } = await this.references(body);
-		const code = await this.numbering.next('license_contract');
-		const created = await this.repository.createContract({
-			...body,
-			orderId: body.orderId ?? null,
-			startDate: body.startDate ?? null,
-			endDate: body.endDate ?? null,
-			code,
-			customerName,
-			status: 'draft',
-			createdBy: ctx.actorUserId,
-		});
+		// P7-5 (T-1): the number is taken in the insert's transaction (no gap).
+		const created = await this.transactions.run(async (tx) =>
+			this.repository.createContract(
+				{
+					...body,
+					orderId: body.orderId ?? null,
+					startDate: body.startDate ?? null,
+					endDate: body.endDate ?? null,
+					code: await this.numbering.next('license_contract', tx),
+					customerName,
+					status: 'draft',
+					createdBy: ctx.actorUserId,
+				},
+				tx,
+			),
+		);
 		return this.timed(await this.require(created.id));
 	}
 
@@ -438,23 +443,26 @@ export class LicensingService {
 		const current = await this.require(id);
 		if (current.status !== 'active' || (await this.repository.findOpenRenewal(id))) throw new ContractStateError('renew');
 		const period = renewalPeriod(current, businessDateOf());
-		const code = await this.numbering.next('license_contract');
-		const created = await this.repository.createContract({
-			code,
-			customerId: current.customerId,
-			customerName: current.customerName,
-			licenseApplicationId: current.licenseApplicationId,
-			packageName: current.packageName,
-			orderId: null,
-			startDate: period.startDate,
-			endDate: period.endDate,
-			billingCycle: current.billingCycle,
-			contractValue: current.contractValue,
-			currencyCode: current.currencyCode,
-			status: 'draft',
-			renewedFromContractId: current.id,
-			notes: current.notes,
-			createdBy: ctx.actorUserId,
+		// P7-5 (T-1): the number is taken in the insert's transaction (no gap).
+		const created = await this.transactions.run(async (tx) => {
+			const code = await this.numbering.next('license_contract', tx);
+			return this.repository.createContract({
+				code,
+				customerId: current.customerId,
+				customerName: current.customerName,
+				licenseApplicationId: current.licenseApplicationId,
+				packageName: current.packageName,
+				orderId: null,
+				startDate: period.startDate,
+				endDate: period.endDate,
+				billingCycle: current.billingCycle,
+				contractValue: current.contractValue,
+				currencyCode: current.currencyCode,
+				status: 'draft',
+				renewedFromContractId: current.id,
+				notes: current.notes,
+				createdBy: ctx.actorUserId,
+			}, tx);
 		});
 		return this.timed(await this.require(created.id));
 	}

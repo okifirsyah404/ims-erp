@@ -252,10 +252,11 @@ export class DeliveryNoteService {
 		);
 
 		const deliveryDate = body.deliveryDate ?? businessDateOf();
-		const code = await this.numbering.next('delivery_note', { date: noon(deliveryDate) });
 		const snapshot = order.customerSnapshot;
 
 		const created = await this.transactions.run(async (tx) => {
+			// P7-5 (T-1): numbered inside the delivery's transaction (no gap).
+			const code = await this.numbering.next('delivery_note', { date: noon(deliveryDate), tx });
 			const allocation = await this.orders.allocateDelivery(
 				order.id,
 				lines.map(({ line }) => ({ orderItemId: line.orderItemId, quantity: line.quantity })),

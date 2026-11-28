@@ -88,19 +88,21 @@ export class ReceivableAdjustmentService {
 		if (!invoice || !item || !isCreditable(item) || input.amount > item.outstandingAmount) {
 			throw new CreditMemoAmountError();
 		}
-		const code = await this.numbering.next('credit_memo', { date: new Date(`${input.memoDate}T12:00:00+07:00`) });
-		const memo = await this.memos.insert({
-			organizationId: ctx.organizationId,
-			code,
-			invoiceId: invoice.id,
-			customerId: invoice.customerId,
-			memoDate: input.memoDate,
-			amount: input.amount,
-			taxAmount: creditTax(input.amount, invoice),
-			reason: input.reason,
-			createdBy: ctx.actorUserId,
-		});
-		await this.record(ctx, 'credit_memo.created', 'credit_memo', memo.id, { code, amount: memo.amount });
+		// P7-5 (T-1): the number is taken in the insert's transaction (no gap).
+		const memo = await this.transactions.run(async (tx) =>
+			this.memos.insert({
+				organizationId: ctx.organizationId,
+				code: await this.numbering.next('credit_memo', { date: new Date(`${input.memoDate}T12:00:00+07:00`), tx }),
+				invoiceId: invoice.id,
+				customerId: invoice.customerId,
+				memoDate: input.memoDate,
+				amount: input.amount,
+				taxAmount: creditTax(input.amount, invoice),
+				reason: input.reason,
+				createdBy: ctx.actorUserId,
+			}, tx),
+		);
+		await this.record(ctx, 'credit_memo.created', 'credit_memo', memo.id, { code: memo.code, amount: memo.amount });
 		return memo;
 	}
 

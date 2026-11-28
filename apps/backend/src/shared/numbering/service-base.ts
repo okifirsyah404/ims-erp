@@ -64,7 +64,16 @@ export type TCodeNumberSetting = {
 	nextNumber: string;
 	/** Column length the rendered code must fit, when it is limited. */
 	maxLength: number | null;
+	/**
+	 * Per-document token values the example was rendered with (e.g. the real
+	 * longest supplier code for `{SUPPLIER}`, K6), so the page can say which
+	 * code the example used.
+	 */
+	sampleContext: TNumberContext;
 };
+
+/** Optional hints for a preview, e.g. the supplier the owner picked. */
+export type TPreviewHint = { supplierCompanyId?: string | null };
 
 /** Options of {@link CodeNumberingServiceBase.issue}. */
 export type TIssueOptions = {
@@ -140,12 +149,14 @@ export abstract class CodeNumberingServiceBase {
 		for (const codeType of this.codeTypes()) {
 			const row = rows.get(codeType) ?? null;
 			const config = effective(codeType, row);
+			const sampleContext = await this.previewContext(codeType);
 			settings.push({
 				codeType,
 				typeCode: CODE_TYPE_CODES[codeType],
 				...config,
 				maxLength: CODE_MAX_LENGTH[codeType] ?? null,
-				nextNumber: await this.render(codeType, config, row, companyCode, organizationId),
+				sampleContext,
+				nextNumber: await this.render(codeType, config, row, companyCode, organizationId, sampleContext),
 			});
 		}
 		return settings;
@@ -161,18 +172,36 @@ export abstract class CodeNumberingServiceBase {
 		codeType: string,
 		config: TCodeNumberConfig,
 		organizationId?: string | null,
-	): Promise<string> {
+		hint: TPreviewHint = {},
+	): Promise<{ nextNumber: string; sampleContext: TNumberContext; maxLength: number | null }> {
 		const owned = this.assertOwned(codeType);
 		const pattern = config.pattern.trim();
 		this.assertValid(pattern, owned);
 		const row = await this.numberings.findByType(owned);
-		return this.render(
+		const sampleContext = await this.previewContext(owned, hint);
+		const nextNumber = await this.render(
 			owned,
 			{ pattern, resetPolicy: config.resetPolicy },
 			row,
 			await this.companyCodes.requireDocumentCode(),
 			organizationId,
+			sampleContext,
 		);
+		return { nextNumber, sampleContext, maxLength: CODE_MAX_LENGTH[owned] ?? null };
+	}
+
+	/**
+	 * Values of the per-document tokens used by previews.
+	 *
+	 * @remarks
+	 * The default is the placeholder set ({@link PREVIEW_CONTEXT}). A module
+	 * whose series take a context token overrides this with real data, so a
+	 * preview shows what an actual document would get: the PO preview uses the
+	 * longest live supplier code (or the supplier in `hint`), which is what
+	 * makes a too-long PO number visible before approval fails (K6).
+	 */
+	protected async previewContext(_codeType: CodeType, _hint: TPreviewHint = {}): Promise<TNumberContext> {
+		return PREVIEW_CONTEXT;
 	}
 
 	/**
@@ -196,13 +225,15 @@ export abstract class CodeNumberingServiceBase {
 			periodKey(config.resetPolicy, new Date()),
 		);
 		const saved = { pattern, resetPolicy: config.resetPolicy };
+		const sampleContext = await this.previewContext(owned);
 		return {
 			codeType: owned,
 			typeCode: CODE_TYPE_CODES[owned],
 			...saved,
 			isDefault: false,
 			maxLength: CODE_MAX_LENGTH[owned] ?? null,
-			nextNumber: await this.render(owned, saved, row, companyCode, organizationId),
+			sampleContext,
+			nextNumber: await this.render(owned, saved, row, companyCode, organizationId, sampleContext),
 		};
 	}
 
@@ -225,6 +256,7 @@ export abstract class CodeNumberingServiceBase {
 		row: TRow,
 		companyCode: string,
 		organizationId?: string | null,
+		context: TNumberContext = PREVIEW_CONTEXT,
 		date = new Date(),
 	): Promise<string> {
 		const key = periodKey(config.resetPolicy, date);
@@ -241,7 +273,7 @@ export abstract class CodeNumberingServiceBase {
 			companyCode,
 			organizationCode,
 			date,
-			context: PREVIEW_CONTEXT,
+			context,
 		});
 	}
 }

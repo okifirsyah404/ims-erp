@@ -18,6 +18,7 @@ import type {
 import { businessDateOf } from '@utils/business-date.util';
 import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
+import { inTransaction, type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import { DELIVERY_NOTE_REPOSITORY_TOKEN, QUOTATION_REPOSITORY_TOKEN, SALES_ORDER_REPOSITORY_TOKEN } from '../constants/di';
 import type { IDeliveryNoteRepository } from '../contracts/delivery-note.repository.interface';
 import { SalesOrderDeliveredError } from '../errors/delivery-note.errors';
@@ -83,6 +84,9 @@ export class SalesOrderService {
 		/** ERP-0044: issued orders are recorded in the document registry. */
 		@inject(DOCUMENT_SERVICE_TOKEN)
 		private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
+		/** P7-5: document number + write in one transaction; optional for unit tests built by hand. */
+		@inject(TRANSACTION_RUNNER_TOKEN)
+		private readonly transactions?: ITransactionRunner,
 	) {}
 
 	private async requireVisible(ctx: TSalesOrderContext, id: string): Promise<TOrderSelect> {
@@ -143,62 +147,69 @@ export class SalesOrderService {
 		}
 		const lines = await this.quotations.findItems(quotation.id);
 		const orderDate = body.orderDate ?? businessDateOf();
-		const code = await this.numbering.next('order', { date: new Date(`${orderDate}T12:00:00+07:00`) });
+		// P7-5 (T-1): number, order and registry entry commit together (no gap).
 		try {
-			const order = await this.orders.createFromQuotation(
-				{
-					code,
-					quotationId: quotation.id,
-					quotationCode: quotation.code,
-					customerId: quotation.customerId,
-					customerSnapshot: quotation.customerSnapshot,
-					customerPoNumber: body.customerPoNumber,
-					title: quotation.title,
-					attention: quotation.attention,
-					orderDate,
-					deliveryDate: body.deliveryDate ?? null,
-					paymentTerms: quotation.paymentTerms,
-					paymentSchedule: quotation.paymentSchedule,
-					guarantee: quotation.guarantee,
-					vatEnabled: quotation.vatEnabled,
-					vatRateBps: quotation.vatRateBps,
-					subtotal: quotation.subtotal,
-					discountTotal: quotation.discountTotal,
-					taxTotal: quotation.taxTotal,
-					grandTotal: quotation.grandTotal,
-					currencyCode: quotation.currencyCode,
-					salesPersonUserId: quotation.createdBy,
-					notes: body.notes,
-					createdBy: ctx.actorUserId,
-				},
-				lines.map((line) => ({
-					quotationItemId: line.id,
-					productId: line.productId,
-					sku: line.sku,
-					name: line.name,
-					specification: line.specification,
-					unit: line.unit,
-					quantity: line.quantity,
-					unitPrice: line.unitPrice,
-					discountAmount: line.discountAmount,
-					lineTotal: line.lineTotal,
-				})),
-				ctx.actorUserId,
-			);
-			if (!order) throw new SalesOrderQuotationNotReadyError();
-			// ERP-0044: the confirmed order is registered with the same code.
-			await this.documents.register({
-				code: order.code,
-				title: `Pesanan Penjualan - ${order.customerSnapshot.name}`,
-				documentType: 'order',
-				module: 'sale',
-				sourceType: 'sales_order',
-				sourceId: order.id,
-				organizationId: null,
-				issuedOn: order.orderDate,
-				issuedByUserId: ctx.actorUserId,
+			return await inTransaction(this.transactions, async (tx) => {
+				const code = await this.numbering.next('order', { date: new Date(`${orderDate}T12:00:00+07:00`), tx });
+				const order = await this.orders.createFromQuotation(
+					{
+						code,
+						quotationId: quotation.id,
+						quotationCode: quotation.code,
+						customerId: quotation.customerId,
+						customerSnapshot: quotation.customerSnapshot,
+						customerPoNumber: body.customerPoNumber,
+						title: quotation.title,
+						attention: quotation.attention,
+						orderDate,
+						deliveryDate: body.deliveryDate ?? null,
+						paymentTerms: quotation.paymentTerms,
+						paymentSchedule: quotation.paymentSchedule,
+						guarantee: quotation.guarantee,
+						vatEnabled: quotation.vatEnabled,
+						vatRateBps: quotation.vatRateBps,
+						subtotal: quotation.subtotal,
+						discountTotal: quotation.discountTotal,
+						taxTotal: quotation.taxTotal,
+						grandTotal: quotation.grandTotal,
+						currencyCode: quotation.currencyCode,
+						salesPersonUserId: quotation.createdBy,
+						notes: body.notes,
+						createdBy: ctx.actorUserId,
+					},
+					lines.map((line) => ({
+						quotationItemId: line.id,
+						productId: line.productId,
+						sku: line.sku,
+						name: line.name,
+						specification: line.specification,
+						unit: line.unit,
+						quantity: line.quantity,
+						unitPrice: line.unitPrice,
+						discountAmount: line.discountAmount,
+						lineTotal: line.lineTotal,
+					})),
+					ctx.actorUserId,
+					tx,
+				);
+				if (!order) throw new SalesOrderQuotationNotReadyError();
+				// ERP-0044: the confirmed order is registered with the same code.
+				await this.documents.register(
+					{
+						code: order.code,
+						title: `Pesanan Penjualan - ${order.customerSnapshot.name}`,
+						documentType: 'order',
+						module: 'sale',
+						sourceType: 'sales_order',
+						sourceId: order.id,
+						organizationId: null,
+						issuedOn: order.orderDate,
+						issuedByUserId: ctx.actorUserId,
+					},
+					tx,
+				);
+				return order;
 			});
-			return order;
 		} catch (error) {
 			if (isUniqueViolation(error)) throw new SalesOrderExistsError();
 			throw error;

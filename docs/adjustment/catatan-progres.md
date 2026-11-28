@@ -2239,6 +2239,27 @@ tidak dipakai.
 
 Tidak ada perubahan kode.
 
+## 2026-11-28 - P7-5 Penomoran tanpa celah dikerjakan (ERP-0182)
+
+Branch `feat/p7-5-penomoran`, belum di-push (menunggu tinjauan Oki, K11).
+
+- **Tanpa celah (T-1):** semua penerbit nomor (24 titik di 11 modul, termasuk
+  8 yang tidak ada di daftar peta kode) mengambil nomor di dalam transaksi
+  penyimpanan dokumen. Simpan yang gagal tidak memakan nomor. Diuji langsung:
+  PO yang ditolak tidak membuat PO berikutnya melompat (002 tetap terpakai).
+- **Kode pemasok pendek (K6, L-2):** pola bawaan `SUP-00001`; nomor PO
+  ±28 karakter. Kode lama tetap; dipersingkat Aqim lewat Pengaturan.
+- **Pratinjau:** contoh nomor PO memakai kode pemasok asli terpanjang dan
+  memberi peringatan bila lebih dari 32 karakter; teks bantuan di bawah kartu.
+- **Pesan FU6:** "Nomor PO … melebihi 32 karakter. Persingkat kode pemasok di
+  Pengaturan → Nomor Kode." (menu yang ada bernama Nomor Kode, bukan Nomor
+  Dokumen).
+- **Garansi:** dibatasi 32 karakter.
+- Seeder: 3 pemasok contoh (A-10).
+- UAT: [`5-pengerjaan/uat/P7-5.md`](5-pengerjaan/uat/P7-5.md), 4/4 Valid.
+- Dicatat untuk tugas lain: tiga jenis kode keuangan belum punya terjemahan di
+  halaman Nomor Kode.
+
 ## 2026-11-28 - P7-6 Dasar form dikerjakan (ERP-0181)
 
 Branch `feat/p7-6-dasar-form`, belum di-push (menunggu tinjauan Oki, K11).

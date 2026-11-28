@@ -354,33 +354,45 @@ export class SalesReturnService {
 			await this.changed(id, 'rejected', actorUserId);
 			return rejected;
 		}
-		const code = await this.numbering.next('return', { date: noon(row.returnDate) });
+		// P7-5 (T-1): number, approval and registry entry commit together; the
+		// outbox event is published only after the commit.
+		const allocated: { code: string | null } = { code: null };
+		let approved: TReturnSelect;
 		try {
-			const approved = await this.returns.transition(id, ['submitted'], 'approved', {
-				code,
-				approvedBy: actorUserId,
-				approvedAt: new Date(),
-				rejectionReason: null,
+			approved = await this.transactions.run(async (tx) => {
+				const code = await this.numbering.next('return', { date: noon(row.returnDate), tx });
+				allocated.code = code;
+				const done = await this.returns.transition(
+					id,
+					['submitted'],
+					'approved',
+					{ code, approvedBy: actorUserId, approvedAt: new Date(), rejectionReason: null },
+					tx,
+				);
+				if (!done) throw new SalesReturnStateError('notSubmitted');
+				// ERP-0044: the approved return is the document the customer signs.
+				await this.documents.register(
+					{
+						code: done.code ?? code,
+						title: `Retur Penjualan - ${row.customerName}`,
+						documentType: 'return',
+						module: 'sale',
+						sourceType: 'sales_return',
+						sourceId: done.id,
+						organizationId: null,
+						issuedOn: done.returnDate,
+						issuedByUserId: actorUserId,
+					},
+					tx,
+				);
+				return done;
 			});
-			if (!approved) throw new SalesReturnStateError('notSubmitted');
-			// ERP-0044: the approved return is the document the customer signs.
-			await this.documents.register({
-				code: approved.code ?? code,
-				title: `Retur Penjualan - ${row.customerName}`,
-				documentType: 'return',
-				module: 'sale',
-				sourceType: 'sales_return',
-				sourceId: approved.id,
-				organizationId: null,
-				issuedOn: approved.returnDate,
-				issuedByUserId: actorUserId,
-			});
-			await this.changed(id, 'approved', actorUserId);
-			return approved;
 		} catch (error) {
-			if (isUniqueViolation(error)) throw new SalesReturnCodeTakenError(code);
+			if (allocated.code && isUniqueViolation(error)) throw new SalesReturnCodeTakenError(allocated.code);
 			throw error;
 		}
+		await this.changed(id, 'approved', actorUserId);
+		return approved;
 	}
 
 	/**

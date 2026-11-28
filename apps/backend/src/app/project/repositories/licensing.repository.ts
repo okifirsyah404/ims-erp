@@ -105,9 +105,9 @@ export class LicensingRepository implements ILicensingRepository {
 		return row ?? null;
 	}
 
-	async createContract(data: TContractData) {
+	async createContract(data: TContractData, tx?: TTx) {
 		const now = new Date();
-		const [row] = await this.database
+		const [row] = await (tx ?? this.database)
 			.insert(licenseContracts)
 			.values({ ...data, createdAt: now, updatedAt: now })
 			.returning();

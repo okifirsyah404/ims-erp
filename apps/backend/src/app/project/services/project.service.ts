@@ -25,7 +25,7 @@ import { businessDateOf } from '@utils/business-date.util';
 import { type IObjectStorage, OBJECT_STORAGE_TOKEN } from '@providers/s3/object-storage';
 import { inject, injectable } from 'tsyringe';
 import type { TTx } from '@drizzle/types';
-import { type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
+import { inTransaction, type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import { POSTING_SERVICE_TOKEN } from '@app/finance/constants/di';
 import type { PostingService } from '@app/finance/services/posting.service';
 import { PROJECT_REPOSITORY_TOKEN } from '../constants/di';
@@ -326,26 +326,29 @@ export class ProjectService {
 		await this.assertPic(ctx, body.picUserId);
 		if (body.targetStartDate && body.targetEndDate && body.targetEndDate < body.targetStartDate) throw new ProjectDatesError();
 		const today = businessDateOf();
-		const code = await this.numbering.next('project', undefined, new Date(`${today}T12:00:00+07:00`));
 		try {
-			return await this.repository.create(
-				{
-					code,
-					orderId: order.id,
-					orderCode: order.code,
-					quotationCode: order.quotationCode,
-					customerId: order.customerId,
-					customerName: order.customerSnapshot.name,
-					title: order.title,
-					contractValue: order.grandTotal,
-					picUserId: body.picUserId,
-					siteName: body.siteName,
-					targetStartDate: body.targetStartDate ?? null,
-					targetEndDate: body.targetEndDate ?? null,
-					notes: body.notes,
-					createdBy: ctx.actorUserId,
-				},
-				DEFAULT_TASKS.map((task) => ({ ...task, assigneeUserId: null, dueDate: null })),
+			// P7-5 (T-1): the number is taken in the insert's transaction (no gap).
+			return await inTransaction(this.transactions, async (tx) =>
+				this.repository.create(
+					{
+						code: await this.numbering.next('project', tx, new Date(`${today}T12:00:00+07:00`)),
+						orderId: order.id,
+						orderCode: order.code,
+						quotationCode: order.quotationCode,
+						customerId: order.customerId,
+						customerName: order.customerSnapshot.name,
+						title: order.title,
+						contractValue: order.grandTotal,
+						picUserId: body.picUserId,
+						siteName: body.siteName,
+						targetStartDate: body.targetStartDate ?? null,
+						targetEndDate: body.targetEndDate ?? null,
+						notes: body.notes,
+						createdBy: ctx.actorUserId,
+					},
+					DEFAULT_TASKS.map((task) => ({ ...task, assigneeUserId: null, dueDate: null })),
+					tx,
+				),
 			);
 		} catch (error) {
 			if (isUniqueViolation(error)) throw new ProjectDealError('taken');

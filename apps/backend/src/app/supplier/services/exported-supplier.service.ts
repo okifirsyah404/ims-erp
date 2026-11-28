@@ -68,6 +68,17 @@ export class ExportedSupplierService {
 		return this.companies.findByCode(code);
 	}
 
+	/**
+	 * The longest live company code, `null` without companies.
+	 *
+	 * @remarks
+	 * The PO numbering preview renders `{SUPPLIER}` with it, so the settings
+	 * page shows the longest PO number a real supplier would produce (K6).
+	 */
+	findLongestCompanyCode(): Promise<string | null> {
+		return this.companies.findLongestCode();
+	}
+
 	/** The live person, or `null`. */
 	findPerson(id: string): Promise<TSupplierSelect | null> {
 		return this.people.findById(id);

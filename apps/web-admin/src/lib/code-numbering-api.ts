@@ -1,7 +1,7 @@
-import type { TApiResponse } from '@ims-erp/common';
 import { queryOptions } from '@tanstack/react-query';
 import type { Permission } from '@/lib/permissions';
 import { currentLanguage } from '@/i18n';
+import { networkError, readEnvelope } from '@/lib/api-error';
 
 /**
  * API client for the code-numbering settings (ADR-0024 Q6).
@@ -84,9 +84,34 @@ export type TCodeNumberSetting = {
 	nextNumber: string;
 	/** Column length the rendered code must fit, when limited. */
 	maxLength: number | null;
+	/**
+	 * Per-document token values the example used (P7-5, K6): for the PO, the
+	 * longest real supplier code instead of a placeholder.
+	 */
+	sampleContext: TNumberSampleContext;
+};
+
+/** Values of the per-document tokens in an example number. */
+export type TNumberSampleContext = { supplier?: string; category?: string; customer?: string };
+
+/** What the preview route answers. */
+export type TCodeNumberPreview = {
+	nextNumber: string;
+	sampleContext: TNumberSampleContext;
+	maxLength: number | null;
 };
 
 export type TCodeNumberInput = { pattern: string; resetPolicy: TResetPolicy };
+
+/** True when an example number does not fit its column (P7-5 warning). */
+export function exceedsMaxLength(nextNumber: string, maxLength: number | null): boolean {
+	return maxLength !== null && nextNumber.length > maxLength;
+}
+
+/** True when the pattern renders the supplier code (`{SUPPLIER}`). */
+export function usesSupplierToken(pattern: string): boolean {
+	return pattern.includes('{SUPPLIER}');
+}
 
 /** The schema that owns a numbering table (also the locale key suffix). */
 export type TNumberingSchema =
@@ -156,21 +181,23 @@ export function canEditSection(
 	return access.canUpdate;
 }
 
+/** Failures throw `ApiError` (field errors, server reference; P7-6). */
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-	const response = await fetch(`${API_URL}${path}`, {
-		credentials: 'include',
-		headers: {
-			// Server error messages come back in the UI language.
-			'Accept-Language': currentLanguage(),
-			...(init?.body != null ? { 'Content-Type': 'application/json' } : {}),
-		},
-		...init,
-	});
-	const envelope = (await response.json()) as TApiResponse<T>;
-	if (!response.ok) {
-		throw new Error(envelope.errors?.[0]?.message ?? envelope.message ?? 'Request failed');
+	let response: Response;
+	try {
+		response = await fetch(`${API_URL}${path}`, {
+			credentials: 'include',
+			headers: {
+				// Server error messages come back in the UI language.
+				'Accept-Language': currentLanguage(),
+				...(init?.body != null ? { 'Content-Type': 'application/json' } : {}),
+			},
+			...init,
+		});
+	} catch (cause) {
+		throw networkError(cause);
 	}
-	return envelope.data as T;
+	return (await readEnvelope<T>(response)).data as T;
 }
 
 export function codeNumberingQueryKey(section: TCodeNumberingSection) {
@@ -184,17 +211,22 @@ export function codeNumberingQueryOptions(section: TCodeNumberingSection) {
 	});
 }
 
-/** Renders a pattern server-side (validated, nothing saved). */
-export async function previewCodeNumber(
+/**
+ * Renders a pattern server-side (validated, nothing saved).
+ *
+ * @param supplierCompanyId - Render `{SUPPLIER}` with this supplier's code
+ *   instead of the longest one (P7-5)
+ */
+export function previewCodeNumber(
 	section: TCodeNumberingSection,
 	codeType: TCodeType,
 	input: TCodeNumberInput,
-): Promise<string> {
-	const data = await request<{ nextNumber: string }>(
-		`${section.prefix}/code-numberings/${encodeURIComponent(codeType)}/preview`,
-		{ method: 'POST', body: JSON.stringify(input) },
-	);
-	return data.nextNumber;
+	supplierCompanyId?: string | null,
+): Promise<TCodeNumberPreview> {
+	return request<TCodeNumberPreview>(`${section.prefix}/code-numberings/${encodeURIComponent(codeType)}/preview`, {
+		method: 'POST',
+		body: JSON.stringify(supplierCompanyId ? { ...input, supplierCompanyId } : input),
+	});
 }
 
 export function saveCodeNumber(

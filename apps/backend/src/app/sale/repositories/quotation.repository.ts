@@ -136,8 +136,9 @@ export class QuotationRepository implements IQuotationRepository {
 	create(
 		header: TQuotationHeaderData & { code: string; createdBy: string },
 		items: TQuotationItemData[],
+		outer?: TTx,
 	): Promise<TQuotationSelect> {
-		return this.database.transaction(async (tx) => {
+		return (outer ?? this.database).transaction(async (tx) => {
 			const now = new Date();
 			const [row] = await tx
 				.insert(quotations)

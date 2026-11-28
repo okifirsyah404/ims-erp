@@ -485,11 +485,13 @@ export class InvoiceService {
 		if (body.amount > invoice.outstandingTotal)
 			throw new ReceiptExceedsOutstandingError();
 		const receivedDate = body.receivedDate ?? businessDateOf();
-		const code = await this.numbering.next('receipt', {
-			date: new Date(`${receivedDate}T12:00:00+07:00`),
-		});
-		// ERP-0139: the receipt, its journal and the AR open item commit together.
+		// ERP-0139: the receipt, its journal and the AR open item commit together;
+		// P7-5 (T-1): so do its number and its registry entry (no gap).
 		const receipt = await this.database.transaction(async (tx) => {
+			const code = await this.numbering.next('receipt', {
+				date: new Date(`${receivedDate}T12:00:00+07:00`),
+				tx,
+			});
 			const created = await this.repo.addReceipt(
 				{
 					invoiceId: invoiceId,
@@ -507,19 +509,22 @@ export class InvoiceService {
 			);
 			if (!created) throw new ReceiptExceedsOutstandingError();
 			await this.receiptLedger?.post(tx, created, invoice, false);
+			// ERP-0044: a receipt (kuitansi) is an issued document too.
+			await this.documents.register(
+				{
+					code: created.code,
+					title: `Kuitansi - ${invoice.customerSnapshot?.name ?? invoice.title}`,
+					documentType: 'receipt',
+					module: 'sale',
+					sourceType: 'receipt',
+					sourceId: created.id,
+					organizationId: ctx.organizationId,
+					issuedOn: created.receivedDate,
+					issuedByUserId: ctx.actorUserId,
+				},
+				tx,
+			);
 			return created;
-		});
-		// ERP-0044: a receipt (kuitansi) is an issued document too.
-		await this.documents.register({
-			code: receipt.code,
-			title: `Kuitansi - ${invoice.customerSnapshot?.name ?? invoice.title}`,
-			documentType: 'receipt',
-			module: 'sale',
-			sourceType: 'receipt',
-			sourceId: receipt.id,
-			organizationId: ctx.organizationId,
-			issuedOn: receipt.receivedDate,
-			issuedByUserId: ctx.actorUserId,
 		});
 		// n8n event (M04), with the invoice as it stands after the payment.
 		const paid = (await this.repo.findById(ctx.organizationId, invoiceId)) ?? invoice;

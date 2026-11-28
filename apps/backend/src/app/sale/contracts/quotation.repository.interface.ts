@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import type {
 	QuotationStatus,
 	TQuotationInsert,
@@ -89,6 +90,8 @@ export interface IQuotationRepository {
 	create(
 		header: TQuotationHeaderData & { code: string; createdBy: string },
 		items: TQuotationItemData[],
+		/** Joins the caller's transaction (number allocation, P7-5). */
+		tx?: TTx,
 	): Promise<TQuotationSelect>;
 
 	/** Replaces header and items while the quotation is a draft; `null` otherwise. */

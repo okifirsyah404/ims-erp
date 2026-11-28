@@ -17,7 +17,7 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@im
 import { Input } from '@ims-erp/ui/components/input';
 import { NativeSelect, NativeSelectOption } from '@ims-erp/ui/components/native-select';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
-import { Pencil } from 'lucide-react';
+import { CircleAlert, Pencil } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
@@ -28,13 +28,16 @@ import { toast } from '@/components/toast';
 import {
 	codeNumberingQueryKey,
 	codeNumberingQueryOptions,
+	exceedsMaxLength,
 	previewCodeNumber,
 	RESET_POLICIES,
 	saveCodeNumber,
 	type TCodeNumberingSection,
 	type TCodeNumberInput,
 	type TCodeNumberSetting,
+	type TNumberSampleContext,
 	type TResetPolicy,
+	usesSupplierToken,
 } from '@/lib/code-numbering-api';
 
 /** Waits this long after the last keystroke before asking for a preview. */
@@ -86,7 +89,11 @@ export function NumberingSectionCard({
 				{settings.isPending && <SectionSkeleton />}
 				{settings.isError && <ErrorState error={settings.error} size='sm' />}
 				{settings.isSuccess && (
-					<NumberingTable settings={settings.data} canEdit={canEdit} onEdit={setEditing} />
+					<>
+						<NumberingTable settings={settings.data} canEdit={canEdit} onEdit={setEditing} />
+						{/* RF-30/31 (P7-5): what the next number means before anyone relies on it. */}
+						<p className='mt-3 text-xs text-muted-foreground'>{t('settings:numbering.nextNumberHelp')}</p>
+					</>
 				)}
 			</CardContent>
 			{editing && (
@@ -153,7 +160,7 @@ export function NumberingTable({
 				header: ({ column }) => (
 					<DataTableColumnHeader column={column} title={t('settings:numbering.nextNumber')} />
 				),
-				meta: { cellClassName: 'font-mono' },
+				cell: ({ row }) => <NextNumberCell setting={row.original} />,
 			},
 			...(canEdit
 				? [
@@ -184,6 +191,50 @@ export function NumberingTable({
 	return (
 		<DataTable columns={columns} data={settings} getRowId={(setting) => setting.codeType} />
 	);
+}
+
+/**
+ * The example number of a series, with the P7-5 hints: a warning when it is
+ * longer than its column, and for a pattern with `{SUPPLIER}` the real
+ * supplier code it was rendered with (K6).
+ */
+function NextNumberCell({ setting }: { setting: TCodeNumberSetting }) {
+	const { t } = useTranslation('settings');
+	const over = exceedsMaxLength(setting.nextNumber, setting.maxLength);
+	return (
+		<div className='flex flex-col gap-1'>
+			<span className={over ? 'font-mono text-destructive' : 'font-mono'}>{setting.nextNumber}</span>
+			{over && setting.maxLength !== null && (
+				<span className='flex items-center gap-1 text-xs text-destructive'>
+					<CircleAlert className='size-3' aria-hidden />
+					{t('numbering.overLimit', { max: setting.maxLength })}
+				</span>
+			)}
+			{usesSupplierToken(setting.pattern) && <SampleSupplierNote context={setting.sampleContext} />}
+		</div>
+	);
+}
+
+/** "Example uses supplier code X" under a PO example (K6). */
+function SampleSupplierNote({ context }: { context: TNumberSampleContext | undefined }) {
+	const { t } = useTranslation('settings');
+	const code = context?.supplier ?? 'SUP';
+	return (
+		<span className='text-xs text-muted-foreground'>
+			{code === 'SUP' ? t('numbering.sampleSupplierNone', { code }) : t('numbering.sampleSupplier', { code })}
+		</span>
+	);
+}
+
+/** The too-long warning: the FU6 wording for a PO number, generic otherwise. */
+function tooLongMessage(
+	t: (key: 'numbering.tooLong' | 'numbering.purchaseOrderTooLong', options: { max: number }) => string,
+	setting: TCodeNumberSetting,
+	max: number,
+): string {
+	return setting.codeType === 'purchase_order'
+		? t('numbering.purchaseOrderTooLong', { max })
+		: t('numbering.tooLong', { max });
 }
 
 /**
@@ -220,8 +271,7 @@ export function NumberingDialog({
 		retry: false,
 	});
 	const typeLabel = t(`settings:numbering.type.${setting.codeType}`);
-	const tooLong =
-		preview.isSuccess && setting.maxLength !== null && preview.data.length > setting.maxLength;
+	const tooLong = preview.isSuccess && exceedsMaxLength(preview.data.nextNumber, setting.maxLength);
 
 	return (
 		<Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -270,12 +320,17 @@ export function NumberingDialog({
 						<div className='rounded-md border bg-muted/40 px-3 py-2 text-sm'>
 							<span className='text-muted-foreground'>{t('settings:numbering.preview')}: </span>
 							<span className='font-mono' aria-live='polite'>
-								{preview.isSuccess ? preview.data : '-'}
+								{preview.isSuccess ? preview.data.nextNumber : '-'}
 							</span>
+							{preview.isSuccess && usesSupplierToken(debounced.pattern) && (
+								<div>
+									<SampleSupplierNote context={preview.data.sampleContext} />
+								</div>
+							)}
 						</div>
 						{tooLong && setting.maxLength !== null && (
 							<p className='text-sm text-destructive' role='alert'>
-								{t('settings:numbering.tooLong', { max: setting.maxLength })}
+								{tooLongMessage((key, options) => t(`settings:${key}`, options), setting, setting.maxLength)}
 							</p>
 						)}
 					</FieldGroup>

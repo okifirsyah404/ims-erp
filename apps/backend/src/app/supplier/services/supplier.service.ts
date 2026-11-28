@@ -1,4 +1,5 @@
 import { inject, injectable } from 'tsyringe';
+import { inTransaction, type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 
 import { AppError } from '@http/errors';
 
@@ -61,6 +62,9 @@ export class SupplierService {
 		private readonly addresses: ISupplierAddressRepository,
 		@inject(EXPORTED_LOCATION_SERVICE_TOKEN)
 		private readonly location: Pick<ExportedLocationService, 'assertVillage'>,
+		/** P7-5: document number + write in one transaction; optional for unit tests built by hand. */
+		@inject(TRANSACTION_RUNNER_TOKEN)
+		private readonly transactions?: ITransactionRunner,
 	) {}
 
 	/** Fetches one filtered page of supplier companies. */
@@ -93,11 +97,15 @@ export class SupplierService {
 		actorUserId: string,
 		organizationId?: string | null,
 	) {
-		const code =
-			data.code ?? (await this.numbering.next('supplier_company', undefined, new Date(), organizationId));
-		const existing = await this.companies.findByCode(code);
-		if (existing) throw new SupplierCompanyCodeTakenError(code);
-		return this.companies.create({ ...data, code, createdBy: actorUserId });
+		// P7-5 (T-1): a generated code is allocated in the insert's transaction,
+		// so a refused or failed insert does not use the number up.
+		return inTransaction(this.transactions, async (tx) => {
+			const code =
+				data.code ?? (await this.numbering.next('supplier_company', tx, new Date(), organizationId));
+			const existing = await this.companies.findByCode(code);
+			if (existing) throw new SupplierCompanyCodeTakenError(code);
+			return this.companies.create({ ...data, code, createdBy: actorUserId }, tx);
+		});
 	}
 
 	async updateCompany(id: string, patch: TSupplierCompanyUpdateInput) {

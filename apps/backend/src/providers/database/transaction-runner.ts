@@ -22,3 +22,20 @@ export const TRANSACTION_RUNNER_TOKEN: InjectionToken<ITransactionRunner> = Symb
 export function drizzleTransactionRunner(database: BunSQLDatabase): ITransactionRunner {
 	return { run: (work) => database.transaction(work) };
 }
+
+/**
+ * Runs `work` in one transaction when a runner is wired, else without one.
+ *
+ * @remarks
+ * For document numbering (P7-5, T-1): the number is allocated with the same
+ * `tx` the document is written with, so a failed save rolls the counter back
+ * and leaves no gap. Services take the runner as an optional last constructor
+ * argument; the DI container always provides it, and only unit tests that
+ * build a service by hand run without one.
+ */
+export function inTransaction<T>(
+	runner: ITransactionRunner | undefined,
+	work: (tx: TTx | undefined) => Promise<T>,
+): Promise<T> {
+	return runner ? runner.run((tx) => work(tx)) : work(undefined);
+}

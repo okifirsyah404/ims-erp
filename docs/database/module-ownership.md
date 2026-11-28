@@ -126,7 +126,9 @@ no central code-number module.
 - **Owns** `companies`, `suppliers` (the people/PIC), `addresses`,
   `company_addresses`, `settings`. Bank details are restricted.
 - **Contract**: `ExportedSupplierService` (`assertActiveCompany`,
-  `findCompanyByCode`, `findPerson`, `getPurchaseSnapshot`, `getBankDetails`).
+  `findCompanyByCode`, `findPerson`, `getPurchaseSnapshot`, `getBankDetails`,
+  `findLongestCompanyCode` - procurement's PO numbering preview renders
+  `{SUPPLIER}` with it, P7-5).
 
 ### 6. Product - `product` (new, split out of inventory, ADR-0026)
 

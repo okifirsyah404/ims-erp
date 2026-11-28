@@ -1,4 +1,5 @@
 import { inject, injectable } from 'tsyringe';
+import { inTransaction, type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import { WAREHOUSE_NUMBERING_SERVICE_TOKEN } from '../constants/di';
 import type { WarehouseNumberingService } from './warehouse-numbering.service';
 import { AuditWriter } from '@shared/audit';
@@ -152,6 +153,9 @@ export class WarehouseService {
 		/** Codes of warehouses created without an explicit one (ERP-0042). */
 		@inject(WAREHOUSE_NUMBERING_SERVICE_TOKEN)
 		private readonly numbering: Pick<WarehouseNumberingService, 'next'>,
+		/** P7-5: document number + write in one transaction; optional for unit tests built by hand. */
+		@inject(TRANSACTION_RUNNER_TOKEN)
+		private readonly transactions?: ITransactionRunner,
 	) {}
 
 	/** Fetches one filtered page of warehouses, decorated with kind counts. */
@@ -284,16 +288,15 @@ export class WarehouseService {
 
 		// ERP-0042: an omitted code is sequence-allocated (`WH-0001`); a code
 		// the client typed wins and stays immutable afterwards.
-		const code = input.code ?? (await this.numbering.next('warehouse'));
-		const existing = await this.warehouseRepository.findByCode(organizationId, code);
-		if (existing) throw new WarehouseCodeTakenError();
-
 		await this.assertPicAssignable(input.responsibleEmployeeId ?? null);
 
-		const warehouse = await this.warehouseRepository.create({
-			...input,
-			code,
-			organizationId: null,
+		// P7-5 (T-1): a generated code is taken in the insert's transaction,
+		// so a refused or failed insert does not use the number up.
+		const warehouse = await inTransaction(this.transactions, async (tx) => {
+			const code = input.code ?? (await this.numbering.next('warehouse', tx));
+			const existing = await this.warehouseRepository.findByCode(organizationId, code);
+			if (existing) throw new WarehouseCodeTakenError();
+			return this.warehouseRepository.create({ ...input, code, organizationId: null }, tx);
 		});
 
 		// D-A: a warehouse created as the default demotes its siblings.

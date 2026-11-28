@@ -1,4 +1,5 @@
 import { inject, injectable } from 'tsyringe';
+import { inTransaction, type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import { AuditWriter, SYSTEM_AUDIT_ACTOR, type TAuditActor } from '@shared/audit';
 import type { ProductNumberingService } from './product-numbering.service';
 import type { TPaginationResult } from '@ims-erp/common';
@@ -72,6 +73,9 @@ export class ProductService {
 		/** ERP-0043: product codes are allocated, never typed. */
 		@inject(PRODUCT_NUMBERING_SERVICE_TOKEN)
 		private readonly numbering: Pick<ProductNumberingService, 'next'>,
+		/** P7-5: document number + write in one transaction; optional for unit tests built by hand. */
+		@inject(TRANSACTION_RUNNER_TOKEN)
+		private readonly transactions?: ITransactionRunner,
 	) {}
 
 	/** Fetches one filtered page of products. */
@@ -129,8 +133,10 @@ export class ProductService {
 		}
 		await this.exported.assertSkuFree(data.organizationId ?? null, data.sku);
 
-		const code = await this.numbering.next(productCodeType(data.productKind));
-		const product = await this.products.create(data, code);
+		// P7-5 (T-1): the number is taken in the insert's transaction (no gap).
+		const product = await inTransaction(this.transactions, async (tx) =>
+			this.products.create(data, await this.numbering.next(productCodeType(data.productKind), tx), tx),
+		);
 		await this.audit.record({
 			actor,
 			action: 'item.created',

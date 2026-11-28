@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import { z } from 'zod';
 import { documentItemSchema } from '@app/project/contracts/handover.contract';
 import type { TPaginationRequest, TPaginationResult } from '@ims-erp/common';
@@ -59,6 +60,7 @@ export interface IWarrantyRepository {
 	listByCustomer(customerId: string): Promise<TWarrantySelect[]>;
 	/** One page of certificates across the visible projects. */
 	paginate(request: TWarrantyPaginationRequest): Promise<TPaginationResult<TWarrantyRow>>;
-	create(code: string, actorUserId: string, data: TWarrantyData): Promise<TWarrantySelect>;
+	/** `tx` joins the caller's transaction (number allocation, P7-5). */
+	create(code: string, actorUserId: string, data: TWarrantyData, tx?: TTx): Promise<TWarrantySelect>;
 	update(id: string, data: TWarrantyData): Promise<TWarrantySelect | null>;
 }
