@@ -4,10 +4,10 @@
  * Exercises the REAL Elysia pipeline (erpGuard + TaxController) with the auth
  * seam and the TaxService mocked, in the same shape as the other suites:
  * - every route requires a session (401) and the right permission (403);
- * - `finance` (read + export only) can view and export but cannot edit,
- *   verify, or delete;
+ * - `finance` holds the former accountant tax grants (P7-4, K2d) and passes
+ *   the guard on every route;
  * - `sales` (no tax grants) is 403 on everything;
- * - `accountant`/owner (full tax:*) passes the guard for all of them.
+ * - the owner (full tax:*) passes the guard for all of them.
  */
 import 'reflect-metadata';
 import { beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
@@ -197,20 +197,14 @@ describe('tax routes — authentication', () => {
 	);
 });
 
-describe('tax routes — finance can read and export only', () => {
+describe('tax routes — finance holds the former accountant tax grants (P7-4, K2d)', () => {
 	test.each(ROUTES)(
-		'$method $path as finance returns 200/2xx or a validation 4xx — never 403 for read/export routes',
+		'$method $path as finance reaches the service (no 401/403)',
 		async ({ method, path, body }) => {
+			// The accountant role is gone; finance now prepares, updates and
+			// verifies tax records as well as reading and exporting them.
 			const response = await app.handle(jsonRequest(method, path, FINANCE, body));
-			expect(response.status).not.toBe(401);
-			if (method === 'GET' || path === '/taxes/records/preview') {
-				// read + export are granted to finance; preview persists nothing
-				// and is deliberately guarded by tax:read.
-				expect(response.status).not.toBe(403);
-			} else {
-				// write routes must be denied
-				expect(response.status).toBe(403);
-			}
+			expect([401, 403]).not.toContain(response.status);
 		},
 	);
 });

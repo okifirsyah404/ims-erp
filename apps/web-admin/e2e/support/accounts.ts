@@ -11,7 +11,7 @@ export const API_URL = process.env.E2E_API_URL ?? 'http://localhost:3001';
 /** Seeded UAT accounts used by the checklists (`<role>_seed` / `<role>123456`). */
 export const ROLES = [
 	'admin',
-	'admin_seed',
+	'hr_seed',
 	'purchasing_seed',
 	'operations_manager_seed',
 	'warehouse_seed',

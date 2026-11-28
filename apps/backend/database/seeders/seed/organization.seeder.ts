@@ -1,8 +1,9 @@
 import { auth } from '../../../src/providers/better-auth/auth';
 import { appConfig } from '../../../config/providers/config';
 import { drizzleDB } from '../../../drizzle/db';
-import { organizations, users } from '../../../drizzle/schemas/auth.schema';
-import { eq, isNull } from 'drizzle-orm';
+import { members, organizations, users } from '../../../drizzle/schemas/auth.schema';
+import { withBaseMemberRole } from '@ims-erp/common';
+import { and, eq, isNull } from 'drizzle-orm';
 import pino from 'pino';
 
 const logger = pino({
@@ -67,6 +68,18 @@ export async function ensureOrganization(input: {
 			userId: owner.id,
 		},
 	});
+
+	// Better Auth writes the creator as a bare `owner`; every member also
+	// carries the base `member` role (P7-4), like the backend writes it.
+	await drizzleDB
+		.update(members)
+		.set({ role: withBaseMemberRole(['owner']).join(',') })
+		.where(
+			and(
+				eq(members.organizationId, organization.id),
+				eq(members.userId, owner.id),
+			),
+		);
 
 	logger.info(
 		{ organizationId: organization.id, ownerId: owner.id },

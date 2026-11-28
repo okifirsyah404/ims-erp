@@ -157,7 +157,7 @@ const ROUTES: ReadonlyArray<{
 /** Organization roles that must never reach a warehouse route. */
 const FORBIDDEN_USERS = [
 	'owner',
-	'admin', // organization admin — NOT a platform admin
+	'admin', // organization owner fixture — NOT a platform admin (P7-4)
 	'sales',
 	'salesFinance',
 	'technician',

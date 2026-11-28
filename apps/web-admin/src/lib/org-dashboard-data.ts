@@ -5,7 +5,7 @@
 
 export const roleCounts = [
 	{ role: 'owner', count: 1 },
-	{ role: 'admin', count: 3 },
+	{ role: 'finance', count: 3 },
 	{ role: 'project_manager', count: 4 },
 	{ role: 'technician', count: 12 },
 	{ role: 'member', count: 28 },

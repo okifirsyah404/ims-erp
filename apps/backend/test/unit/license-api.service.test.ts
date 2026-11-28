@@ -109,8 +109,9 @@ beforeEach(() => {
 				({
 					meta: { page: 1, limit: 100, total: 2, totalPages: 1 },
 					data: [
-						{ userId: 'owner-1', role: 'owner', user: { name: 'Owner' } },
-						{ userId: 'u1', role: 'sales_manager', user: { name: 'Sari Sales' } },
+						{ userId: 'owner-1', role: 'member,owner', user: { name: 'Owner' } },
+						// P7-4: `sales` holds the license API key grants (K2b).
+						{ userId: 'u1', role: 'member,sales', user: { name: 'Sari Sales' } },
 					],
 				}) as never,
 		},

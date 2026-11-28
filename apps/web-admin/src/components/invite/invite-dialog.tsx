@@ -22,20 +22,12 @@ import {
 import { Field, FieldGroup } from '@ims-erp/ui/components/field';
 import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@ims-erp/ui/components/select';
 import { Switch } from '@ims-erp/ui/components/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ims-erp/ui/components/tabs';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { ScrollDialogContent } from '@/components/scroll-dialog-content';
 import {
 	employmentTypeLabels,
-	erpRoleLabel,
 	parseInviteSheet,
 	MAX_INVITE_SHEET_ROWS,
 } from '@ims-erp/common';
@@ -53,6 +45,7 @@ import {
 	downloadOrgInvitationTemplate,
 } from '@/lib/org-invitation-api';
 import { useGrantableOrgRoles } from '@/lib/use-caller-org-roles';
+import { RoleCombobox } from './role-combobox';
 
 /** `admin` = application-level dialog (`/admin/users`); `org` = organization detail. */
 export type TInviteMode = 'admin' | 'org';
@@ -94,7 +87,9 @@ export function InviteDialog({
 	const isAdmin = mode === 'admin';
 	const [email, setEmail] = useState('');
 	const [name, setName] = useState('');
-	const [organizationRole, setOrganizationRole] = useState<string>('member');
+	// P7-4: several roles per invite; starts empty (the base `member` role is
+	// added by the backend and is never picked here).
+	const [organizationRoles, setOrganizationRoles] = useState<string[]>([]);
 	const [targetOrganizationId, setTargetOrganizationId] = useState<string | null>(
 		organizationId ?? null,
 	);
@@ -129,14 +124,12 @@ export function InviteDialog({
 	const { roles: grantableRoles } = useGrantableOrgRoles(roleScopeOrganizationId);
 
 	// Derived, not synced in an effect: a role picked for one organization may
-	// sit above the caller's tier in the next, so the *effective* role is
+	// sit above the caller's tier in the next, so the *effective* roles are
 	// clamped at render time. The stored value is left untouched so returning
-	// to an organization where it is legal restores it.
-	const effectiveRole = grantableRoles.includes(organizationRole as never)
-		? organizationRole
-		: grantableRoles.includes('member')
-			? 'member'
-			: (grantableRoles[0] ?? 'member');
+	// to an organization where they are legal restores them.
+	const effectiveRoles = organizationRoles.filter((role) =>
+		(grantableRoles as readonly string[]).includes(role),
+	);
 
 	const send = useMutation({
 		mutationFn: (input: TInviteInput | TInviteInput[]) =>
@@ -184,7 +177,7 @@ export function InviteDialog({
 	function reset() {
 		setEmail('');
 		setName('');
-		setOrganizationRole('member');
+		setOrganizationRoles([]);
 		setBulk('');
 		setFileRows(null);
 		setFileErrors([]);
@@ -201,13 +194,17 @@ export function InviteDialog({
 			toast.error(t('invite.nameRequired'));
 			return;
 		}
+		if (targetOrganizationId && effectiveRoles.length === 0) {
+			toast.error(t('invite.roleRequired'));
+			return;
+		}
 		setReport(null);
 		// A role only means something inside an organization.
 		send.mutate({
 			email: email.trim(),
 			name: name.trim(),
 			organizationId: targetOrganizationId ?? undefined,
-			organizationRoles: targetOrganizationId ? [effectiveRole] : undefined,
+			organizationRoles: targetOrganizationId ? effectiveRoles : undefined,
 			// Every invitation creates an employee record (company-level when no
 			// organization is chosen), so the switch always applies.
 			employmentType,
@@ -218,7 +215,7 @@ export function InviteDialog({
 		const { rows, rowErrors, error } = parseBulkInviteRows(bulk, {
 			mode,
 			organizationId,
-			organizationRole: effectiveRole,
+			organizationRoles: effectiveRoles,
 			allowedRoles: grantableRoles,
 			employmentType,
 			resolveOrganizationCode: (code) =>
@@ -265,28 +262,41 @@ export function InviteDialog({
 			);
 			// Admin rows resolve the slug client-side; org rows pin to the page's
 			// organization. Backend re-validates everything regardless.
-			const rows: TInviteInput[] = parsed.rows.map((row) => {
+			const rows: TInviteInput[] = parsed.rows.flatMap((row) => {
 				const targetOrgId = isAdmin
 					? (row.organizationSlug
 						? (options.find((o) => o.slug === row.organizationSlug)?.id ??
 							row.organizationSlug)
 						: undefined)
 					: organizationId;
-				// Sheet cells carry pipe-separated roles ('admin|finance');
-				// empty falls back to the dialog default.
+				// Sheet cells carry pipe-separated roles ('sales|warehouse');
+				// empty falls back to the dialog defaults.
 				const roles = targetOrgId
 					? (row.role
 						? row.role.split('|').map((r) => r.trim()).filter(Boolean)
-						: [effectiveRole])
+						: effectiveRoles)
 					: undefined;
-				return {
-					email: row.email,
-					name: row.name,
-					organizationId: targetOrgId,
-					organizationRoles: roles,
-					// A row may override the switch (spreadsheet column).
-					employmentType: row.employmentType ?? employmentType,
-				};
+				// P7-4: an organization row needs at least one role (the sheet
+				// cell or the default roles picked on the bulk tab).
+				if (roles && roles.length === 0) {
+					errors.push(
+						t('invite.fileRowError', {
+							row: row.row,
+							message: t('invite.roleRequired'),
+						}),
+					);
+					return [];
+				}
+				return [
+					{
+						email: row.email,
+						name: row.name,
+						organizationId: targetOrgId,
+						organizationRoles: roles,
+						// A row may override the switch (spreadsheet column).
+						employmentType: row.employmentType ?? employmentType,
+					},
+				];
 			});
 			setFileRows(rows);
 			setFileErrors(errors);
@@ -318,30 +328,25 @@ export function InviteDialog({
 	}
 
 	/**
-	 * Role dropdown, restricted to what the caller may actually assign.
+	 * Multi-role picker, restricted to what the caller may actually assign.
 	 *
 	 * @remarks
 	 * `grantableRoles` comes from the shared ladder
-	 * (`grantableOrganizationRoles`): `owner` never appears, an org admin does
-	 * not see `admin`, org HR does not see `hr`. The backend enforces the same
-	 * rule, so hiding an option here is UX, not the boundary.
+	 * (`grantableOrganizationRoles`): `owner` and the base `member` role never
+	 * appear, and only an owner sees `hr`. The backend enforces the same rule,
+	 * so hiding an option here is UX, not the boundary.
 	 */
-	const roleSelect = (placeholder: string) => (
-		<Select
-			value={effectiveRole}
-			onValueChange={(value) => setOrganizationRole(value ?? 'member')}
-		>
-			<SelectTrigger>
-				<SelectValue placeholder={placeholder} />
-			</SelectTrigger>
-			<SelectContent>
-				{grantableRoles.map((roleName) => (
-					<SelectItem key={roleName} value={roleName}>
-						{erpRoleLabel(roleName, i18n.language)}
-					</SelectItem>
-				))}
-			</SelectContent>
-		</Select>
+	const roleSelect = (id: string, placeholder: string) => (
+		<>
+			<RoleCombobox
+				id={id}
+				roles={grantableRoles}
+				value={effectiveRoles}
+				onChange={setOrganizationRoles}
+				placeholder={placeholder}
+			/>
+			<p className='text-xs text-muted-foreground'>{t('invite.roleHint')}</p>
+		</>
 	);
 
 	/**
@@ -427,8 +432,8 @@ export function InviteDialog({
 							)}
 							{targetOrganizationId && (
 								<Field>
-									<FieldLabel>{t('invite.role')}</FieldLabel>
-									{roleSelect(t('invite.rolePlaceholder'))}
+									<FieldLabel htmlFor='invite-roles'>{t('invite.role')}</FieldLabel>
+									{roleSelect('invite-roles', t('invite.rolePlaceholder'))}
 								</Field>
 							)}
 						</FieldGroup>
@@ -474,8 +479,10 @@ export function InviteDialog({
 								</p>
 							</Field>
 							<Field>
-								<FieldLabel>{t('invite.defaultRole')}</FieldLabel>
-								{roleSelect(t('invite.defaultRolePlaceholder'))}
+								<FieldLabel htmlFor='invite-default-roles' optional>
+									{t('invite.defaultRole')}
+								</FieldLabel>
+								{roleSelect('invite-default-roles', t('invite.defaultRolePlaceholder'))}
 							</Field>
 						</FieldGroup>
 						<DialogFooter className='mt-6'>

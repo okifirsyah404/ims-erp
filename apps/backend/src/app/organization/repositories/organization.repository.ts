@@ -279,8 +279,9 @@ export class OrganizationRepository implements IOrganizationRepository {
 		const conditions = [eq(members.organizationId, organizationId)];
 		if (role) {
 			// Multi-role members are comma-joined (ERP-0041); the wrapped list
-			// matches a whole entry, not a substring ('sales' does not match
-			// 'sales_manager').
+			// matches a whole entry, not a substring ('sales' does not match a
+			// hypothetical 'sales_lead'). Lists are stored without spaces
+			// (ERP-0187 normalized the older 'a, b' rows).
 			conditions.push(
 				sql`(',' || ${members.role} || ',') LIKE ${`%,${role},%`}`,
 			);

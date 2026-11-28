@@ -56,6 +56,7 @@ import {
 	assignableOrganizationRoles,
 	findUnassignableRoles,
 	parseRoleList,
+	withBaseMemberRole,
 } from '@ims-erp/common';
 
 /**
@@ -259,7 +260,8 @@ export class OrganizationService {
 			const member = await this.gateway.addMember({
 				organizationId,
 				userId: activeUser.id,
-				roles: user.roles,
+				// Every member carries the base `member` role (P7-4).
+				roles: withBaseMemberRole(user.roles),
 			});
 			await this.notifyMemberAdded(
 				activeUser.id,
@@ -545,7 +547,8 @@ export class OrganizationService {
 		const member = await this.gateway.addMember({
 			organizationId,
 			userId: input.userId,
-			roles: input.roles,
+			// Every member carries the base `member` role (P7-4).
+			roles: withBaseMemberRole(input.roles),
 		});
 		await this.notifyMemberAdded(
 			input.userId,
@@ -582,7 +585,7 @@ export class OrganizationService {
 		if (!member) throw new MemberNotFoundError();
 		// An existing grant is not a new grant: the caller may leave a role in
 		// place even when it sits above their tier (an owner demoting another
-		// owner, an admin removing `admin` from a peer), but may not create one.
+		// owner, org HR keeping `hr`), but may not create one.
 		this.assertAssignableRoles(
 			assignment,
 			input.roles,
@@ -591,7 +594,9 @@ export class OrganizationService {
 		if (this.isOwner(member.role) && !input.roles.includes('owner')) {
 			await this.ensureNotLastOwner(organizationId, memberId);
 		}
-		const joined = input.roles.join(',');
+		// The base `member` role is always kept, even when the form does not
+		// send it (P7-4).
+		const joined = withBaseMemberRole(input.roles).join(',');
 		const result = await this.gateway.updateMemberRole(headers, {
 			organizationId,
 			memberId,

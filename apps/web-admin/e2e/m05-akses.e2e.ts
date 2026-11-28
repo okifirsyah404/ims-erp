@@ -14,8 +14,10 @@ test('A11 ⚠️ Pembelian membuka Produk: halaman khusus admin aplikasi', async
 	await page.context().close();
 });
 
-test('F6 Admin organisasi tidak melihat tombol penyesuaian stok', async ({ browser }) => {
-	const page = await pageAs(browser, 'admin_seed');
+// P7-4: the organization `admin` role is gone; SDM stands in as a role
+// without stock-adjustment rights.
+test('F6 SDM tidak melihat tombol penyesuaian stok', async ({ browser }) => {
+	const page = await pageAs(browser, 'hr_seed');
 	await page.goto('/inventory/stock/adjustments');
 	await expect(page.getByRole('heading').first()).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Penyesuaian baru' })).toHaveCount(0);

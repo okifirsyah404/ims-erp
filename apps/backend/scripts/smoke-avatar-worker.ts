@@ -20,7 +20,7 @@ import { users } from '../drizzle/schemas/auth.schema';
 import { queueConnection } from '../src/providers/queue/queue.connection';
 import { dispatchAvatarGeneration } from '../src/app/user/queues/avatar.queue';
 
-const MEMBER_EMAIL = 'member.seed@entragate.local';
+const MEMBER_EMAIL = 'freelancer.seed@entragate.local';
 const TIMEOUT_MS = 30_000;
 const POLL_MS = 500;
 

@@ -1,7 +1,12 @@
 import { z } from 'zod';
 import type { OpeningSubledgerService } from '../services/opening-subledger.service';
 import { container } from 'tsyringe';
-import type { ErpContext } from '@authorization/elysia-auth';
+import { ErpAuthError, type ErpContext } from '@authorization/elysia-auth';
+import {
+	type IPermissionResolver,
+	PERMISSION_RESOLVER_TOKEN,
+} from '@authorization/permission-resolver';
+import { parseRoleList } from '@ims-erp/common';
 import { domainPlugin } from '@http/plugin';
 import { created, ok, okPaginated } from '@http/response';
 import {
@@ -45,10 +50,10 @@ import type { CashBankService } from '../services/cash-bank.service';
  *
  * @remarks
  * Permissions come from the existing resources in `erp-permissions.ts`:
- * `chart_of_account` (accountant), `accounting_period` (accountant, with
- * `close`/`reopen`), `journal` (accountant, with `post`/`reverse`). The
+ * `chart_of_account` (finance), `accounting_period` (finance with `close`;
+ * `reopen` is owner-only), `journal` (finance, with `post`/`reverse`). The
  * posting service itself is a service-layer contract for other modules, not
- * an HTTP surface; the `/journal` routes below are for manual accountant
+ * an HTTP surface; the `/journal` routes below are for manual finance
  * entries. Controllers only parse, call the service, and envelope.
  */
 export class LedgerController {
@@ -66,6 +71,7 @@ export class LedgerController {
 		const cashBank =
 			container.resolve<CashBankService>(CASH_BANK_SERVICE_TOKEN);
 		const manualJournals = container.resolve<ManualJournalService>(MANUAL_JOURNAL_SERVICE_TOKEN);
+		const permissions = container.resolve<IPermissionResolver>(PERMISSION_RESOLVER_TOKEN);
 
 		const ctxOf = (erp: ErpContext) => ({
 			organizationId: erp.organizationId,
@@ -207,10 +213,22 @@ export class LedgerController {
 				},
 				{
 					erp: {
-						// `locked -> open` stays owner-only: the `reopen` permission is
-						// not granted to the plain accountant role (erp-permissions.ts).
 						permission: ['accounting_period:close'],
-						ownership: { reopen: 'owner' },
+						// RO4 (P7-4): moving a period back to `open` (from `closed`
+						// or `locked`) needs `accounting_period:reopen`, which only
+						// the owner holds. Checked before the handler runs.
+						policy: async ({ body, erp }: { body: unknown; erp: ErpContext }) => {
+							const target = (body as { to?: unknown } | null)?.to;
+							if (target !== 'open') return;
+							const canReopen = await permissions.hasPermission(
+								erp.organizationId,
+								parseRoleList(erp.member.role),
+								{ accounting_period: ['reopen'] },
+							);
+							if (!canReopen) {
+								throw new ErpAuthError(403, 'Insufficient permissions');
+							}
+						},
 					},
 					detail: {
 						description:

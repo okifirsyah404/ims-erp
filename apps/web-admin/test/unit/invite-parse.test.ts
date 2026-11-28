@@ -13,8 +13,8 @@ const resolve = (code: string) => ORGS[code] ?? null;
 describe('parseBulkInviteRows — organization mode', () => {
 	test('reads email, name, role and pins the organization', () => {
 		const { rows, rowErrors, error } = parseBulkInviteRows(
-			'jane@example.com, Jane Doe, admin\njohn@example.com',
-			{ mode: 'org', organizationId: 'org-1', organizationRole: 'member' },
+			'jane@example.com, Jane Doe, finance\njohn@example.com',
+			{ mode: 'org', organizationId: 'org-1', organizationRoles: ['sales'] },
 		);
 
 		expect(error).toBeNull();
@@ -24,32 +24,32 @@ describe('parseBulkInviteRows — organization mode', () => {
 				email: 'jane@example.com',
 				name: 'Jane Doe',
 				organizationId: 'org-1',
-				organizationRoles: ['admin'],
+				organizationRoles: ['finance'],
 			},
 			{
 				email: 'john@example.com',
 				// Bare-email rows default the name to the local part.
 				name: 'john',
 				organizationId: 'org-1',
-				organizationRoles: ['member'],
+				organizationRoles: ['sales'],
 			},
 		]);
 	});
 
 	test('a pipe-separated role cell resolves to multiple roles', () => {
 		const { rows, rowErrors } = parseBulkInviteRows(
-			'jane@example.com, Jane Doe, admin|finance',
-			{ mode: 'org', organizationId: 'org-1', organizationRole: 'member' },
+			'jane@example.com, Jane Doe, sales|warehouse',
+			{ mode: 'org', organizationId: 'org-1', organizationRoles: ['sales'] },
 		);
 
 		expect(rowErrors).toEqual([]);
-		expect(rows[0]?.organizationRoles).toEqual(['admin', 'finance']);
+		expect(rows[0]?.organizationRoles).toEqual(['sales', 'warehouse']);
 	});
 
 	test('an unknown role fails only that row', () => {
 		const { rows, rowErrors } = parseBulkInviteRows(
 			'jane@example.com, Jane Doe, boss',
-			{ mode: 'org', organizationId: 'org-1', organizationRole: 'member' },
+			{ mode: 'org', organizationId: 'org-1', organizationRoles: ['sales'] },
 		);
 
 		expect(rowErrors).toEqual(['Row 1: unknown role "boss"']);
@@ -62,8 +62,8 @@ describe('parseBulkInviteRows — organization mode', () => {
 			{
 				mode: 'org',
 				organizationId: 'org-1',
-				organizationRole: 'member',
-				allowedRoles: ['member', 'finance'],
+				organizationRoles: ['sales'],
+				allowedRoles: ['sales', 'finance'],
 			},
 		);
 
@@ -78,19 +78,51 @@ describe('parseBulkInviteRows — organization mode', () => {
 		const { rows, rowErrors } = parseBulkInviteRows('jane@example.com, Jane Doe', {
 			mode: 'org',
 			organizationId: 'org-1',
-			organizationRole: 'admin',
-			allowedRoles: ['member', 'finance'],
+			organizationRoles: ['owner'],
+			allowedRoles: ['sales', 'finance'],
 		});
 
 		expect(rows).toHaveLength(0);
 		expect(rowErrors[0]).toContain('role not allowed');
 	});
 
+	test('P7-4: an org row with no role and no default fails that row', () => {
+		const { rows, rowErrors } = parseBulkInviteRows('jane@example.com, Jane Doe', {
+			mode: 'org',
+			organizationId: 'org-1',
+			organizationRoles: [],
+		});
+
+		expect(rows).toHaveLength(0);
+		expect(rowErrors).toEqual(['Row 1: choose at least one role']);
+	});
+
+	test('P7-4: the base member role is accepted even though it is never offered', () => {
+		const { rows, rowErrors } = parseBulkInviteRows('jane@example.com, Jane Doe, member|sales', {
+			mode: 'org',
+			organizationId: 'org-1',
+			allowedRoles: ['sales', 'finance'],
+		});
+
+		expect(rowErrors).toEqual([]);
+		expect(rows[0]?.organizationRoles).toEqual(['member', 'sales']);
+	});
+
+	test('P7-4: a role removed from the catalog is unknown', () => {
+		const { rows, rowErrors } = parseBulkInviteRows('jane@example.com, Jane Doe, sales_manager', {
+			mode: 'org',
+			organizationId: 'org-1',
+		});
+
+		expect(rows).toHaveLength(0);
+		expect(rowErrors).toEqual(['Row 1: unknown role "sales_manager"']);
+	});
+
 	test('the employment type from the dialog is applied to every row', () => {
 		const { rows } = parseBulkInviteRows('jane@example.com, Jane Doe', {
 			mode: 'org',
 			organizationId: 'org-1',
-			organizationRole: 'member',
+			organizationRoles: ['sales'],
 			employmentType: 'contract',
 		});
 
@@ -114,7 +146,7 @@ describe('parseBulkInviteRows — organization mode', () => {
 describe('parseBulkInviteRows — admin mode', () => {
 	test('reads the org-code column and resolves it', () => {
 		const { rows, rowErrors } = parseBulkInviteRows(
-			'jane@example.com, Jane Doe, acme, admin',
+			'jane@example.com, Jane Doe, acme, finance',
 			{ mode: 'admin', resolveOrganizationCode: resolve },
 		);
 
@@ -124,14 +156,14 @@ describe('parseBulkInviteRows — admin mode', () => {
 				email: 'jane@example.com',
 				name: 'Jane Doe',
 				organizationId: 'org-acme',
-				organizationRoles: ['admin'],
+				organizationRoles: ['finance'],
 			},
 		]);
 	});
 
 	test('an empty org code means an application-level invite with no role', () => {
 		const { rows, rowErrors } = parseBulkInviteRows(
-			'jane@example.com, Jane Doe, , admin',
+			'jane@example.com, Jane Doe, , finance',
 			{ mode: 'admin', resolveOrganizationCode: resolve },
 		);
 
@@ -149,7 +181,7 @@ describe('parseBulkInviteRows — admin mode', () => {
 	test('an unknown org code fails only that row', () => {
 		const { rows, rowErrors } = parseBulkInviteRows(
 			'jane@example.com, Jane, nope\njohn@example.com, John, beta',
-			{ mode: 'admin', resolveOrganizationCode: resolve },
+			{ mode: 'admin', resolveOrganizationCode: resolve, organizationRoles: ['sales'] },
 		);
 
 		expect(rowErrors).toEqual(['Row 1: unknown organization code "nope"']);

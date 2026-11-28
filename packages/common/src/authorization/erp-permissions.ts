@@ -253,13 +253,18 @@ export type ErpPermissionRequest = {
  * ERP organization role keys. These are *organization* membership roles -
  * completely separate from the global Better Auth `admin`/`user` roles
  * managed by the `admin()` plugin.
+ *
+ * @remarks
+ * P7-4 (K2, K2b, K2d): the organization roles `admin`, `sales_manager`,
+ * `accountant` and `auditor` are gone. `sales` holds the former sales
+ * manager grants and `finance` the former accountant grants. `member` stays
+ * as the base membership role every member carries
+ * ({@link withBaseMemberRole}); it is never offered in a form.
  */
 export const erpRoleNames = [
 	'owner',
-	'admin',
 	'member',
 	'operations_manager',
-	'sales_manager',
 	'sales',
 	'project_manager',
 	'technician',
@@ -267,14 +272,42 @@ export const erpRoleNames = [
 	'purchasing',
 	'warehouse',
 	'finance',
-	'accountant',
 	'hr',
 	'customer_service',
 	'marketing',
-	'auditor',
 ] as const;
 
 export type ErpRoleName = (typeof erpRoleNames)[number];
+
+/**
+ * The base membership role. Every stored role list carries it: the backend
+ * adds it on every role write, so forms never offer it.
+ */
+export const BASE_MEMBER_ROLE = 'member' as const satisfies ErpRoleName;
+
+/**
+ * Organization roles a person can be given in the invite and member forms
+ * (OA9, K2). `owner` is listed but still needs an acting owner and never
+ * rides on an invitation; `member` is the implicit base role and is absent.
+ */
+export const offeredOrganizationRoles = erpRoleNames.filter(
+	(role) => role !== BASE_MEMBER_ROLE,
+) as Exclude<ErpRoleName, typeof BASE_MEMBER_ROLE>[];
+
+/**
+ * Adds the base `member` role to a role list and drops duplicates, keeping
+ * `member` first and the rest in the given order.
+ *
+ * @remarks
+ * Applied by the backend on every write of an organization role list
+ * (member add/update, invitation create, invite-first employee form,
+ * organization create with users), so a client never has to send it.
+ *
+ * @param roles - Requested roles; may already contain `member`
+ */
+export function withBaseMemberRole(roles: readonly string[]): string[] {
+	return [...new Set<string>([BASE_MEMBER_ROLE, ...roles])];
+}
 
 /**
  * Human-readable organization role labels per UI language. Display only —
@@ -286,10 +319,8 @@ export const erpRoleLabels: Record<
 	{ en: string; id: string }
 > = {
 	owner: { en: 'Owner', id: 'Pemilik' },
-	admin: { en: 'Admin', id: 'Admin' },
 	member: { en: 'Member', id: 'Anggota' },
 	operations_manager: { en: 'Operations Manager', id: 'Manajer Operasional' },
-	sales_manager: { en: 'Sales Manager', id: 'Manajer Penjualan' },
 	sales: { en: 'Sales', id: 'Penjualan' },
 	project_manager: { en: 'Project Manager', id: 'Manajer Proyek' },
 	technician: { en: 'Technician', id: 'Teknisi' },
@@ -297,11 +328,9 @@ export const erpRoleLabels: Record<
 	purchasing: { en: 'Purchasing', id: 'Pembelian' },
 	warehouse: { en: 'Warehouse', id: 'Gudang' },
 	finance: { en: 'Finance', id: 'Keuangan' },
-	accountant: { en: 'Accountant', id: 'Akuntan' },
 	hr: { en: 'Human Resource', id: 'Sumber Daya Manusia' },
 	customer_service: { en: 'Customer Service', id: 'Layanan Pelanggan' },
 	marketing: { en: 'Marketing', id: 'Pemasaran' },
-	auditor: { en: 'Auditor', id: 'Auditor' },
 };
 
 /**
@@ -384,20 +413,21 @@ export type TRoleAssignmentOptions = {
  * Organization roles a caller may hand out, sorted by catalog order.
  *
  * @remarks
+ * Only the offered roles ({@link offeredOrganizationRoles}) are ever
+ * returned; the base `member` role is added by the backend, never picked.
  * The tier ladder is deliberately tiny and explicit:
  * - `owner` requires holding `owner` — an invite can never carry it, and this
  *   also mirrors Better Auth's own hook (`auth-hooks.ts`: an owner grant needs
  *   an acting owner member, so a platform admin with no owner membership is
  *   rejected there too).
- * - `admin` requires an acting owner.
- * - `hr` requires an acting owner or admin.
+ * - `hr` requires an acting owner (or the platform admin).
  * - Every other role is grantable by any member manager; the backend still
  *   enforces `member:create`/`member:update` and record-level rules.
  *
  * `currentRoles` is the member-management escape hatch: an existing grant is
  * not a new grant, so a caller may leave a role in place even when it sits
- * above their tier (an admin removing `admin` from a peer, org HR keeping
- * `hr`). Invites omit it, which is what keeps the invite dropdown strict.
+ * above their tier (org HR keeping `hr`). Invites omit it, which is what
+ * keeps the invite dropdown strict.
  *
  * @param callerRoles - The caller's comma-joined `member.role` split apart
  * @param options - Platform-admin bypass and the target's current roles
@@ -411,13 +441,12 @@ export function assignableOrganizationRoles(
 	const isPlatformAdmin = options.isPlatformAdmin === true;
 	const isOwner = held.has('owner');
 
-	return erpRoleNames.filter((role) => {
+	return offeredOrganizationRoles.filter((role) => {
 		if (role === 'owner') return isOwner;
 		// Keeping an existing grant is not an escalation.
 		if (current.has(role) && held.has(role)) return true;
 		if (isPlatformAdmin) return true;
-		if (role === 'admin') return isOwner;
-		if (role === 'hr') return isOwner || held.has('admin');
+		if (role === 'hr') return isOwner;
 		return true;
 	});
 }
@@ -429,8 +458,7 @@ export function assignableOrganizationRoles(
  * Same ladder as {@link assignableOrganizationRoles} without the
  * keep-existing escape hatch, and with `owner` removed unconditionally: an
  * invite can never carry the organization's owner role (requirements: no
- * `owner` in the role dropdown for anyone, and org admins additionally lose
- * `admin`, org HR additionally loses `hr`).
+ * `owner` in the role picker for anyone; only an owner offers `hr`).
  */
 export function grantableOrganizationRoles(
 	callerRoles: readonly string[],
@@ -447,12 +475,14 @@ export function grantableOrganizationRoles(
  * @remarks
  * Empty means the payload is fine. Comparison is on the raw strings so a
  * stale client naming a role that no longer exists is reported, not ignored.
+ * The base `member` role is always accepted: it is never offered, but the
+ * backend adds it to every role list anyway ({@link withBaseMemberRole}).
  */
 export function findUnassignableRoles(
 	requested: readonly string[],
 	allowed: readonly string[],
 ): string[] {
-	const permitted = new Set<string>(allowed);
+	const permitted = new Set<string>([...allowed, BASE_MEMBER_ROLE]);
 	return requested.filter((role) => !permitted.has(role));
 }
 
@@ -515,62 +545,11 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		apiKey: ['create', 'read', 'update', 'delete'],
 	},
 
-	// Organization administration + non-sensitive master data. No payroll,
-	// payment execution, accounting, investor-finance, or integration secrets.
-	admin: {
-		portal_account: ['read', 'invite', 'revoke'],
-		organization: ['read', 'update'],
-		member: ['create', 'read', 'update', 'delete'],
-		invitation: ['create', 'cancel'],
-		ac: ['read'],
-		company: ['read', 'update'],
-		code_number: ['read', 'update'],
-		branch: ['read', 'create', 'update', 'archive'],
-		department: ['read', 'create', 'update', 'archive'],
-		master_data: ['read', 'create', 'update', 'archive', 'import', 'export'],
-		dashboard: ['read'],
-		employee: ['read'],
-		// Watches the n8n event log and sends failed events again (M04).
-		automation: ['read', 'read_log', 'execute'],
-		// WhatsApp inbox and FAQ (M04 stage 2).
-		whatsapp: ['read', 'reply', 'manage_faq'],
-		// Records attendance with HR (M08, decision 2026-11-07).
-		attendance: ['read', 'record'],
-		// Plans the work schedule with HR, like attendance (ERP-0118).
-		schedule: ['read', 'create', 'update', 'delete'],
-		product: ['read'],
-		asset_borrowing: [
-			'read',
-			'create',
-			'update',
-			'approve',
-			'issue',
-			'return',
-			'extend',
-			'mark_late',
-			'mark_lost',
-			'export',
-		],
-		document: ['read', 'create', 'download', 'signature_read', 'signature_sign', 'signature_request'],
-		approval_rule: ['read'],
-		service_ticket: ['read', 'create', 'update', 'assign'],
-		asset: ['read'],
-		// ERP-0031: admins see the warehouse stock of warehouses their
-		// organization is linked to (read-only; receiving/issuing stays with the
-		// warehouse role).
-		stock: ['read', 'export'],
-		stock_adjustment: ['read'],
-		license: ['read'],
-		audit_log: ['read'],
-	},
-
-	// Minimal baseline. Employee self-service still requires an actual
-	// employee relationship (record-level check, enforced server-side).
+	// Base membership role. Every member carries it (the backend adds it on
+	// every role write, P7-4), so it grants nothing beyond reading the
+	// caller's own access: the working grants come from the other roles.
 	member: {
 		ac: ['read'],
-		dashboard: ['read'],
-		master_data: ['read'],
-		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
 	operations_manager: {
@@ -609,7 +588,9 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
-	sales_manager: {
+	// The only sales role (K2b): holds the former sales manager grants. The
+	// services still refuse approving one's own quotation or return.
+	sales: {
 		portal_account: ['read', 'invite', 'revoke'],
 		ac: ['read'],
 		asset_borrowing: ['read', 'create'],
@@ -630,23 +611,6 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		apiKey: ['create', 'read', 'update'],
 		// Answers WhatsApp chats handed off by the assistant (M04 stage 2).
 		whatsapp: ['read', 'reply'],
-		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
-		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
-	},
-
-	sales: {
-		ac: ['read'],
-		asset_borrowing: ['read', 'create'],
-		dashboard: ['read'],
-		customer: ['read', 'create', 'update'],
-		lead: ['read', 'create', 'update'],
-		quotation: ['read', 'create', 'update', 'submit', 'send'],
-		sales_discount: ['request'],
-		sales_order: ['read', 'create', 'update', 'submit'],
-		sales_return: ['read', 'create', 'update', 'submit', 'cancel'],
-		product: ['read'],
-		// Registers licenses sold and starts renewals (M03, decision 2026-11-06).
-		license: ['read', 'create', 'extend', 'read_key'],
 		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
@@ -691,8 +655,14 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 
 	// Explicitly assigned work only; record-level scoping keeps customer
 	// data, payroll, and margins out of reach.
+	// P7-4 (KL-6): the projects they are assigned to (record scope in the
+	// project service), tool borrowing and cash advances. Who may take an
+	// advance (an active project task, KL-10) is checked in the service.
 	freelancer: {
 		ac: ['read'],
+		project: ['read'],
+		asset_borrowing: ['read', 'create'],
+		advance: ['read', 'create'],
 		task: ['read', 'update', 'submit'],
 		daily_report: ['read', 'create', 'update', 'submit'],
 		settlement: ['read', 'create', 'update', 'submit'],
@@ -726,6 +696,9 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		purchase_return: ['read', 'ship'],
 		// ERP-0065: takes customer returns back in (stock in, condition).
 		sales_return: ['read', 'receive'],
+		// B4 (P7-4): reads the orders behind goods in and goods out.
+		purchase_order: ['read'],
+		sales_order: ['read'],
 		asset_borrowing: [
 			'read',
 			'update',
@@ -742,7 +715,9 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 
 	// Payment execution is limited to approved transactions and enforced
 	// transactionally server-side; payroll payment access does not grant
-	// broad HR record access.
+	// broad HR record access. P7-4 (K2d, OB1, OB5): finance also holds the
+	// former accountant grants (chart of accounts, journals, periods, tax,
+	// investor reports). Reopening a locked period stays with the owner (RO4).
 	finance: {
 		ac: ['read'],
 		dashboard: ['read'],
@@ -755,8 +730,11 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		quotation: ['read'],
 		sales_order: ['read'],
 		sales_return: ['read'],
-		// Project direct costs, read only (decision 2026-11-04).
+		// Project direct costs and budgets, read only (decision 2026-11-04).
 		project: ['read', 'read_cost'],
+		budget: ['read'],
+		// Fixed assets register, read only (OB5).
+		asset: ['read'],
 		bill: ['read', 'create', 'record'],
 		expense_claim: ['read', 'create', 'update', 'submit', 'approve', 'reject', 'cancel'],
 		cash_bank: ['read', 'create', 'update', 'reconcile', 'export'],
@@ -766,44 +744,20 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		employee: ['read', 'read_private'],
 		payroll: ['read', 'create', 'update', 'export'],
 		financial_report: ['read', 'export'],
-		posting_rule: ['read'],
-		cost_center: ['read'],
+		chart_of_account: ['read', 'create', 'update', 'archive'],
+		journal: ['read', 'create', 'update', 'submit', 'approve', 'post', 'reverse', 'export'],
+		// Prepares and closes periods (RO1); `reopen` is owner-only (RO4).
+		accounting_period: ['read', 'create', 'close'],
+		posting_rule: ['read', 'update'],
+		cost_center: ['read', 'create', 'update', 'archive'],
 		credit_memo: ['read', 'create', 'apply', 'void'],
-		ar_write_off: ['read', 'request'],
-		tax: ['read', 'export'],
+		ar_write_off: ['read', 'request', 'approve'],
+		tax: ['read', 'create', 'update', 'verify', 'export'],
 		product: ['read', 'read_cost'],
 		// Supplier payments need the supplier's bank account (decision 2026-11-02).
 		supplier: ['read', 'read_bank'],
 		stock: ['read'],
 		license: ['read'],
-		investor: ['read'],
-		investor_report: ['read'],
-		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
-		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
-	},
-
-	// Accounting and reporting. No automatic bank-transfer execution.
-	accountant: {
-		ac: ['read'],
-		dashboard: ['read'],
-		master_data: ['read'],
-		chart_of_account: ['read', 'create', 'update', 'archive'],
-		journal: ['read', 'create', 'update', 'submit', 'approve', 'post', 'reverse', 'export'],
-		accounting_period: ['read', 'create', 'close', 'reopen'],
-		posting_rule: ['read', 'update'],
-		cost_center: ['read', 'create', 'update', 'archive'],
-		credit_memo: ['read', 'apply', 'void'],
-		ar_write_off: ['read', 'approve'],
-		tax: ['read', 'create', 'update', 'verify', 'export'],
-		financial_report: ['read', 'export'],
-		invoice: ['read', 'export'],
-		receipt: ['read', 'export'],
-		payment: ['read', 'export'],
-		bill: ['read', 'create', 'record'],
-		// Files nothing and submits nothing: the accountant checks and signs
-		// off claims someone else filed (ERP-0013).
-		expense_claim: ['read', 'approve', 'reject'],
-		cash_bank: ['read', 'reconcile', 'export'],
 		investor: ['read'],
 		investor_report: ['read', 'create', 'publish', 'export'],
 		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
@@ -828,11 +782,9 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		payroll: ['read', 'create', 'calculate', 'update', 'submit', 'export'],
 		payslip: ['read', 'publish', 'download'],
 		document: ['read', 'create', 'download', 'signature_read', 'signature_sign', 'signature_request'],
-		// Invites org members (and creates their employee record) and sees the
-		// members tab. No `member:create|update|delete`: HR does not manage
-		// organization membership itself.
+		// Sees the members tab. Only the owner invites (OA12, P7-4) and HR
+		// does not manage organization membership itself.
 		member: ['read'],
-		invitation: ['create', 'cancel'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -868,56 +820,6 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		customer: ['read'],
 		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
-	},
-
-	// Read/export only inside an explicitly assigned audit scope; sensitive
-	// HR/payroll access still requires explicit scope assignment at the
-	// record level. No business mutations.
-	auditor: {
-		ac: ['read'],
-		audit_log: ['read', 'export'],
-		company: ['read'],
-		code_number: ['read'],
-		branch: ['read'],
-		department: ['read'],
-		master_data: ['read', 'export'],
-		dashboard: ['read'],
-		customer: ['read', 'export'],
-		lead: ['read', 'export'],
-		quotation: ['read', 'export'],
-		sales_order: ['read', 'export'],
-		sales_return: ['read'],
-		supplier: ['read'],
-		purchase_request: ['read'],
-		purchase_order: ['read', 'export'],
-		purchase_return: ['read'],
-		project: ['read', 'export'],
-		task: ['read'],
-		daily_report: ['read', 'export'],
-		employee: ['read', 'export'],
-		attendance: ['read', 'export'],
-		schedule: ['read'],
-		product: ['read', 'export'],
-		stock: ['read', 'export'],
-		asset_borrowing: ['read', 'export'],
-		invoice: ['read', 'export'],
-		receipt: ['read', 'export'],
-		payment: ['read', 'export'],
-		cash_bank: ['read', 'export'],
-		chart_of_account: ['read'],
-		journal: ['read', 'export'],
-		accounting_period: ['read'],
-		posting_rule: ['read'],
-		cost_center: ['read'],
-		credit_memo: ['read'],
-		ar_write_off: ['read'],
-		tax: ['read', 'export'],
-		financial_report: ['read', 'export'],
-		service_ticket: ['read'],
-		asset: ['read', 'export'],
-		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
-		budget: ['read', 'export'],
-		license: ['read'],
 	},
 } as const satisfies Record<ErpRoleName, ErpPermissionRequest>;
 

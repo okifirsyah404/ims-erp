@@ -7,10 +7,15 @@ describe('hasInternalRole', () => {
 		expect(hasInternalRole('customer')).toBe(false);
 	});
 
-	test('any organization role is internal, including freelancer and auditor', () => {
+	test('any organization role is internal, including freelancer and the base member', () => {
 		expect(hasInternalRole('sales')).toBe(true);
 		expect(hasInternalRole('freelancer')).toBe(true);
-		expect(hasInternalRole('auditor')).toBe(true);
+		expect(hasInternalRole('member')).toBe(true);
+	});
+
+	test('roles removed in P7-4 are not internal', () => {
+		expect(hasInternalRole('auditor')).toBe(false);
+		expect(hasInternalRole('accountant')).toBe(false);
 	});
 
 	test('split per role, trimmed; one internal role is enough', () => {

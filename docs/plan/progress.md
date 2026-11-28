@@ -12,6 +12,121 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-28 - `/admin/users` hides the base `member` role (ERP-0187 follow-up)
+
+The organization column showed the raw stored list (`Entragate (member,finance)`,
+the label lookup only knows single keys). `routes/_authed/admin/users/index.tsx`
+now splits the list, drops the base `member` role and labels each role
+(`Entragate (Keuangan)`; a member-only membership shows the organization name
+alone). The role dialog no longer receives `member` either, so it is not listed
+as a locked role; the backend adds it back on save. Checks: web-admin
+`tsc -p tsconfig.app.json --noEmit` clean, `bun test` 234 pass. Not checked in a
+browser.
+
+## 2026-11-28 - `@ims-erp/common` resolves to source (ERP-0186)
+
+**Cause.** On another machine `bun run backend:drizzle:migrate-reset` failed
+with `Export named 'errorRef' not found in module packages/common/dist/index.js`.
+The package's `main`/`types` pointed at `dist/`, which is gitignored and only
+rebuilt by `prepare` during `bun install`; a pull without a rebuild left a
+`dist/` older than P7-6 (ERP-0181) and P7-4 (ERP-0187).
+
+**Fix.** `packages/common/package.json`: `main`, `types` and `exports["."]`
+point at `./src/index.ts`, like `@ims-erp/locales`. Every consumer bundles or
+runs TypeScript (Bun runtime and `--compile`, Vite, Astro), and source imports
+already use `.js` specifiers that resolve to `.ts`. The `build` script stays for
+CI and the Dockerfiles; the backend Dockerfile comment was updated.
+
+**Checks (with `packages/common/dist` deleted).** `bunx tsc --noEmit` in
+`apps/backend` and `packages/common`: clean. `bun test` (backend, local env):
+1686 pass. `bun run build` (backend compile): OK. web-admin and web-employee
+`tsc -p tsconfig.app.json --noEmit` and `bun run build`: OK. `bun run typecheck`:
+6/6. `bun run lint`: 7/7, 0 errors. `bunx turbo run test --filter=!@ims-erp/backend`:
+7/7. `bun run backend:drizzle:migrate-reset` on a throwaway database: exit 0
+twice (seeded 41 role accounts each run). `docs/database/` unchanged.
+
+## 2026-11-28 - P7-4 new role grants (ERP-0187)
+
+> **Renumbered 2026-11-29.** This work was opened as ERP-0185, which B-29
+> (#184) took on `main` first. On syncing PR #185 with `main` it became
+> ERP-0187, and its data migration was regenerated after B-29's migration as
+> `20261128170839_erp0187_sales_role` (same SQL; the old
+> `20261128153813_erp0185_sales_role` was never merged). The branch name keeps
+> `erp-0185`.
+
+**Scope.** Step 7 task P7-4 (K2, K2b, K2d, RO1, RO4, OA8, OA9, OA12, KL-6,
+B4). Branch `feat/erp-0185-p7-4-hak-role` from `43020626`.
+
+**Gate 1.** Read `docs/database/docs.dbml` for `auth.members`,
+`auth.user_invitations` and `auth.invitations` (role columns are plain text,
+comma-joined). No table, column or constraint changes, so `docs/database/` was
+reviewed and is unchanged; skipped `logical-references.md` and
+`implementation-phases.md` (no cross-module link). `bun docs/database/validate-dbml.ts`: OK.
+
+**Gate 2 (grill with the owner of the task, answers).** Offered roles: owner,
+operations_manager, sales, project_manager, technician, freelancer,
+purchasing, warehouse, finance, hr, customer_service, marketing. `admin`,
+`accountant`, `auditor` and `sales_manager` are **removed from the enum**
+(no mapping; the owner re-assigns people). `member` stays in the enum as the
+base role the backend adds on every role write (member add/update, invitation
+create and claim, organization create with users, invite-first employee form);
+never offered, silently accepted when sent, grants `ac:read` only. Only the
+owner invites (hr and the removed admin lose `invitation:create|cancel`).
+Finance gets every accountant grant with `accounting_period: read, create,
+close`; `reopen` stays owner-only and is checked for any transition to
+`open`. Freelancer `project:read` relies on the existing project scope
+(`canViewAll` false). KL-10 (advance only with an active project task) is a
+service rule left to M09-7. `security-and-access.md` changed (role list and
+matrix only) on the task owner's decision, overriding the hold in A-13.
+Invite form uses a multi-role combobox.
+
+**Common.** `erp-permissions.ts`: 13 roles, `BASE_MEMBER_ROLE`,
+`offeredOrganizationRoles`, `withBaseMemberRole`; the ladder returns offered
+roles only, `hr` needs an owner; `findUnassignableRoles` always accepts
+`member`; grants per the decisions above. `invite-sheet.ts` accepts `member`.
+
+**Backend.** `ledger.controller.ts`: the period transition route had an
+`ownership: { reopen: 'owner' }` option that the guard never read; replaced by
+a `policy` that requires `accounting_period:reopen` when `to` is `open`.
+`organization.service.ts` (add member, update roles, organization create) and
+`invitation.service.ts` (create, claim) add the base role. Removed roles taken
+out of `organization-ac.ts`. Seeders: `organization-members.seeder.ts` drops
+the removed-role accounts and adds per-person accounts (Aqim owner+hr, Bella
+finance, Agus MD sales, Bilal sales+warehouse+customer_service+marketing,
+Agus project_manager+technician+warehouse, Dafrin and Oki freelancer;
+`@example.com`); `organization.seeder.ts` gives the first owner the base role.
+Smoke scripts and e2e accounts moved off the removed seed accounts.
+
+**Migration.** `bunx --bun drizzle-kit generate --custom --name=erp0187_sales_role`
+→ `20261128170839_erp0187_sales_role` (data only, three `UPDATE`s on
+`auth.members.role`, `auth.user_invitations.org_role`, `auth.invitations.role`:
+`sales_manager` → `sales`, drop `admin`/`accountant`/`auditor`, `member` first,
+no duplicates, no spaces). Applied with `bunx --bun drizzle-kit migrate` to a
+throwaway database `ims_erp_p74_scratch`; the SQL was replayed inside a
+rolled-back transaction over 9 legacy rows (all expected values, second run
+changed 0 rows). `bun run database/seeders/index.ts` twice: 41 then 0
+memberships created.
+
+**Web-admin.** `components/invite/role-combobox.tsx` (chips, search, offered
+roles only); `invite-dialog.tsx` single and bulk default use it, start empty
+and require at least one role; `admin-api.ts` bulk parser takes default roles
+as a list and reports an org row without roles. `erp-ac.ts` (web-admin and
+web-employee) lose the removed roles. Locales `admin` en+id: role picker
+labels, hint (A-11), "pick at least one role".
+
+**Checks.**
+- Task tests: `bun test test/authorization/permission-matrix.test.ts test/unit/role-assignment.test.ts test/unit/lead.service.test.ts test/unit/license-api.service.test.ts test/authorization/inventory-authorization.test.ts` (backend): 85 pass; `packages/common` `grantable-roles` + `invite-sheet`: 31 pass.
+- New: `test/unit/organization-member-roles.test.ts` (base role on add/update, removed role refused), `test/authorization/period-reopen-authorization.test.ts` (finance closes, cannot reopen; owner reopens). `tax-authorization.test.ts` now expects finance to pass every tax route (K2d).
+- `bun test` in `apps/backend` with the local env loaded: 1686 pass. `apps/web-admin`: 234 pass. `packages/locales`: 110 pass.
+- `bun run test` (root) in this worktree: every workspace green except backend, which fails at config load (ZodError on `app.name`) because the worktree has no `apps/backend/.env` and turbo filters the environment; the same suite run directly passes (above).
+- `bun run typecheck` (root): 6/6. `bunx tsc -p tsconfig.app.json --noEmit` in web-admin and web-employee: clean. `bun run lint`: 7/7, 0 errors.
+- `bun docs/architecture/gen-role-permission.ts`: 816 routes; hand-written part updated.
+- UAT `docs/adjustment/5-pengerjaan/uat/P7-4.md` 7/7 Valid, run over HTTP against the backend on the throwaway database (no browser, on request).
+
+**Next task.** Oki: M12-2 / PH-UNDANG and M12-14 (role dialog on the Users
+page can reuse `RoleCombobox`), M09-1/M09-4, then M09-7 (KL-10 advance rule in
+the service). L-16 (full per-person seeder) is unblocked.
+
 ## 2026-11-28 - B-29 manual stock receipt and issue screens (ERP-0185)
 
 **Scope.** Step 8 task B-29 (KF-G1, KF-1), after B-32 (#182) was merged.

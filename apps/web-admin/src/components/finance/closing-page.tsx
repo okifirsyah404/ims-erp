@@ -41,7 +41,7 @@ export function ClosingPage() {
 	const { t } = useTranslation(['finance', 'common']);
 	const queryClient = useQueryClient();
 	const canRead = usePermission('accounting_period.read');
-	// ERP-0167: opening a month needs `accounting_period:create` (owner, accountant).
+	// ERP-0167: opening a month needs `accounting_period:create` (owner, finance).
 	const canCreatePeriod = usePermission('accounting_period.create');
 	const canClose = usePermission('accounting_period.close');
 	const canReopen = usePermission('accounting_period.reopen');

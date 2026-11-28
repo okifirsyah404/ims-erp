@@ -1,4 +1,5 @@
 import {
+	BASE_MEMBER_ROLE,
 	erpRoleNames,
 	type TApiPaginatedResponse,
 	type TApiResponse,
@@ -358,18 +359,23 @@ export type TBulkInviteParseOptions = {
 	 * `admin` rows are `email, name, org-code, role` (org code empty means an
 	 * application-level invite); `org` rows are `email, name, role` and are
 	 * pinned to `organizationId`. The role cell is pipe-separated for
-	 * multi-role invites (`admin|finance`); the comma stays the field
+	 * multi-role invites (`sales|warehouse`); the comma stays the field
 	 * separator (ERP-0041).
 	 */
 	mode: TBulkInviteMode;
 	/** Pinned organization for `org` mode. */
 	organizationId?: string;
-	/** Role used when a row does not specify one (and the row has an org). */
-	organizationRole?: string;
+	/**
+	 * Roles used when a row does not specify any (and the row has an org).
+	 * An org row left with no role at all is a row error (P7-4: pick at least
+	 * one; the backend adds the base `member` role itself).
+	 */
+	organizationRoles?: readonly string[];
 	/**
 	 * Roles the caller may assign. Absent = the whole catalog. A role outside
 	 * this list is a per-row error, mirroring the backend guard (`owner` is
-	 * never invitable; org admins also lose `admin`, org HR also loses `hr`).
+	 * never invitable; only an owner invites `hr`). The base `member` role is
+	 * always accepted.
 	 */
 	allowedRoles?: readonly string[];
 	/**
@@ -458,9 +464,14 @@ export function parseBulkInviteRows(
 			rowErrors.push(`Row ${index + 1}: unknown role "${rawRole}"`);
 			continue;
 		}
+		if (organizationId && (!roles || roles.length === 0)) {
+			rowErrors.push(`Row ${index + 1}: choose at least one role`);
+			continue;
+		}
 		if (organizationId && roles && options.allowedRoles) {
 			const forbidden = roles.filter(
-				(role) => !options.allowedRoles?.includes(role),
+				(role) =>
+					role !== BASE_MEMBER_ROLE && !options.allowedRoles?.includes(role),
 			);
 			if (forbidden.length > 0) {
 				rowErrors.push(
@@ -488,15 +499,17 @@ export function parseBulkInviteRows(
 /**
  * Maps a pasted role cell onto the fixed enum, case-insensitively. Empty
  * input falls back to the dialog default. Multi-role cells are pipe-
- * separated ('admin|finance'); the comma stays the field separator
+ * separated ('sales|warehouse'); the comma stays the field separator
  * (ERP-0041). Returns `undefined` when any role is unknown — the caller
  * reports a row error, matching the sheet parser's per-row validation.
  */
 function resolveOrganizationRoles(
 	value: string | undefined,
-	options: { organizationRole?: string },
+	options: { organizationRoles?: readonly string[] },
 ): string[] | undefined {
-	const fallback = options.organizationRole ? [options.organizationRole] : undefined;
+	const fallback = options.organizationRoles?.length
+		? [...options.organizationRoles]
+		: [];
 	if (!value) return fallback;
 	const roles = value
 		.split('|')
