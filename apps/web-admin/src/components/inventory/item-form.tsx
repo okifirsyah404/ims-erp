@@ -109,6 +109,7 @@ export function ItemForm({
 	const [isSerialized, setIsSerialized] = useState(item?.isSerialized ?? false);
 	const [isStockTracked, setIsStockTracked] = useState(item?.isStockTracked ?? true);
 	const [minStockQty, setMinStockQty] = useState(item?.minStockQty ?? '0');
+	const [warrantyMonths, setWarrantyMonths] = useState(item?.warrantyMonths == null ? '' : String(item.warrantyMonths));
 	const [sellingPrice, setSellingPrice] = useState(minorToRupiah(item?.sellingPrice ?? 0));
 	const [purchasePrice, setPurchasePrice] = useState(minorToRupiah(item?.purchasePrice ?? 0));
 
@@ -135,6 +136,8 @@ export function ItemForm({
 			isSerialized,
 			isStockTracked,
 			minStockQty: Number(minStockQty) || 0,
+			// B-30: empty = no standard warranty.
+			warrantyMonths: warrantyMonths.trim() === '' ? null : Math.trunc(Number(warrantyMonths)),
 			barcode: barcode || null,
 			sellingPrice: rupiahToMinor(sellingPrice),
 			purchasePrice: rupiahToMinor(purchasePrice),
@@ -348,6 +351,21 @@ export function ItemForm({
 						value={minStockQty}
 						onChange={(event) => setMinStockQty(event.target.value)}
 					/>
+				</Field>
+
+				<Field>
+					<FieldLabel htmlFor='warrantyMonths' optional>{t('product:items.warrantyMonths')}</FieldLabel>
+					<Input
+						id='warrantyMonths'
+						type='number'
+						inputMode='numeric'
+						min={0}
+						max={120}
+						step={1}
+						value={warrantyMonths}
+						onChange={(event) => setWarrantyMonths(event.target.value)}
+					/>
+					<FieldDescription>{t('product:items.warrantyMonthsHint')}</FieldDescription>
 				</Field>
 
 				<Field className='sm:col-span-2'>

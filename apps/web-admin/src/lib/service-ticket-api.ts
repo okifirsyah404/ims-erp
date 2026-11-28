@@ -70,6 +70,10 @@ export type TWarrantyCheck = {
 	inWarranty: boolean;
 	warrantyEndsOn: string | null;
 	warrantyCode: string | null;
+	/** B-30: where the end date came from; null = no warranty found. */
+	warrantySource?: 'certificate' | 'serial' | 'product' | null;
+	/** Whether a given serial was found; null without a serial (FU10). */
+	serialKnown?: boolean | null;
 };
 
 export type TTicketInput = {

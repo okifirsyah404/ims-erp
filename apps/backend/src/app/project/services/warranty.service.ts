@@ -4,6 +4,10 @@ import { PROJECT_NUMBERING_SERVICE_TOKEN } from '../constants/di';
 import { COMPANY_SERVICE_TOKEN } from '@app/company';
 import type { CompanyService } from '@app/company';
 import type { ProjectNumberingService } from './project-numbering.service';
+import { EXPORTED_INVENTORY_SERVICE_TOKEN } from '@app/inventory/constants/di';
+import type { ExportedInventoryService } from '@app/inventory/services/exported-inventory.service';
+import { EXPORTED_PRODUCT_SERVICE_TOKEN } from '@app/product/constants/di';
+import type { ExportedProductService } from '@app/product/services/exported-product.service';
 import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
 import type { DocumentService } from '@app/document';
 import { HANDOVER_SERVICE_TOKEN } from '@app/project/constants/di';
@@ -48,6 +52,14 @@ export type TWarrantyCheck = {
 	inWarranty: boolean;
 	warrantyEndsOn: string | null;
 	warrantyCode: string | null;
+	/**
+	 * Where the end date came from (B-30): the project's certificate, the
+	 * unit's own warranty date, or delivery date + the product's standard
+	 * months; `null` when nothing gives a warranty.
+	 */
+	warrantySource?: 'certificate' | 'serial' | 'product' | null;
+	/** Whether a given serial was found (shipped or registered); `null` without a serial (FU10). */
+	serialKnown?: boolean | null;
 };
 
 /** A new certificate's prefilled fields (not saved). */
@@ -79,6 +91,12 @@ export class WarrantyService {
 		/** P7-5: document number + write in one transaction; optional for unit tests built by hand. */
 		@inject(TRANSACTION_RUNNER_TOKEN)
 		private readonly transactions?: ITransactionRunner,
+		/** B-30: a serial's own warranty date (inventory owns the units). */
+		@inject(EXPORTED_INVENTORY_SERVICE_TOKEN)
+		private readonly units?: Pick<ExportedInventoryService, 'serialWarranty'>,
+		/** B-30: the product's standard warranty months. */
+		@inject(EXPORTED_PRODUCT_SERVICE_TOKEN)
+		private readonly products?: Pick<ExportedProductService, 'productsById'>,
 	) {}
 
 	/** The project's certificate, or `null`. */
@@ -181,34 +199,63 @@ export class WarrantyService {
 	}
 
 	/**
-	 * Is a device under warranty on `on` (a Jakarta business date)? A serial
-	 * is traced to the delivery note that shipped it, its order's live
-	 * project and that project's certificate; without a serial, the given
-	 * project's certificate decides. No caller visibility: the ticket service
-	 * authorizes its callers.
+	 * Is a device under warranty on `on` (a Jakarta business date)?
+	 *
+	 * @remarks
+	 * B-30 (KF-P2) order: (1) a serial is traced to the delivery note that
+	 * shipped it, its order's live project and that project's certificate
+	 * (without a serial, the given project's certificate); (2) else the unit's
+	 * own `warranty_expires_on` (frozen when it was shipped without a project,
+	 * or typed on the unit); (3) else, for a sale without a project, the
+	 * delivery date + the product's standard warranty months. Nothing found =
+	 * out of warranty: the ticket is still opened and counts as paid (FU10).
+	 * No caller visibility: the ticket service authorizes its callers.
 	 */
 	async check(query: { serialNumber?: string | null; projectId?: string | null }, on: string): Promise<TWarrantyCheck> {
 		let customerId: string | null = null;
 		let deviceDescription: string | null = null;
 		let project = null;
+		let shipment = null;
 		if (query.serialNumber) {
-			const shipment = await this.sales.findShipmentBySerial(query.serialNumber);
+			shipment = await this.sales.findShipmentBySerial(query.serialNumber);
 			if (shipment) {
 				customerId = shipment.customerId;
 				deviceDescription = shipment.description;
 				project = await this.lookup.liveProjectOfOrder(shipment.orderId);
 			}
 		}
+		const shippedWithProject = !!project;
 		if (!project && query.projectId) project = await this.lookup.getProject(query.projectId);
 		const certificate = project ? await this.certificates.findByProject(project.id) : null;
+		let endsOn: string | null = certificate?.endDate ?? null;
+		let source: TWarrantyCheck['warrantySource'] = certificate ? 'certificate' : null;
+		let serialKnown: boolean | null = query.serialNumber ? !!shipment : null;
+		if (!certificate && query.serialNumber && this.units) {
+			const unit = await this.units.serialWarranty(query.serialNumber);
+			if (unit) serialKnown = true;
+			if (unit?.warrantyExpiresOn) {
+				endsOn = unit.warrantyExpiresOn;
+				source = 'serial';
+			} else if (unit?.productId && shipment?.shippedAt && !shippedWithProject && this.products) {
+				const productId = unit.productId;
+				const months = (await this.products.productsById([productId])).get(productId)?.warrantyMonths;
+				if (months) {
+					endsOn = warrantyEndDate(businessDateOf(shipment.shippedAt), months);
+					source = 'product';
+				}
+			}
+		}
+		const startsOn = certificate?.startDate ?? null;
 		return {
 			customerId,
 			projectId: project?.id ?? null,
 			projectCode: project?.code ?? null,
 			deviceDescription,
-			inWarranty: !!certificate && on >= certificate.startDate && on <= certificate.endDate,
-			warrantyEndsOn: certificate?.endDate ?? null,
+			inWarranty: !!endsOn && on <= endsOn && (!startsOn || on >= startsOn),
+			warrantyEndsOn: endsOn,
 			warrantyCode: certificate?.code ?? null,
+			warrantySource: source,
+			serialKnown,
 		};
 	}
 

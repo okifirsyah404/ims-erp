@@ -1,0 +1,76 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "ddfd2d2f-bf67-46f5-9042-3d23e52a64eb",
+  "prevIds": [
+    "dd8599f7-2f9a-4a6e-858f-d5d407c67af7"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "product",
+        "products",
+        "warranty_months"
+      ],
+      "writes": [
+        "s|col|product.products.warranty_months",
+        "n|col|product.products.warranty_months",
+        "e|col|product.products.warranty_months"
+      ],
+      "reads": [
+        "n|tbl|product.products",
+        "n|sch|product"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "product",
+        "products"
+      ],
+      "writes": [
+        "s|ck|product.products.products_warranty_months_check",
+        "n|ck|product.products.products_warranty_months_check",
+        "e|ck|product.products.products_warranty_months_check",
+        "n|con|product.products.products_warranty_months_check"
+      ],
+      "reads": [
+        "n|tbl|product.products",
+        "n|sch|product",
+        "n|col|product.products.warranty_months"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "product",
+        "table": "products",
+        "name": "warranty_months",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "product",
+        "table": "products",
+        "name": "products_warranty_months_check",
+        "value": "warranty_months IS NULL OR (warranty_months >= 0 AND warranty_months <= 120)",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

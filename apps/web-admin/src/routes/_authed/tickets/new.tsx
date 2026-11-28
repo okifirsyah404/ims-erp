@@ -110,12 +110,31 @@ function NewTicketPage() {
 										</Badge>
 										{check.warrantyEndsOn && (
 											<span className='text-muted-foreground'>
-												{check.warrantyCode} · {t('projects:ticket.until', { date: formatBusinessDate(check.warrantyEndsOn, i18n.language) })}
+												{check.warrantyCode ? `${check.warrantyCode} · ` : ''}
+												{check.warrantySource === 'serial'
+													? `${t('projects:ticket.sourceSerial')} · `
+													: check.warrantySource === 'product'
+														? `${t('projects:ticket.sourceProduct')} · `
+														: ''}
+												{t('projects:ticket.until', { date: formatBusinessDate(check.warrantyEndsOn, i18n.language) })}
 											</span>
 										)}
 									</div>
 								)}
 							</div>
+							{/* FU10: no warranty never blocks the ticket; it is flagged as paid. */}
+							{check && !check.inWarranty && (
+								<div
+									role='status'
+									className='rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 sm:col-span-2 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200'
+								>
+									{check.serialKnown === false
+										? t('projects:ticket.paidUnknownSerial')
+										: check.warrantyEndsOn
+											? t('projects:ticket.paidExpired', { date: formatBusinessDate(check.warrantyEndsOn, i18n.language) })
+											: t('projects:ticket.paidNoWarranty')}
+								</div>
+							)}
 							<Field>
 								<FieldLabel htmlFor='ticket-customer'>{t('projects:ticket.customer')}</FieldLabel>
 								<Select

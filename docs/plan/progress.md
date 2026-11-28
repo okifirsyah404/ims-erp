@@ -12,6 +12,74 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-28 - B-30 warranty check without a project (ERP-0188)
+
+> **Renumbered 2026-11-29.** Opened as ERP-0187 (PR #186); P7-4 (#185) took
+> ERP-0187 on `main` first, so this is ERP-0188. On rebasing onto `main`
+> (`33dcb615`) the migration was regenerated after P7-4's data migration as
+> `20261128174034_erp0188_product_warranty_months` (same SQL; the first
+> `20261128155912_erp0187_product_warranty_months` was never merged). The dev
+> DB's `drizzle.__drizzle_migrations` row was renamed to match.
+
+**Scope.** Step 8 task B-30 (KF-P2, FU10), from `main` (`43020626`); B-29
+(ERP-0185) is open as PR #184 and not a dependency.
+
+**Gate 1.** Read `docs/database/docs.dbml` (`product.products`,
+`inventory.item_serials`, `project.warranties`, `ticket.tickets`),
+`module-ownership.md` (product, inventory, sale, project contracts),
+`integrity-and-consistency.md` (CHECK style) and `data-dictionary.md`
+(business dates). `logical-references.md` regenerated only: no new
+cross-module column.
+
+**Gate 2 (manual grill, answers).** Ownership: `product` owns the months
+(`warranty_months integer`, nullable = no standard warranty, CHECK 0–120);
+`inventory` owns the unit's `warranty_expires_on` (date, Jakarta business
+date); `sale` decides at shipment (it already knows whether the order has a
+live project) and passes the date through `SerialUnitService.sellUnits`;
+`project` (`WarrantyService`) reads through `ExportedInventoryService` and
+`ExportedProductService`, never their repositories. Freeze on ship (a later
+change of the product months does not move old sales); fallback at check time
+for units shipped before this change. Order: project certificate → unit date →
+delivery date + product months. A project sale without a certificate does not
+use the product months. Paid = existing `ticket.tickets.in_warranty = false`
+(billing is B-31). Tenant: company-wide. Soft delete: unchanged. Status
+vocabulary: unchanged.
+
+**Schema.** `docs.dbml` first (column, CHECK, notes on
+`warranty_months` and `warranty_expires_on`), then `product.schema.ts`.
+`bun docs/database/gen-logical-references.ts` (216 refs) and
+`bun docs/database/validate-dbml.ts`: OK.
+`bunx --bun drizzle-kit generate --name erp0188_product_warranty_months` →
+`20261128174034_erp0188_product_warranty_months` (one nullable `ADD COLUMN` +
+CHECK; inspected). `bun run drizzle:migrate` applied it to the local dev DB.
+
+**Backend.** Product contract and snapshot (`warrantyMonths`);
+`DeliveryNoteService.ship`; `ItemSerialRepository.sell` (optional
+`warrantyExpiresOn`) and `findAnyBySerial`; `SerialUnitService.sellUnits`;
+`ExportedInventoryService.serialWarranty`; `WarrantyService.check` returns
+`warrantySource` and `serialKnown`. `module-ownership.md` updated.
+
+**Web-admin.** Item form "Warranty (months)" with help text (stock section);
+new ticket: FU10 yellow notice (unknown serial / expired / no warranty) and
+the source label; ticket detail no longer prints a null certificate code.
+Locales `product`, `projects` en+id.
+
+**Checks.**
+- `bun test test/unit/handover-warranty.test.ts`: 9 pass (4 new); `test/unit/delivery-note.service.test.ts`: 7 pass (freeze asserted).
+- `bun run test` (root): 8/8 (backend 1671, web-admin 230, locales 110). `bun run lint`: 7/7, 0 errors. tsc backend and web-admin clean; web-admin build clean.
+- Routes unchanged: `role-permission.md` not regenerated.
+- Browser UAT `docs/adjustment/5-pengerjaan/uat/B-30.md`: 4/4 Valid. Data prepared through the API with seed accounts (customer, quotation → approved → SO, serial + stock); delivery note shipped and tickets opened in the browser (`warehouse_seed`, `customer_service_seed`). Two findings fixed during UAT (cross-scope serial lookup; "null" code on the ticket page). The product form field was checked through `PATCH /products/:id` as `purchasing_seed` (the edit page is owner-only).
+
+**Seed (A-10).** `product.seeder.ts`: CTRL-DOOR-01 gets 12 months (an
+existing row is filled once when still null); run twice through
+`seedProduct()` only (the full seeder flushes the shared Redis): 12, then
+unchanged.
+
+**docs/database/.** Updated (`docs.dbml`, `module-ownership.md`;
+`logical-references.md` regenerated, no diff).
+
+**Next task.** B-42 (invoice without an SO), then B-31 (needs B-42 and B-30).
+
 ## 2026-11-28 - `/admin/users` hides the base `member` role (ERP-0187 follow-up)
 
 The organization column showed the raw stored list (`Entragate (member,finance)`,

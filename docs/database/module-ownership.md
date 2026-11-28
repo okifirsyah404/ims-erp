@@ -143,7 +143,8 @@ no central code-number module.
 - Rows may carry a null `organization_id` (global scope, ADR-0008).
 - **Contract**: `ExportedProductService` (`assertProduct`, `isProductActive`,
   `productsById`, `getNameMap`, `productKinds`, `countUnits`,
-  `categoryExists`, `findBySearch`), plus `ProductService`,
+  `categoryExists`, `findBySearch`; the snapshot carries `warrantyMonths`,
+  B-30), plus `ProductService`,
   `ProductCategoryService`, `ProductImageService` and
   `ProductListingService` through their DI tokens.
 
@@ -182,7 +183,8 @@ no central code-number module.
   `countOpenBorrowingsByOriginWarehouse`, `countMaterialStocks`,
   `countSerialKindsByWarehouse`, `countItemsByWarehouse`, `isItemOwnedBy`,
   `projectMaterialMovements` - manual stock issues/receipts for a project,
-  read by `project` as material cost, B-29)
+  read by `project` as material cost, B-29;
+  `serialWarranty` - B-30: a serial's product and own warranty end, any scope)
   plus the stock, item and serial-unit services other modules call through DI
   tokens (`StockService`, `ItemService`, `SerialUnitService`).
 
@@ -248,6 +250,11 @@ no central code-number module.
   `ProjectLookupService` (repository-only: `getProject`, `liveProjectOfOrder`,
   `hasLiveProject`, `activeProjectOptions` - the inventory stock screens'
   project picker, B-29).
+  The
+  service-ticket warranty check (`WarrantyService.check`, B-30) reads the
+  project certificate, then `ExportedInventoryService.serialWarranty`, then
+  delivery date + `ExportedProductService.productsById().warrantyMonths` for a
+  sale without a project.
 
 ### 15. Ticket - `ticket` (absorbs `aftersales` tickets)
 

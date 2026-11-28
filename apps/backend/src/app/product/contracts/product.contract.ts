@@ -83,6 +83,8 @@ export const createProductSchema = z
 			.min(0)
 			.default(0)
 			.transform((value) => value.toFixed(3)),
+		/** B-30: standard customer warranty in months for a sale without a project; null = none. */
+		warrantyMonths: z.coerce.number().int().min(0).max(120).nullable().optional(),
 		barcode: z.string().nullable().optional(),
 		sellingPrice: z.coerce.number().int().min(0).default(0),
 		purchasePrice: z.coerce.number().int().min(0).default(0),
@@ -108,6 +110,7 @@ export const updateProductSchema = z
 			.min(0)
 			.optional()
 			.transform((value) => value?.toFixed(3)),
+		warrantyMonths: z.coerce.number().int().min(0).max(120).nullable().optional(),
 		barcode: z.string().nullable().optional(),
 		sellingPrice: z.coerce.number().int().min(0).optional(),
 		purchasePrice: z.coerce.number().int().min(0).optional(),

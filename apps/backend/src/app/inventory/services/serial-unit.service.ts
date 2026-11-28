@@ -209,7 +209,7 @@ export class SerialUnitService {
 	async sellUnits(
 		productId: string,
 		serialNumbers: readonly string[],
-		data: { warehouseId: string; customerId: string | null; movementId: string | null },
+		data: { warehouseId: string; customerId: string | null; movementId: string | null; warrantyExpiresOn?: string | null },
 		tx: TTx,
 	): Promise<string[]> {
 		const product = await this.products.assertProduct(productId);

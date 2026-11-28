@@ -28,6 +28,10 @@ let profileTexts: { warrantyCoverage: string | null };
 /** Registry calls made by the two services (ERP-0044). */
 let registered: { code: string; sourceId: string; documentType: string }[];
 let voided: string[];
+/** B-30: units known to inventory (serial → product and own warranty date). */
+let units: Map<string, { productId: string | null; warrantyExpiresOn: string | null }>;
+/** B-30: standard warranty months per product. */
+let productMonths: Map<string, number | null>;
 
 const bastBody = (date = '2025-12-24') => ({
 	bastDate: date,
@@ -52,6 +56,8 @@ beforeEach(() => {
 	profileTexts = { warrantyCoverage: null };
 	registered = [];
 	voided = [];
+	units = new Map();
+	productMonths = new Map();
 	const numbering = {
 		// The project numbering service is `next(type, tx, date, context)`.
 		async next(type: string, _tx?: unknown, _date?: unknown, context?: unknown) {
@@ -122,8 +128,12 @@ beforeEach(() => {
 					{ orderItemId: 'l1', name: 'Swing Gate', unit: 'unit', quantity: '1.000', serialNumbers: ['SG-2'] },
 				] as never,
 			orderLines: async () => [] as never,
-			findShipmentBySerial: async (serial: string) =>
-				serial.startsWith('SG-') ? { orderId: 'so-1', customerId: 'cust-1', description: 'Swing Gate', deliveryNoteCode: 'SJ-1', shippedAt: new Date() } : null,
+			findShipmentBySerial: async (serial: string) => {
+				if (serial.startsWith('SG-')) return { orderId: 'so-1', customerId: 'cust-1', description: 'Swing Gate', deliveryNoteCode: 'SJ-1', shippedAt: new Date() };
+				// B-30: a plain sales order (no project), shipped on 10 March 2026 (Jakarta).
+				if (serial.startsWith('RD-')) return { orderId: 'so-plain', customerId: 'cust-2', description: 'Card reader', deliveryNoteCode: 'SJ-9', shippedAt: new Date('2026-03-10T05:00:00Z') };
+				return null;
+			},
 		},
 		{ getSnapshot: async () => ({ code: 'app' }) as never },
 		{ get: async () => ({ ...profileTexts }) as never },
@@ -138,6 +148,12 @@ beforeEach(() => {
 				registered.push(input);
 				return {} as never;
 			},
+		},
+		undefined,
+		{ serialWarranty: async (serial: string) => units.get(serial) ?? null },
+		{
+			productsById: async (ids: string[]) =>
+				new Map(ids.map((id) => [id, { warrantyMonths: productMonths.get(id) ?? null }])) as never,
 		},
 	);
 });
@@ -215,6 +231,51 @@ describe('warranty check', () => {
 		expect((await warranty.check({ serialNumber: 'SG-1' }, '2026-12-24')).inWarranty).toBe(false);
 		expect(await warranty.check({ serialNumber: 'XX-9' }, '2026-01-01')).toMatchObject({ projectId: null, inWarranty: false });
 		expect((await warranty.check({ projectId: PROJECT }, '2026-06-01')).inWarranty).toBe(true);
+	});
+
+	test('B-30: a serial sold on an order without a project: delivery date + product months', async () => {
+		units.set('RD-1', { productId: 'reader', warrantyExpiresOn: null });
+		productMonths.set('reader', 12);
+		expect(await warranty.check({ serialNumber: 'RD-1' }, '2027-03-09')).toMatchObject({
+			customerId: 'cust-2',
+			projectId: null,
+			deviceDescription: 'Card reader',
+			inWarranty: true,
+			warrantyEndsOn: '2027-03-09',
+			warrantyCode: null,
+			warrantySource: 'product',
+			serialKnown: true,
+		});
+		expect(await warranty.check({ serialNumber: 'RD-1' }, '2027-03-10')).toMatchObject({ inWarranty: false, warrantyEndsOn: '2027-03-09' });
+		// A product without a standard warranty gives none.
+		productMonths.set('reader', null);
+		expect(await warranty.check({ serialNumber: 'RD-1' }, '2026-04-01')).toMatchObject({ inWarranty: false, warrantySource: null, serialKnown: true });
+	});
+
+	test("B-30: the unit's own warranty date wins over the product months", async () => {
+		units.set('RD-2', { productId: 'reader', warrantyExpiresOn: '2026-09-30' });
+		productMonths.set('reader', 24);
+		expect(await warranty.check({ serialNumber: 'RD-2' }, '2026-09-30')).toMatchObject({ inWarranty: true, warrantyEndsOn: '2026-09-30', warrantySource: 'serial' });
+		expect((await warranty.check({ serialNumber: 'RD-2' }, '2026-10-01')).inWarranty).toBe(false);
+	});
+
+	test('B-30: a project sale without a certificate does not fall back to the product months', async () => {
+		units.set('SG-1', { productId: 'gate', warrantyExpiresOn: null });
+		productMonths.set('gate', 12);
+		expect(await warranty.check({ serialNumber: 'SG-1' }, '2026-06-01')).toMatchObject({ projectId: PROJECT, inWarranty: false, warrantySource: null });
+	});
+
+	test('B-30 (FU10): an unknown serial is out of warranty and flagged unknown', async () => {
+		expect(await warranty.check({ serialNumber: 'XX-404' }, '2026-06-01')).toMatchObject({
+			customerId: null,
+			inWarranty: false,
+			warrantyEndsOn: null,
+			warrantySource: null,
+			serialKnown: false,
+		});
+		// A serial registered in stock but never shipped is known, still out of warranty.
+		units.set('ST-1', { productId: 'reader', warrantyExpiresOn: null });
+		expect(await warranty.check({ serialNumber: 'ST-1' }, '2026-06-01')).toMatchObject({ inWarranty: false, serialKnown: true });
 	});
 });
 

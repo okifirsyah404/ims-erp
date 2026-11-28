@@ -2239,6 +2239,21 @@ tidak dipakai.
 
 Tidak ada perubahan kode.
 
+## 2026-11-28 - B-30 Cek garansi barang tanpa proyek (ERP-0188)
+
+Branch `feat/b-30-garansi-tanpa-proyek`, belum di-push.
+
+- Barang bisa diberi **Garansi (bulan)** di form barang. Saat surat jalan untuk
+  SO tanpa proyek dikirim, tanggal akhir garansi tiap nomor seri dihitung dari
+  tanggal kirim dan disimpan di seri itu.
+- Buat Tiket: garansi dicek dari surat garansi proyek, lalu tanggal garansi
+  seri, lalu tanggal kirim + garansi produk. Seri tidak dikenal atau garansi
+  habis: kotak kuning, tiket tetap dibuat dan dihitung berbayar.
+- Skema: kolom `warranty_months` di `product.products`; migrasi diterapkan
+  di DB dev. Seeder: CTRL-DOOR-01 bergaransi 12 bulan.
+- UAT: [`5-pengerjaan/uat/B-30.md`](5-pengerjaan/uat/B-30.md), 4/4 Valid
+  (dua temuan saat uji, sudah ditutup).
+
 ## 2026-11-28 - P7-4 Hak role baru (ERP-0187)
 
 Branch `feat/erp-0185-p7-4-hak-role`, belum di-push.

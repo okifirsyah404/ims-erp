@@ -50,6 +50,8 @@ const product = {
 	'items.purchasePrice': 'Harga beli',
 	'items.description_label': 'Deskripsi',
 	'items.barcode': 'Kode batang',
+	'items.warrantyMonths': 'Garansi (bulan)',
+	'items.warrantyMonthsHint': 'Garansi standar untuk penjualan tanpa proyek, dihitung dari tanggal surat jalan. Kosongkan bila barang tidak bergaransi.',
 	'items.noCategory': 'Tanpa kategori',
 	'items.brand': 'Merek',
 	'items.specification': 'Spesifikasi',
