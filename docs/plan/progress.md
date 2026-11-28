@@ -12,6 +12,43 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-28 - B-21 receive approved purchase orders directly (ERP-0183)
+
+**Scope.** Step 8 task B-21 (K3 / B1, FU6): remove "Mark as sent"; an approved
+PO is receivable straight away. P7-3 was put on hold first: its dependencies
+P7-1 and P7-2 (Oki) are not on `main` yet (no branch, no PR).
+
+**Backend.** `goods-receipt.service.ts`: `RECEIVABLE_STATUSES` =
+`approved`, `sent` (historical), `partially_received` for both the
+receivable list and `create`. `purchase-order.repository.ts`: `receive`
+accepts `approved`; undoing every receipt returns the order to `approved`
+(was `sent`). `markSent` and `POST /procurement/purchase-orders/:id/send`
+removed. The `sent` value stays in the CHECK for old rows; the
+`purchase_order:send` grant is left in the role catalogue (unused).
+
+**Web-admin.** PO detail: the mark-sent button is gone, "Receive goods" shows
+for approved / sent / partly received, the approval toast reads "PO {code}
+disetujui dan siap diterima di gudang." (new key `pos.approvedReady`; the
+purchase-return page keeps `pos.approved`), the approved hint explains the
+warehouse can receive it now. `lib/procurement-api.ts`: `sendPurchaseOrder`
+removed. `receipts/new.tsx`: comment only (the list comes from the API).
+
+**Locales.** `procurement` en+id: removed `pos.markSent`, `pos.sent`,
+`pos.approvedNotSent`; added `pos.approvedReady`, `pos.readyToReceive`;
+`receipts.newHint` / `receipts.noOrders` reworded; `status.sent` marked as old.
+
+**Checks.**
+- `bun test test/unit/goods-receipt.service.test.ts test/unit/procurement.service.test.ts` (backend): 19 pass.
+- `bun run test` (root): 8/8 tasks (backend 1666, web-admin 230, locales 110). `bun run lint`: 7/7, 0 errors. `bunx tsc -p tsconfig.app.json --noEmit` (web-admin) and backend tsc: clean.
+- `docs/database/docs.dbml`: purchase order note (no new `sent`; undo returns to approved), `bun docs/database/validate-dbml.ts`: OK. No table or column change.
+- `bun docs/architecture/gen-role-permission.ts`: 815 routes (the `/send` route is gone).
+- Browser UAT (`turbo dev`, accounts `purchasing_seed`, `operations_manager_seed`, `warehouse_seed`): `docs/adjustment/5-pengerjaan/uat/B-21.md` 3/3 Valid. Approved `PO/DEV-HIT/HW/1126/003` was listed in Goods receipts at once; BPB `0001/BPB/DEV/XI/26` (4 of 10) left it `partially_received` with 6 open; `POST …/send` → 404. The dev DB had no accounting period for 2026-11; it was opened through `POST /finance/periods` (accountant) before posting.
+
+**Seed (A-10).** No new seeder: the P7-5 demo suppliers and the existing products cover the flow.
+
+**Next task.** B-32 (close a short-delivered PO, depends on B-21) after this PR
+is merged; meanwhile B-30 or B-42. P7-3 waits for Oki's P7-1 / P7-2.
+
 ## 2026-11-28 - P7-5 gap-free numbering and short supplier codes (ERP-0182)
 
 **Scope.** Step 7 task P7-5 (`docs/adjustment/5-pengerjaan/peta-kode-dafrin.md`):

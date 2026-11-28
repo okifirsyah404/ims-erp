@@ -2704,7 +2704,7 @@ Table procurement.purchase_orders {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Purchase order to a supplier, company-wide. draft -> submitted -> approved -> sent -> partially_received -> received; rejection returns to draft; cancelled while nothing was received. One-level approval, never by the creator. The supplier bill and its payment stay in Finance."
+  Note: "Purchase order to a supplier, company-wide. draft -> submitted -> approved -> partially_received -> received; rejection returns to draft; cancelled while nothing was received. An approved order is received directly (B-21, K3); `sent` (with sent_by/sent_at) is historical: rows marked as sent before the step was removed stay receivable, and no new row gets it. Undoing every receipt returns the order to approved. One-level approval, never by the creator. The supplier bill and its payment stay in Finance."
   Indexes {
     supplier_company_id [name: 'purchase_orders_supplier_company_id_idx']
     status [name: 'purchase_orders_status_idx']

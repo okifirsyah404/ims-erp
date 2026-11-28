@@ -316,7 +316,8 @@ describe('purchase orders', () => {
 		expect(registered).toEqual([
 			expect.objectContaining({ code: 'PO/IMS-HIT/HW/1026/001', documentType: 'purchase_order', sourceId: order.id }),
 		]);
-		expect((await orders.markSent('purchasing', order.id)).status).toBe('sent');
+		// B-21 (K3): there is no "mark as sent" step; approved goes straight to receiving.
+		expect('markSent' in orders).toBe(false);
 	});
 
 	test('P7-5 (T-1): a failed approval does not use a PO number up; the next approval gets it', async () => {

@@ -351,6 +351,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 | locale | `packages/locales/src/{en,id}/procurement.ts` | Hapus `pos.markSent`, `pos.sent` (dead-key test); teks sukses FU6 |
 | test | `apps/backend/test/unit/goods-receipt.service.test.ts`, `procurement.service.test.ts` | PO approved bisa diterima; rute send hilang |
 | docs | `docs/architecture/role-permission.md` (generator) | Rute `/send` hilang |
+| tambahan (dikerjakan 28/11) | `apps/backend/src/app/procurement/contracts/` (tidak berubah), `docs/database/docs.dbml` (catatan status PO) | Pesan FU6 memakai kunci baru `pos.approvedReady` karena `pos.approved` juga dipakai halaman retur pembelian; izin `purchase_order:send` dibiarkan (tidak dipakai rute) |
 
 - **Skema/migrasi:** Tidak. Nilai `sent` tetap di CHECK
   (`procurement.schema.ts:281`) untuk baris lama; catatan di `docs.dbml`

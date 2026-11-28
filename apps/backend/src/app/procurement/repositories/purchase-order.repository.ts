@@ -162,7 +162,9 @@ export class PurchaseOrderRepository implements IPurchaseOrderRepository, IPurch
 			.from(purchaseOrders)
 			.where(this.live(purchaseOrderId))
 			.for('update');
-		if (!order || (order.status !== 'sent' && order.status !== 'partially_received')) {
+		// B-21 (K3): an approved order is receivable straight away; `sent` is
+		// kept for orders marked as sent before that step was removed.
+		if (!order || (order.status !== 'approved' && order.status !== 'sent' && order.status !== 'partially_received')) {
 			return { ok: false, reason: 'notReceivable' };
 		}
 		const items = await tx
@@ -230,7 +232,8 @@ export class PurchaseOrderRepository implements IPurchaseOrderRepository, IPurch
 		const anyReceived = items.some((item) => received.get(item.id)! > 0n);
 		const [updated] = await tx
 			.update(purchaseOrders)
-			.set({ status: anyReceived ? 'partially_received' : 'sent', updatedAt: now })
+			// Nothing left received: back to approved, which is receivable again (B-21).
+			.set({ status: anyReceived ? 'partially_received' : 'approved', updatedAt: now })
 			.where(eq(purchaseOrders.id, purchaseOrderId))
 			.returning();
 		return { ok: true, order: updated };

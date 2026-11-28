@@ -908,6 +908,11 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   number is refused with the FU6 message, and the Code Number page renders the
   PO example with the longest real supplier code. Verified: backend 1664,
   web-admin 230, locales 110, UAT `uat/P7-5.md` all Valid.
+- ERP-0183 B-21 receive approved POs directly (2026-11-28): the "Mark as sent"
+  step and `POST /procurement/purchase-orders/:id/send` are gone; an approved PO
+  appears in Goods receipts at once (historical `sent` rows stay receivable)
+  and the approval toast says it is ready for the warehouse (FU6). Verified:
+  backend 1666, web-admin 230, locales 110, UAT `uat/B-21.md` all Valid.
 
 - ERP-0170 opening-balance row dialog (2026-11-27): the inline add-row form on
   `/finance/opening-balances` moved to `opening-balance-row-dialog.tsx`; the

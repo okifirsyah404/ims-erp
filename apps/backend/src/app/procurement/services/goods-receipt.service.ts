@@ -1,3 +1,4 @@
+import type { PurchaseOrderStatus } from '@drizzle/schemas/procurement.schema';
 import { STOCK_SERVICE_TOKEN } from '@app/inventory/constants/di';
 import { PRODUCT_SERVICE_TOKEN } from '@app/product/constants/di';
 import { WAREHOUSE_SERVICE_TOKEN } from '@app/warehouse/constants/di';
@@ -38,6 +39,12 @@ import {
 	GoodsReceiptOrderNotReceivableError,
 	PurchaseOrderItemUnavailableError,
 } from '../errors/procurement.errors';
+
+/**
+ * Purchase-order statuses a goods receipt may be posted against (B-21, K3).
+ * `sent` stays for orders marked as sent before the step was removed.
+ */
+const RECEIVABLE_STATUSES: readonly PurchaseOrderStatus[] = ['approved', 'sent', 'partially_received'];
 
 export type TGoodsReceiptDetail = TGoodsReceiptRow & {
 	items: TGoodsReceiptItemSelect[];
@@ -144,10 +151,14 @@ export class GoodsReceiptService {
 		);
 	}
 
-	/** POs that can still be received (sent or partly received), newest first. */
+	/**
+	 * POs that can still be received, newest first: approved (K3: no
+	 * "mark as sent" step any more), partly received, and the historical
+	 * `sent` rows from before B-21.
+	 */
 	async receivableOrders(search?: string): Promise<TReceivableOrder[]> {
 		const pages = await Promise.all(
-			(['sent', 'partially_received'] as const).map((status) => this.orders.paginate({ page: 1, limit: 50, status, search })),
+			RECEIVABLE_STATUSES.map((status) => this.orders.paginate({ page: 1, limit: 50, status, search })),
 		);
 		const orders = pages.flatMap((page) => page.data);
 		return Promise.all(
@@ -190,7 +201,7 @@ export class GoodsReceiptService {
 	 */
 	async create(actor: { userId: string; organizationId: string }, body: TCreateGoodsReceipt): Promise<TGoodsReceiptDetail> {
 		const order = await this.orders.findById(body.purchaseOrderId);
-		if (!order || (order.status !== 'sent' && order.status !== 'partially_received')) {
+		if (!order || !RECEIVABLE_STATUSES.includes(order.status)) {
 			throw new GoodsReceiptOrderNotReceivableError();
 		}
 		await this.stock.resolveScope(body.warehouseId);

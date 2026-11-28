@@ -2239,6 +2239,18 @@ tidak dipakai.
 
 Tidak ada perubahan kode.
 
+## 2026-11-28 - B-21 PO disetujui langsung diterima (ERP-0183)
+
+Branch `feat/b-21-po-tanpa-tandai-terkirim`, belum di-push.
+
+- P7-3 ditunda: P7-1 dan P7-2 (Oki) belum ada di `main`.
+- Tombol "Tandai terkirim" dihapus. PO yang disetujui langsung muncul di
+  Penerimaan Barang; PO lama berstatus Terkirim tetap bisa diterima.
+- Setelah disetujui tampil "PO {nomor} disetujui dan siap diterima di gudang."
+  (FU6).
+- UAT: [`5-pengerjaan/uat/B-21.md`](5-pengerjaan/uat/B-21.md), 3/3 Valid
+  (PO 003 diterima 4 dari 10, sisa 6 masih bisa diterima).
+
 ## 2026-11-28 - P7-5 Penomoran tanpa celah dikerjakan (ERP-0182)
 
 Branch `feat/p7-5-penomoran`, belum di-push (menunggu tinjauan Oki, K11).

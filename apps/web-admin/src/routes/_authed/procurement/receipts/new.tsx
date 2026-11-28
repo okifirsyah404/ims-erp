@@ -27,7 +27,7 @@ import { createGoodsReceipt, receivableOrdersQueryOptions, receivingWarehousesQu
 /** A receipt may start from a purchase order page. */
 const searchSchema = z.object({ purchaseOrderId: z.string().optional() });
 
-/** `/procurement/receipts/new` — receive goods against a sent purchase order. */
+/** `/procurement/receipts/new` — receive goods against an approved (or partly received) purchase order. */
 export const Route = createFileRoute('/_authed/procurement/receipts/new')({
 	validateSearch: searchSchema,
 	component: NewGoodsReceiptPage,
