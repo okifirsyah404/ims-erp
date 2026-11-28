@@ -12,6 +12,17 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-28 - `/admin/users` hides the base `member` role (ERP-0185 follow-up)
+
+The organization column showed the raw stored list (`Entragate (member,finance)`,
+the label lookup only knows single keys). `routes/_authed/admin/users/index.tsx`
+now splits the list, drops the base `member` role and labels each role
+(`Entragate (Keuangan)`; a member-only membership shows the organization name
+alone). The role dialog no longer receives `member` either, so it is not listed
+as a locked role; the backend adds it back on save. Checks: web-admin
+`tsc -p tsconfig.app.json --noEmit` clean, `bun test` 234 pass. Not checked in a
+browser.
+
 ## 2026-11-28 - `@ims-erp/common` resolves to source (ERP-0186)
 
 **Cause.** On another machine `bun run backend:drizzle:migrate-reset` failed

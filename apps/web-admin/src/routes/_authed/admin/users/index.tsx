@@ -85,7 +85,7 @@ import {
 import { useActiveOrganizationId } from '@/lib/use-active-organization';
 import { usePermission } from '@/lib/use-permission';
 import { humanizeIdentifier } from '@/lib/format';
-import { erpRoleLabel, hasRole, parseRoleList } from '@ims-erp/common';
+import { BASE_MEMBER_ROLE, erpRoleLabel, hasRole, parseRoleList } from '@ims-erp/common';
 
 /** Sort fields the users table header exposes. */
 const SORT_FIELDS = ['name', 'createdAt', 'joinedAt'] as const;
@@ -467,7 +467,10 @@ function UsersPage() {
 					}}
 					userName={rolesUser.name || rolesUser.email}
 					organizationId={organizationId}
-					currentRoles={parseRoleList(rolesUser.organizations[0]?.role ?? '')}
+					// The base `member` role is never picked; the backend adds it back.
+					currentRoles={parseRoleList(rolesUser.organizations[0]?.role ?? '').filter(
+						(role) => role !== BASE_MEMBER_ROLE,
+					)}
 					saving={saveRoles.isPending}
 					onSave={(roles) =>
 						saveRoles.mutate({ userId: rolesUser.id, roles })
@@ -559,11 +562,19 @@ function UserOrganizations({ user }: { user: TAdminUser }) {
 	}
 	return (
 		<div className='flex flex-wrap gap-1'>
-			{(user.organizations ?? []).map((org) => (
-				<Badge key={org.id} variant='secondary'>
-					{`${humanizeIdentifier(org.name)} (${erpRoleLabel(org.role, i18n.language)})`}
-				</Badge>
-			))}
+			{(user.organizations ?? []).map((org) => {
+				// The base `member` role sits on every membership (P7-4), so it
+				// says nothing here; list the working roles only, each labelled.
+				const roles = parseRoleList(org.role)
+					.filter((role) => role !== BASE_MEMBER_ROLE)
+					.map((role) => erpRoleLabel(role, i18n.language));
+				const name = humanizeIdentifier(org.name);
+				return (
+					<Badge key={org.id} variant='secondary'>
+						{roles.length > 0 ? `${name} (${roles.join(', ')})` : name}
+					</Badge>
+				);
+			})}
 		</div>
 	);
 }
