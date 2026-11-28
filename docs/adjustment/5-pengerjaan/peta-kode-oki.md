@@ -201,7 +201,9 @@ Laporkan hanya: file yang diubah dan hasil test.
 ### P7-4 Hak role baru (Tinggi, K2, K2b, K2d, RO1, RO4, OA8, OA12, KL-6, KL-10, B4)
 
 - **Seharusnya:**
-  - `sales_manager` berlabel "Penjualan"; `sales`, `admin` (role organisasi), `member`, `auditor` **tidak ditawarkan** di form (K2b, OA9); tanda admin aplikasi Aqim tetap.
+  - Role `sales_manager` **dihapus** dari `erpRoleNames`, `erpRoleLabels`, dan `erpRoleGrants`; satu-satunya role penjualan adalah `sales` ("Penjualan") yang mendapat **semua** hak `sales_manager` sekarang (setujui SPH/retur rekan, batal SO, arsip pelanggan, akun portal, lisensi penuh, `apiKey`, katalog, WhatsApp). Aturan "tidak menyetujui dokumen sendiri" tetap (K2b, diubah 28/11).
+  - Data anggota lama dipindah: `sales_manager` di `auth.members.role` diganti `sales` (nilai gabungan seperti `"sales_manager, sales, warehouse"` menjadi `"sales, warehouse"`, tanpa duplikat), lewat migrasi data append-only, karena `organizationRoleSchema` (zod enum) menolak role yang sudah dihapus.
+  - `admin` (role organisasi), `member`, `auditor` **tidak ditawarkan** di form (OA9); tanda admin aplikasi Aqim tetap.
   - `finance` mendapat semua hak `accountant` (`chart_of_account`, `journal`, `accounting_period`, `asset:read`, `project:read`, `investor_report`, …); `accountant` tidak ditawarkan (K2d, OB1, OB5).
   - `accounting_period:create` untuk Pemilik + Keuangan (RO1); `reopen` **hanya Pemilik** (RO4).
   - `audit_log:read` hanya Pemilik (OA8); `invitation:create` dicabut dari `hr` (OA12).
@@ -213,23 +215,27 @@ Laporkan hanya: file yang diubah dan hasil test.
 
 | Lapisan | Path | Perubahan |
 |---|---|---|
-| backend (common) | `packages/common/src/authorization/erp-permissions.ts` | Grant baru, label, daftar role yang ditawarkan (konstanta baru mis. `offeredOrganizationRoles`, dipakai `assignableOrganizationRoles`) |
+| backend (common) | `packages/common/src/authorization/erp-permissions.ts` | Hapus `sales_manager`, hak-haknya pindah ke `sales`; grant baru, label, daftar role yang ditawarkan (konstanta baru mis. `offeredOrganizationRoles`, dipakai `assignableOrganizationRoles`) |
+| backend | `database/migrations/<baru>_erp<nnnn>_sales_role/` (`bunx --bun drizzle-kit generate --custom`) | Migrasi data `auth.members.role`: `sales_manager` → `sales`, buang duplikat; diuji di database lokal |
+| backend | `src/app/project/services/lead.service.ts:166`, `src/app/project/services/project.service.ts:241`, `src/app/organization/repositories/organization.repository.ts:283` | Cek tidak ada logika yang membaca nama `sales_manager` |
 | backend | `src/app/finance/controllers/ledger.controller.ts:205-218` | Transisi periode `locked → open` memeriksa `accounting_period:reopen` (bukan `close` + ownership) |
 | backend | `src/authorization/role-assignment.ts` | Tolak role yang tidak ditawarkan saat ubah/undang |
 | backend | `database/seeders/seed/organization-roles.seeder.ts`, `organization-members.seeder.ts` | Role per orang (Bella `finance`, Dafrin/Oki `freelancer`) |
 | web-admin | `lib/use-caller-org-roles.ts`, `components/invite/invite-dialog.tsx` | Hanya role yang ditawarkan |
 | locale | `packages/locales/src/{en,id}/admin.ts` (dicek saat desain: kunci label role) | Label baru |
 | test | `packages/common/test/grantable-roles.test.ts`, `packages/common/test/invite-sheet.test.ts` | Role yang ditawarkan |
-| test | `apps/backend/test/authorization/permission-matrix.test.ts`, `test/unit/role-assignment.test.ts` | Matriks hak baru, reopen hanya owner |
+| test | `apps/backend/test/authorization/permission-matrix.test.ts`, `test/unit/role-assignment.test.ts` | Matriks hak baru, reopen hanya owner, `sales` menyetujui SPH |
+| test | `apps/backend/test/unit/lead.service.test.ts`, `test/unit/license-api.service.test.ts`, `test/authorization/inventory-authorization.test.ts` | Ganti `sales_manager` dengan `sales` |
 | docs | `docs/architecture/role-permission.md` (jalankan `bun docs/architecture/gen-role-permission.ts`) | Regenerasi; `security-and-access.md` tidak diubah (ditahan, T-6) |
 
-- **Skema/migrasi:** tidak (data `auth.members.role` diatur ulang oleh Aqim setelah rilis; seeder ikut).
+- **Skema/migrasi:** skema tidak berubah; **migrasi data** `sales_manager` → `sales` di `auth.members.role` (wajib, karena role dihapus). Role lain per orang diatur ulang oleh Aqim setelah rilis; seeder ikut (akun `sales_manager_seed` hilang, `sales_seed` memegang hak penuh).
 - **Test:** di atas.
 - **UAT:**
-  1. Form undang/ubah anggota hanya menawarkan Pemilik…Pekerja Lepas yang dipakai; tidak ada Admin, Anggota, Auditor, Akuntan, "Sales".
-  2. Login Bella (Keuangan) → buka Bagan akun, Jurnal, Tutup periode "Siapkan periode", Aset tetap, Anggaran proyek tanpa 403.
-  3. Bella tidak melihat tombol "Buka kembali"; Aqim melihatnya.
-  4. Login SDM: tidak ada tombol Undang; Log Audit hanya terbuka untuk Pemilik.
+  1. Form undang/ubah anggota hanya menawarkan Pemilik…Pekerja Lepas yang dipakai; tidak ada Admin, Anggota, Auditor, Akuntan, Manajer Penjualan. Hanya ada satu pilihan "Penjualan" (`sales`).
+  2. Sesudah migrasi data, Agus MD dan Bilal memegang `sales` (bukan `sales_manager`); Bilal menyetujui SPH Agus MD dan sebaliknya; SPH sendiri tidak bisa disetujui.
+  3. Login Bella (Keuangan) → buka Bagan akun, Jurnal, Tutup periode "Siapkan periode", Aset tetap, Anggaran proyek tanpa 403.
+  4. Bella tidak melihat tombol "Buka kembali"; Aqim melihatnya.
+  5. Login SDM: tidak ada tombol Undang; Log Audit hanya terbuka untuk Pemilik.
 - **Bergantung pada:** — . Dibutuhkan oleh M09-1, M09-4, M09-7, M12-14, PK-10.
 
 **Prompt AI (salin):**
@@ -237,11 +243,11 @@ Laporkan hanya: file yang diubah dan hasil test.
 ```text
 Kerjakan P7-4 Hak role baru.
 Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian P7-4 (Seharusnya, File yang diubah, Test, UAT).
-Buka hanya file ini: packages/common/src/authorization/erp-permissions.ts, src/app/finance/controllers/ledger.controller.ts:205-218, src/authorization/role-assignment.ts, database/seeders/seed/organization-roles.seeder.ts, organization-members.seeder.ts, lib/use-caller-org-roles.ts, components/invite/invite-dialog.tsx, packages/locales/src/{en,id}/admin.ts, docs/architecture/role-permission.md, docs/architecture/security-and-access.md.
+Buka hanya file ini: packages/common/src/authorization/erp-permissions.ts, src/app/finance/controllers/ledger.controller.ts:205-218, src/authorization/role-assignment.ts, database/seeders/seed/organization-roles.seeder.ts, organization-members.seeder.ts, database/migrations/ (migrasi data baru sales_manager → sales), src/app/project/services/lead.service.ts, src/app/project/services/project.service.ts, lib/use-caller-org-roles.ts, components/invite/invite-dialog.tsx, packages/locales/src/{en,id}/admin.ts, docs/architecture/role-permission.md, docs/architecture/security-and-access.md.
 Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
 Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
 Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
-Test: packages/common/test/grantable-roles.test.ts, packages/common/test/invite-sheet.test.ts, apps/backend/test/authorization/permission-matrix.test.ts, test/unit/role-assignment.test.ts (jalankan hanya ini saat iterasi).
+Test: packages/common/test/grantable-roles.test.ts, packages/common/test/invite-sheet.test.ts, apps/backend/test/authorization/permission-matrix.test.ts, test/unit/role-assignment.test.ts, test/unit/lead.service.test.ts, test/unit/license-api.service.test.ts, test/authorization/inventory-authorization.test.ts (jalankan hanya ini saat iterasi).
 Selesai bila semua butir UAT di entri P7-4 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/P7-4.md dari templat uat-pengerjaan.md.
 Laporkan hanya: file yang diubah dan hasil test.
 ```

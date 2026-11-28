@@ -2467,3 +2467,28 @@ Permintaan pemilik: http://localhost:5173/organizations redundan dengan
 
 Sisa: KF-R2 (form karyawan M08 masih menimpa daftar role saat simpan) belum
 dikerjakan; di luar lingkup permintaan ini. UAT: `uat/M12-14.md`.
+
+## 2026-11-28 - K2b diubah: role `sales_manager` dihapus, hanya `sales`
+
+Keputusan programmer B: K2b tidak lagi "label `sales_manager` = Penjualan,
+`sales` tidak ditawarkan", tetapi **role `sales_manager` dihapus** dan
+satu-satunya role penjualan adalah `sales` ("Penjualan"). Hak efektif sama
+dengan keputusan 27/11 (`sales` mendapat semua hak `sales_manager`
+sekarang; aturan tidak menyetujui dokumen sendiri tetap), jadi persetujuan
+Pemilik atas K2b tetap berlaku.
+
+Akibat di P7-4 (Oki): data `auth.members.role` dipindah `sales_manager`
+-> `sales` lewat migrasi data append-only (tanpa perubahan skema), karena
+`organizationRoleSchema` (zod enum) menolak role yang sudah dihapus; seeder
+dan test yang memakai `sales_manager` ikut diubah.
+
+Docs diperbarui: `lembar-keputusan-rapat.md` (K2b),
+`bahan-keputusan-modul-oki.md` (OA11), `rencana-langkah-7.md` (P7-4),
+`rencana-perubahan-modul-oki.md` (M12-5), `peta-kode-oki.md` (P7-4:
+Seharusnya, file, migrasi, test, UAT, prompt), `menu-dan-form-per-role.md`
+(bagian 1), `sekarang-vs-sesudah.md` (bagian 3),
+`lintas-modul/autentikasi-dan-hak-akses.md`, `validasi-konsep-saat-ini.md`
+(3.8). Dokumen yang mencatat kondisi sekarang (UAT lama, diagram saat ini)
+tidak diubah.
+
+Tidak ada perubahan kode.
