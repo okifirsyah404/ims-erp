@@ -29,13 +29,15 @@ import {
 	decidePurchaseOrder,
 	PO_STATUS_VARIANT,
 	purchaseOrderQueryOptions,
-	sendPurchaseOrder,
 	submitPurchaseOrder,
 	type TPurchaseOrderItem,
 } from '@/lib/procurement-api';
 import { usePermission } from '@/lib/use-permission';
 
-/** `/procurement/purchase-orders/$purchaseOrderId` — one PO: approval, sending, print. */
+/** PO statuses that can take a goods receipt (mirrors the backend, B-21). */
+const RECEIVABLE_STATUSES: readonly string[] = ['approved', 'sent', 'partially_received'];
+
+/** `/procurement/purchase-orders/$purchaseOrderId` — one PO: approval, receiving, print. */
 export const Route = createFileRoute('/_authed/procurement/purchase-orders/$purchaseOrderId/')({
 	component: PurchaseOrderDetailPage,
 });
@@ -112,7 +114,6 @@ function PurchaseOrderDetailPage() {
 	const canUpdate = usePermission('purchase_order.update');
 	const canSubmit = usePermission('purchase_order.submit');
 	const canApprove = usePermission('purchase_order.approve');
-	const canSend = usePermission('purchase_order.send');
 	const canCancel = usePermission('purchase_order.cancel');
 	const canReceive = usePermission('stock.receive');
 	const [dialog, setDialog] = useState<'reject' | 'cancel' | null>(null);
@@ -120,13 +121,14 @@ function PurchaseOrderDetailPage() {
 	const [busy, setBusy] = useState(false);
 	const { data, isPending, isError, error } = useQuery(purchaseOrderQueryOptions(purchaseOrderId));
 
-	async function run(action: () => Promise<unknown>, message: string) {
+	/** `message` may read the result, e.g. the number an approval just gave (FU6). */
+	async function run<T>(action: () => Promise<T>, message: string | ((result: T) => string)) {
 		setBusy(true);
 		try {
-			await action();
+			const result = await action();
 			// A cancelled PO frees its purchase request lines too.
 			await queryClient.invalidateQueries({ queryKey: ['procurement'] });
-			toast.success(message);
+			toast.success(typeof message === 'function' ? message(result) : message);
 			setDialog(null);
 			setReason('');
 		} catch (cause) {
@@ -184,7 +186,12 @@ function PurchaseOrderDetailPage() {
 						<>
 							<Button
 								disabled={busy}
-								onClick={() => void run(() => decidePurchaseOrder(purchaseOrderId, 'approve'), t('procurement:pos.approved'))}
+								onClick={() =>
+									void run(
+										() => decidePurchaseOrder(purchaseOrderId, 'approve'),
+										(approved) => t('procurement:pos.approvedReady', { code: approved.code ?? '' }),
+									)
+								}
 							>
 								{t('procurement:pos.approve')}
 							</Button>
@@ -193,12 +200,8 @@ function PurchaseOrderDetailPage() {
 							</Button>
 						</>
 					)}
-					{data.status === 'approved' && canSend && (
-						<Button disabled={busy} onClick={() => void run(() => sendPurchaseOrder(purchaseOrderId), t('procurement:pos.sent'))}>
-							{t('procurement:pos.markSent')}
-						</Button>
-					)}
-					{(data.status === 'sent' || data.status === 'partially_received') && canReceive && (
+					{/* B-21 (K3): an approved PO is received straight away; `sent` is historical. */}
+					{RECEIVABLE_STATUSES.includes(data.status) && canReceive && (
 						<Button
 							render={<Link to='/procurement/receipts/new' search={{ purchaseOrderId }} />}
 							nativeButton={false}
@@ -217,7 +220,7 @@ function PurchaseOrderDetailPage() {
 				<p className='text-sm text-muted-foreground'>{t('procurement:pos.ownNoApprove')}</p>
 			)}
 			{data.status === 'approved' && (
-				<p className='text-sm text-muted-foreground'>{t('procurement:pos.approvedNotSent')}</p>
+				<p className='text-sm text-muted-foreground'>{t('procurement:pos.readyToReceive')}</p>
 			)}
 			{data.status === 'draft' && data.rejectionReason && (
 				<p className='text-sm text-destructive'>

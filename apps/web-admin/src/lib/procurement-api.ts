@@ -272,7 +272,6 @@ export const updatePurchaseOrder = (id: string, input: TPurchaseOrderInput) =>
 export const submitPurchaseOrder = (id: string) => send<TPurchaseOrder>(`/procurement/purchase-orders/${id}/submit`, 'POST');
 export const decidePurchaseOrder = (id: string, decision: 'approve' | 'reject', reason?: string) =>
 	send<TPurchaseOrder>(`/procurement/purchase-orders/${id}/decision`, 'POST', { decision, reason });
-export const sendPurchaseOrder = (id: string) => send<TPurchaseOrder>(`/procurement/purchase-orders/${id}/send`, 'POST');
 export const cancelPurchaseOrder = (id: string, reason: string) =>
 	send<TPurchaseOrder>(`/procurement/purchase-orders/${id}/cancel`, 'POST', { reason });
 

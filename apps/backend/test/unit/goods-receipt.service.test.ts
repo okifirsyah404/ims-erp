@@ -30,6 +30,8 @@ let committed: boolean;
 /** Registry calls made by the service (ERP-0044). */
 let registered: { code: string; sourceId: string }[];
 let service: GoodsReceiptService;
+/** Statuses the service asked the PO repository for (B-21). */
+const paginated: string[] = [];
 
 beforeEach(() => {
 	order = { id: PO, code: 'PO/IMS-HIT/HW/1126/001', status: 'sent', vatMode: 'included', vatRateBps: 1100, supplierSnapshot: { name: 'PT HIT' } } as TPurchaseOrderSelect;
@@ -65,7 +67,10 @@ beforeEach(() => {
 		{
 			findById: async () => order,
 			findItems: async () => poItems,
-			paginate: async () => ({ meta: { page: 1, limit: 50, total: 1, totalPages: 1 }, data: [order] }),
+			paginate: async (request: { status?: string }) => {
+				paginated.push(request.status ?? '');
+				return { meta: { page: 1, limit: 50, total: 1, totalPages: 1 }, data: [order] };
+			},
 			async receive(_id: string, lines: { purchaseOrderItemId: string; quantity: string }[]) {
 				for (const line of lines) {
 					const item = poItems.find((row) => row.id === line.purchaseOrderItemId)!;
@@ -173,18 +178,33 @@ describe('goods receipts', () => {
 		expect(movements).toEqual([expect.objectContaining({ productId: 'item-a', quantity: '10' })]);
 	});
 
-	test('never more than is open; only sent or partly received POs', async () => {
+	test('never more than is open; only approved, sent or partly received POs', async () => {
 		await expect(
 			service.create({ userId: 'wh', organizationId: 'org' }, body([{ purchaseOrderItemId: LINE_A, quantity: 100.001 }])),
 		).rejects.toBeInstanceOf(GoodsReceiptLineError);
 		await expect(
 			service.create({ userId: 'wh', organizationId: 'org' }, body([{ purchaseOrderItemId: crypto.randomUUID(), quantity: 1 }])),
 		).rejects.toBeInstanceOf(GoodsReceiptLineError);
-		order.status = 'approved';
-		await expect(
-			service.create({ userId: 'wh', organizationId: 'org' }, body([{ purchaseOrderItemId: LINE_A, quantity: 1 }])),
-		).rejects.toBeInstanceOf(GoodsReceiptOrderNotReceivableError);
+		for (const status of ['draft', 'submitted', 'received', 'cancelled'] as const) {
+			order.status = status;
+			await expect(
+				service.create({ userId: 'wh', organizationId: 'org' }, body([{ purchaseOrderItemId: LINE_A, quantity: 1 }])),
+			).rejects.toBeInstanceOf(GoodsReceiptOrderNotReceivableError);
+		}
 		expect(movements).toHaveLength(0);
+	});
+
+	test('B-21 (K3): an approved PO is received straight away, without a "sent" step', async () => {
+		order.status = 'approved';
+		const receipt = await service.create({ userId: 'wh', organizationId: 'org' }, body([{ purchaseOrderItemId: LINE_A, quantity: 1 }]));
+		expect(receipt.items).toHaveLength(1);
+		expect(movements).toHaveLength(1);
+	});
+
+	test('B-21: receivable orders list approved, historical sent and partly received POs', async () => {
+		paginated.length = 0;
+		await service.receivableOrders();
+		expect([...paginated].sort()).toEqual(['approved', 'partially_received', 'sent']);
 	});
 
 	test('a storage of another warehouse is refused; the detail names the warehouse', async () => {

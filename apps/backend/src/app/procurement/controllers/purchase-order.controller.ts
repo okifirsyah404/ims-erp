@@ -50,10 +50,6 @@ export class PurchaseOrderController {
 					ok(await service.decide(erp.session.user.id, id(params), purchaseOrderDecisionSchema.parse(body))),
 				{ erp: { permission: ['purchase_order:approve'] }, detail: { description: 'Approves (numbers) or rejects to draft' } },
 			)
-			.post('/:id/send', async ({ params, erp }) => ok(await service.markSent(erp.session.user.id, id(params))), {
-				erp: { permission: ['purchase_order:send'] },
-				detail: { description: 'Approved → sent to the supplier' },
-			})
 			.post(
 				'/:id/cancel',
 				async ({ params, body, erp }) =>

@@ -295,14 +295,6 @@ export class PurchaseOrderService {
 		}
 	}
 
-	/** Approved → sent (recorded after sending it to the supplier). */
-	async markSent(actorUserId: string, id: string): Promise<TPurchaseOrderSelect> {
-		await this.require(id);
-		const updated = await this.orders.transition(id, ['approved'], 'sent', { sentBy: actorUserId, sentAt: new Date() });
-		if (!updated) throw new PurchaseOrderStateError('notApproved');
-		return updated;
-	}
-
 	async cancel(actorUserId: string, id: string, reason: string): Promise<TPurchaseOrderSelect> {
 		await this.require(id);
 		if (await this.orders.hasReceipts(id)) throw new PurchaseOrderStateError('received');
