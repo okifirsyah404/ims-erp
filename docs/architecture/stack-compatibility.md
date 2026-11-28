@@ -23,6 +23,7 @@ again before upgrading anything.
 | zod | 4.x | `^4.x` | boundary validation |
 | Keyv / cache | keyv 6.x, `@keyv/redis` 6.x | — | Keyv TTL in ms; Better Auth `secondaryStorage` TTL in seconds (do not mix) |
 | Vite / React web | vite 8.3.5, React 19.3.1, TanStack Query 5.66+, Router 1.130+ | — | `@tanstack/router-plugin` generates `routeTree.gen.ts` |
+| TanStack Form (web-admin) | `@tanstack/react-form` 1.33.x | `^1.0.0` | form state for web forms since P7-6; rules come from the shared zod schemas in `@ims-erp/common` (validated with `schemaIssues`, no form-level validator adapter); reference form: `components/crm/lead-form-dialog.tsx` |
 | Lint/test tooling | oxlint, prettier 3.9.10, vitest 4.x | - | verify per-workspace configs |
 | @faker-js/faker | 10.6.0 | `^10.6.0` (backend, devDependency) | seeders only — never imported in runtime code or tests (`.agents/skills/faker`); note this table's driver row predates the `bun-sql` switch (`drizzle-orm/bun-sql` is the real entrypoint per `AGENTS.md`) |
 | DiceBear HTTP API | `10.x` major (pinned in `avatar.worker.ts`) | external service, no package | user avatars: `10.x/initials/webp`, 72px, seed = display name. **v10 constraint:** `backgroundColor` is hex-pattern-validated — the legacy `transparent` value returns 400; send no background parameter. Object key `users/<id>/avatar.webp`, presigned per request |

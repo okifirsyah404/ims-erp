@@ -12,6 +12,69 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-28 - P7-6 form foundation (ERP-0181)
+
+**Scope.** Step 7 task P7-6 (`docs/adjustment/5-pengerjaan/peta-kode-dafrin.md`):
+TF-1 (every validation error with field + translation key), TF-2 (one API
+error reader), TF-3 (shared form components), TF-A (TanStack Form + shared zod
+schema via `packages/common`), RF-27 (server error reference), L-7. Example
+form: lead (FU1).
+
+**Backend.** `src/http/plugin.ts`: VALIDATION re-parses Zod routes
+(`safeParse`) or reads TypeBox `ValidationError.all` and returns one
+`errors[]` entry per issue `{ field, key, params?, message }`; a thrown
+`ZodError` and PARSE map the same way (PARSE never echoes the body). Messages
+come from `api:validation.<key>`. Found and fixed on the way: elysia-i18next
+switches language in `onBeforeHandle`, after validation, so validation
+messages were always English; the plugin now applies `Accept-Language` before
+translating VALIDATION/PARSE errors. 500: `requestId` is generated once, the
+message reads `... (ref: XXXXXXXX)` (`errorRef`), and the log line carries
+`requestId` + `ref`. `src/http/response.ts`: `buildMeta`/`errorEnvelope`
+accept a caller-chosen `requestId`. `project/contracts/lead.contract.ts` now
+re-exports the shared create/update lead schemas.
+
+**Shared.** `packages/common`: `forms/form-error.ts` (`FORM_ERROR_KEYS`,
+`zodIssueToFormError`, `formRule`, `errorRef`), `crm/lead.schema.ts`
+(`createLeadSchema` with contact + follow-up-not-past rules, `leadFormSchema`,
+`updateLeadSchema`; company name max 120 per FU1), `TApiErrorMessage` gained
+`key?`/`params?`.
+
+**Web-admin.** `lib/api-error.ts` (`ApiError`, `readApiError`,
+`readEnvelope`, `networkError`), `lib/form-validation.ts` (`schemaIssues`,
+`serverIssues`, `visibleIssues`, `focusControl`), `components/form/`
+(`FieldLabel required` + `RequiredLegend`, `FormField`, `FormErrorSummary`,
+`useIssueText`), `components/crm/lead-form-dialog.tsx` rebuilt on TanStack
+Form; `lib/lead-api.ts` throws `ApiError`; lead list/detail pages pass a
+promise-returning `onSave` so failures stay in the dialog. Other
+`lib/*-api.ts` clients are unchanged (moved per form in step 8).
+
+**Locales.** `api` `validation.*` (14 keys) and `common.internalError` with
+`{{ref}}`; `common` `form.*` + `formError.*`; `crm` lead help texts
+(RF-31). Dead-key prefixes `validation.` / `formError.`; `crm:lead.phoneExample`
+allowed identical.
+
+**Seed (A-10).** `database/seeders/seed/lead-demo.seeder.ts` (3 demo leads,
+anchored on name + source), wired after `seedDemoProject`. Ran the function
+twice against the dev DB: 3 then 0 inserted (full seeder not run: it flushes
+the shared Redis).
+
+**Checks.**
+- `bun test test/unit/http-plugin-unhandled-error.test.ts test/unit/http-plugin-validation.test.ts test/unit/lead.service.test.ts test/unit/request-language.test.ts` (backend): 31 pass.
+- `bun test` (backend): 1660 pass, 0 fail (two `notification.controller` assertions updated from Zod's "Invalid UUID" to the shared key).
+- `bun test` (web-admin): 228 pass (new `test/unit/api-error.test.ts` 10).
+- `bun test` (packages/locales): 110 pass.
+- `bunx tsc --noEmit -p tsconfig.json` (backend) and `bunx tsc -p tsconfig.app.json --noEmit` (web-admin): clean.
+- `bun run lint` (root): 7/7, 0 errors (no new warnings in touched files).
+- Browser UAT (`turbo dev` backend + web-admin, account `sales_seed`): `docs/adjustment/5-pengerjaan/uat/P7-6.md`, 5/5 Valid. The 500 was triggered by renaming `project.leads` for one request on the dev DB (restored immediately); one UAT lead "UAT P7-6 Prospek" remains in the dev DB.
+
+**Docs.** `docs/architecture/api-conventions.md` (error contract),
+`stack-compatibility.md` (TanStack Form), `testing-strategy.md` (form test
+pattern) per A-14. `docs/database/` reviewed and unchanged (no table, column,
+index or status change). No route or guard change, so
+`role-permission.md` was not regenerated.
+
+**Next task.** P7-5 Penomoran (Dafrin), or P7-3 once P7-1/P7-2 are merged;
+the P7-6 PR needs Oki's review (K11: shared `src/http` + `packages/common`).
 ## 2026-11-28 - M12-14 (KF-R1): roles from the Users page, organization pages folded into Settings
 
 **Scope.** Follow-up to M12-2 at the owner's request: `/organizations` was

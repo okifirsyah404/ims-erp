@@ -272,9 +272,10 @@ describe('PATCH /notifications/:id/read', () => {
 		const body = await response.json();
 
 		expect(response.status).toBe(400);
-		// The offending field NAME and the validator's own message. Stringifying
+		// The offending field NAME and the shared key (P7-6; no i18n plugin here,
+		// so the message is the key). Stringifying
 		// the input instead (`[object Object]`) is what used to reach the client.
-		expect(body.errors[0]).toEqual({ field: 'id', message: 'Invalid UUID' });
+		expect(body.errors[0]).toEqual({ field: 'id', key: 'invalidFormat', message: 'validation.invalidFormat' });
 	});
 
 	test('the same 400 comes back from a listening server (compiled route)', async () => {
@@ -290,7 +291,7 @@ describe('PATCH /notifications/:id/read', () => {
 			const body = await response.json();
 
 			expect(response.status).toBe(400);
-			expect(body.errors[0]).toEqual({ field: 'id', message: 'Invalid UUID' });
+			expect(body.errors[0]).toEqual({ field: 'id', key: 'invalidFormat', message: 'validation.invalidFormat' });
 		} finally {
 			listening.stop();
 		}

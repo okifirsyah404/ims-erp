@@ -106,6 +106,10 @@ const DYNAMIC_PREFIXES = [
 	'numbering.pattern.',
 	// Website inquiry errors compose `publicApi.${kind}`.
 	'publicApi.',
+	// Field validation messages: the backend composes `validation.${key}` and
+	// the web form composes `formError.${key}` (common) from the shared key (P7-6).
+	'validation.',
+	'formError.',
 	// The code number settings page labels server values (schema, code type,
 	// reset policy) by composing the key.
 	'settings:numbering.section.',

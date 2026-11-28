@@ -24,10 +24,16 @@ import type {
  *
  * @param status - HTTP status mirrored into the body
  * @param message - Human-readable outcome, already translated by the caller
+ * @param requestId - Caller-chosen id, when the caller already logged it
+ *   (the RF-27 reference of a 500); a fresh UUID otherwise
  */
-export function buildMeta(status: number, message: string) {
+export function buildMeta(
+	status: number,
+	message: string,
+	requestId: string = crypto.randomUUID(),
+) {
 	return {
-		requestId: crypto.randomUUID(),
+		requestId,
 		status,
 		message,
 		timestamp: Date.now(),
@@ -72,11 +78,18 @@ export function okPaginated<T>(
 	};
 }
 
-/** Builds the standard error envelope for a failed request. */
+/**
+ * Builds the standard error envelope for a failed request.
+ *
+ * @remarks
+ * `meta.requestId` is always filled; pass `requestId` when the same id was
+ * already written to the log, so the client's reference (RF-27) matches it.
+ */
 export function errorEnvelope(
 	status: number,
 	message: string,
 	errors: TApiErrorMessage[] = [],
+	requestId?: string,
 ): TApiResponse<null> {
-	return { ...buildMeta(status, message), data: null, errors };
+	return { ...buildMeta(status, message, requestId), data: null, errors };
 }

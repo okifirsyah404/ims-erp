@@ -212,6 +212,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 | test | `apps/backend/test/unit/http-plugin-unhandled-error.test.ts` (perluas), `apps/backend/test/unit/http-plugin-validation.test.ts` (baru) | Dua isian salah → dua `errors` dengan `field` + `key`; 500 berisi ref |
 | test | `apps/web-admin/test/unit/api-error.test.ts` (baru) | Pemetaan envelope → per isian |
 | test | `apps/backend/test/unit/lead.service.test.ts` | Skema bersama menolak lead tanpa kontak dengan `field` |
+| tambahan (dikerjakan 28/11) | `apps/web-admin/src/lib/form-validation.ts`, `apps/web-admin/src/components/form/use-issue-text.ts`, `apps/web-admin/src/routes/_authed/crm/leads/index.tsx`, `.../leads/$leadId.tsx`, `packages/locales/src/{en,id}/crm.ts`, `packages/locales/src/locale-{parity,dead-keys}.test.ts`, `apps/backend/database/seeders/seed/lead-demo.seeder.ts` + `index.ts`, `apps/backend/test/unit/notification.controller.test.ts` | Pemetaan issue → isian dan fokus; kata pesan dengan label; halaman prospek meneruskan kegagalan ke dialog; teks bantuan prospek; data seeder A-10; test lama yang memeriksa teks Zod Inggris |
 
 - **Skema/migrasi:** Tidak.
 - **Test:** lihat tabel; locale parity lewat `bun run test` di

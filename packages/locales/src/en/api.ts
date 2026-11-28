@@ -20,9 +20,28 @@ const api = {
 	'common.fileInvalid': 'Upload a PDF, PNG, JPG or WebP file of at most {{max}} MB',
 	'common.payloadTooLarge': 'Payload too large',
 	'common.authenticationRequired': 'Authentication required',
+	// RF-27: a server error (not a field error) carries a reference to report.
 	'common.internalError':
-		'Something went wrong on the server. Try again; if it keeps happening, contact the administrator.',
+		'Something went wrong on the server (ref: {{ref}}). Try again or report this number to the administrator.',
 	'common.forbidden': 'Forbidden',
+
+	// Field validation messages (P7-6, pattern 4.5). The backend composes the
+	// key from the shared form-error key; the web form re-words them with the
+	// field label (common formError keys).
+	'validation.required': 'This field is required.',
+	'validation.invalidFormat': 'The value is not valid.',
+	'validation.min': 'Must be at least {{min}}.',
+	'validation.max': 'Must be at most {{max}}.',
+	'validation.minLength': 'Needs at least {{min}} characters.',
+	'validation.maxLength': 'At most {{max}} characters.',
+	'validation.notNegative': 'Cannot be negative.',
+	'validation.notPast': 'Cannot be in the past.',
+	'validation.dateOrder': 'Cannot be before {{other}}.',
+	'validation.taken': '{{value}} is already used. Use another one.',
+	'validation.exceedsRemaining': 'Exceeds the remaining {{remaining}}.',
+	'validation.emptyTable': 'Add at least one row.',
+	'validation.contactRequired': 'Fill in at least one contact: phone, WhatsApp, or email.',
+	'validation.unknownField': 'Unknown field.',
 
 	'location.provinceNotFound': 'Province not found',
 	'location.regencyNotFound': 'Regency not found',

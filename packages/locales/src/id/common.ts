@@ -8,6 +8,29 @@ import type common from '../en/common';
 const common_: Record<keyof typeof common, string> = {
 	// Suffix of an optional form field label: "Phone (Optional)" (ERP-0114).
 	'form.optional': 'Opsional',
+	// Shared form parts (P7-6, RF-6, RF-16, RF-19, RF-27).
+	'form.requiredLegend': 'wajib diisi',
+	'form.requiredMark': 'wajib',
+	'form.errorSummary': 'Ada {{count}} isian yang perlu diperbaiki',
+	'form.serverError':
+		'Terjadi kesalahan di server (ref: {{ref}}). Coba lagi atau laporkan nomor ini ke admin.',
+	'form.networkError': 'Gagal menyimpan. Periksa koneksi lalu coba lagi.',
+	// Field messages with the field label (pattern 4.5).
+	'formError.required': '{{label}} wajib diisi.',
+	'formError.invalidFormat': '{{label}} tidak valid.',
+	'formError.invalidFormatExample': '{{label}} tidak valid. Contoh: {{example}}.',
+	'formError.min': '{{label}} minimal {{min}}.',
+	'formError.max': '{{label}} maksimal {{max}}.',
+	'formError.minLength': '{{label}} minimal {{min}} karakter.',
+	'formError.maxLength': '{{label}} maksimal {{max}} karakter.',
+	'formError.notNegative': '{{label}} tidak boleh negatif.',
+	'formError.notPast': '{{label}} tidak boleh di waktu yang sudah lewat.',
+	'formError.dateOrder': '{{label}} tidak boleh sebelum {{other}}.',
+	'formError.taken': '{{label}} {{value}} sudah dipakai. Gunakan yang lain.',
+	'formError.exceedsRemaining': '{{label}} melebihi sisa ({{remaining}}).',
+	'formError.emptyTable': 'Tambahkan minimal satu {{label}}.',
+	'formError.contactRequired': 'Isi minimal satu kontak: telepon, WhatsApp, atau email.',
+	'formError.unknownField': '{{label}} tidak dikenal.',
 	'action.cancel': 'Batal',
 	'cardMenu.label': 'Aksi',
 	'cardMenu.stockAdjustment': 'Penyesuaian stok',

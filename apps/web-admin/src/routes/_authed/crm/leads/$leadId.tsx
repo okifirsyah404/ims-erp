@@ -391,9 +391,14 @@ function LeadDetailPage() {
 			{editing && (
 				<LeadFormDialog
 					lead={lead}
-					submitting={submitting}
 					onClose={() => setEditing(false)}
-					onSave={(input) => void run(() => updateLead(lead.id, input), t('crm:leads.saved'), () => setEditing(false))}
+					onSave={async (input) => {
+						// Failures reach the dialog, which shows them per field (P7-6).
+						await updateLead(lead.id, input);
+						await refresh();
+						toast.success(t('crm:leads.saved'));
+						setEditing(false);
+					}}
 				/>
 			)}
 			{converting && (

@@ -51,6 +51,13 @@ stale state. `build` stays out of the hook (too slow).
 3. **Validation** — zod boundary rejects malformed bodies with field-clear
    400s; phone/address rules respect Indonesian conventions (no international
    phone-format obsession).
+   Since P7-6 a validation test asserts the `field` and `key` of **every**
+   error, not only the status (`test/unit/http-plugin-validation.test.ts`
+   mounts the plugin behind the real i18next wiring and checks the
+   Indonesian text). A form's shared schema is tested once in the backend
+   (`zodIssuesToFormErrors(schema.safeParse(x).error.issues, x)`) and the web
+   side tests the envelope reader and field mapping
+   (`apps/web-admin/test/unit/api-error.test.ts`).
 4. **Successful writes** — create/update deactivate flows, cache eviction
    verified where caches are involved.
 5. **Deactivation / soft delete** — list/detail disappear, restore possible,

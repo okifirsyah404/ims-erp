@@ -62,6 +62,8 @@ describe('locale values', () => {
 		const ALLOWED_IDENTICAL = new Set([
 			// The product name is a brand, not copy (employee portal).
 			'employee:appName',
+			// A phone number example has no language (P7-6, lead form help).
+			'crm:lead.phoneExample',
 			// Acronyms and loanwords that are the same in Indonesian.
 			'employee:projects.picBadge',
 			'employee:projects.evidenceKind.bast',

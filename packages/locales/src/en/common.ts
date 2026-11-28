@@ -7,6 +7,29 @@
 const common = {
 	// Suffix of an optional form field label: "Phone (Optional)" (ERP-0114).
 	'form.optional': 'Optional',
+	// Shared form parts (P7-6, RF-6, RF-16, RF-19, RF-27).
+	'form.requiredLegend': 'required',
+	'form.requiredMark': 'required',
+	'form.errorSummary': '{{count}} field(s) need fixing',
+	'form.serverError':
+		'Something went wrong on the server (ref: {{ref}}). Try again or report this number to the administrator.',
+	'form.networkError': 'Could not save. Check your connection and try again.',
+	// Field messages with the field label (pattern 4.5), composed from the shared key.
+	'formError.required': '{{label}} is required.',
+	'formError.invalidFormat': '{{label}} is not valid.',
+	'formError.invalidFormatExample': '{{label}} is not valid. Example: {{example}}.',
+	'formError.min': '{{label}} must be at least {{min}}.',
+	'formError.max': '{{label}} must be at most {{max}}.',
+	'formError.minLength': '{{label}} needs at least {{min}} characters.',
+	'formError.maxLength': '{{label}} can have at most {{max}} characters.',
+	'formError.notNegative': '{{label}} cannot be negative.',
+	'formError.notPast': '{{label}} cannot be in the past.',
+	'formError.dateOrder': '{{label}} cannot be before {{other}}.',
+	'formError.taken': '{{label}} {{value}} is already used. Use another one.',
+	'formError.exceedsRemaining': '{{label}} exceeds the remaining {{remaining}}.',
+	'formError.emptyTable': 'Add at least one {{label}}.',
+	'formError.contactRequired': 'Fill in at least one contact: phone, WhatsApp, or email.',
+	'formError.unknownField': '{{label}} is not a known field.',
 	'action.cancel': 'Cancel',
 	'cardMenu.label': 'Actions',
 	'cardMenu.stockAdjustment': 'Stock adjustment',

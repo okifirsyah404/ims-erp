@@ -2239,6 +2239,25 @@ tidak dipakai.
 
 Tidak ada perubahan kode.
 
+## 2026-11-28 - P7-6 Dasar form dikerjakan (ERP-0181)
+
+Branch `feat/p7-6-dasar-form`, belum di-push (menunggu tinjauan Oki, K11).
+
+- Server mengirim **semua** kesalahan validasi, masing-masing `field` +
+  kunci (`required`, `invalidFormat`, `min`, `max`, …) dan pesan dalam
+  bahasa permintaan. Ditemukan sekaligus diperbaiki: sebelumnya pesan validasi
+  selalu berbahasa Inggris karena bahasa baru dideteksi setelah validasi.
+- Kesalahan server (500) menampilkan nomor referensi yang sama dengan log.
+- Web-admin: satu pembaca kesalahan API, komponen `FormField` dan
+  `FormErrorSummary`, tanda `*` merah dan "\* wajib diisi". Form Prospek
+  (FU1) memakai TanStack Form + skema zod bersama `packages/common`, dengan
+  teks bantuan per isian (RF-31).
+- Seeder: 3 prospek contoh (A-10).
+- UAT: [`5-pengerjaan/uat/P7-6.md`](5-pengerjaan/uat/P7-6.md), 5/5 Valid.
+- Dicatat untuk tugas lain (A-8): aturan "nomor ganda ditolak" FU1 di server;
+  pesan guard (401/403) masih Inggris dan DB mati menghasilkan 403, bukan 500;
+  ±40 `lib/*-api.ts` lain dipindah ke pembaca baru per form di langkah 8.
+
 ## 2026-11-28 - PR #175
 
 PR #175 dibuat ke `main` dari `docs/aturan-pengerjaan-dan-pembersihan`.

@@ -8,6 +8,8 @@
  * answers 500 with the standard envelope and a generic message.
  */
 import { describe, expect, test } from 'bun:test';
+import { Elysia } from 'elysia';
+import { errorRef } from '@ims-erp/common';
 
 import { domainPlugin } from '../../src/http/plugin';
 
@@ -24,6 +26,31 @@ describe('domainPlugin — unhandled errors', () => {
 		expect(body.status).toBe(500);
 		expect(body.data).toBeNull();
 		expect(Array.isArray(body.errors)).toBe(true);
+	});
+
+	test('carries a reference derived from the envelope requestId (RF-27, P7-6)', async () => {
+		const response = await app.handle(new Request('http://localhost/unhandled/boom'));
+		const body = (await response.json()) as { requestId: string; message: string };
+		const ref = errorRef(body.requestId);
+		expect(ref).toMatch(/^[0-9A-F]{8}$/);
+		// Without the i18n plugin the translator answers with the key; the
+		// reference still reaches the client through `requestId`.
+		expect(body.message).toBe('common.internalError');
+	});
+
+	test('the translated message names the reference', async () => {
+		const translated = new Elysia()
+			.derive({ as: 'global' }, () => ({
+				t: (key: string, options?: { ref?: string }) => `${key} (ref: ${options?.ref ?? ''})`,
+			}))
+			.use(
+				domainPlugin({ name: 'unhandled-ref-test', prefix: '/unhandled-ref', guards: 'none' }).get('/boom', () => {
+					throw new Error('boom');
+				}),
+			);
+		const response = await translated.handle(new Request('http://localhost/unhandled-ref/boom'));
+		const body = (await response.json()) as { requestId: string; message: string };
+		expect(body.message).toBe(`api:common.internalError (ref: ${errorRef(body.requestId)})`);
 	});
 
 	test('never sends the SQL or the error text to the client', async () => {
