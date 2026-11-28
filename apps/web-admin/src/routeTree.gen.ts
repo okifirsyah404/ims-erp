@@ -96,7 +96,9 @@ import { Route as AuthedInventoryComponentsIndexRouteImport } from './routes/_au
 import { Route as AuthedInventoryMaterialsIndexRouteImport } from './routes/_authed/inventory/materials/index'
 import { Route as AuthedInventoryStockIndexRouteImport } from './routes/_authed/inventory/stock/index'
 import { Route as AuthedInventoryStockAdjustRouteImport } from './routes/_authed/inventory/stock/adjust'
+import { Route as AuthedInventoryStockIssueRouteImport } from './routes/_authed/inventory/stock/issue'
 import { Route as AuthedInventoryStockMovementsRouteImport } from './routes/_authed/inventory/stock/movements'
+import { Route as AuthedInventoryStockReceiveRouteImport } from './routes/_authed/inventory/stock/receive'
 import { Route as AuthedInventoryStockValueRouteImport } from './routes/_authed/inventory/stock/value'
 import { Route as AuthedProcurementPurchaseOrdersIndexRouteImport } from './routes/_authed/procurement/purchase-orders/index'
 import { Route as AuthedProcurementPurchaseOrdersNewRouteImport } from './routes/_authed/procurement/purchase-orders/new'
@@ -656,10 +658,22 @@ const AuthedInventoryStockAdjustRoute =
     path: '/inventory/stock/adjust',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedInventoryStockIssueRoute =
+  AuthedInventoryStockIssueRouteImport.update({
+    id: '/inventory/stock/issue',
+    path: '/inventory/stock/issue',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedInventoryStockMovementsRoute =
   AuthedInventoryStockMovementsRouteImport.update({
     id: '/inventory/stock/movements',
     path: '/inventory/stock/movements',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedInventoryStockReceiveRoute =
+  AuthedInventoryStockReceiveRouteImport.update({
+    id: '/inventory/stock/receive',
+    path: '/inventory/stock/receive',
     getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedInventoryStockValueRoute =
@@ -1177,7 +1191,9 @@ export interface FileRoutesByFullPath {
   '/integrations/whatsapp-ai/$conversationId': typeof AuthedIntegrationsWhatsappAiConversationIdRoute
   '/integrations/whatsapp-ai/faq': typeof AuthedIntegrationsWhatsappAiFaqRoute
   '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
+  '/inventory/stock/issue': typeof AuthedInventoryStockIssueRoute
   '/inventory/stock/movements': typeof AuthedInventoryStockMovementsRoute
+  '/inventory/stock/receive': typeof AuthedInventoryStockReceiveRoute
   '/inventory/stock/value': typeof AuthedInventoryStockValueRoute
   '/procurement/purchase-orders/new': typeof AuthedProcurementPurchaseOrdersNewRoute
   '/procurement/purchase-requests/new': typeof AuthedProcurementPurchaseRequestsNewRoute
@@ -1345,7 +1361,9 @@ export interface FileRoutesByTo {
   '/integrations/whatsapp-ai/$conversationId': typeof AuthedIntegrationsWhatsappAiConversationIdRoute
   '/integrations/whatsapp-ai/faq': typeof AuthedIntegrationsWhatsappAiFaqRoute
   '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
+  '/inventory/stock/issue': typeof AuthedInventoryStockIssueRoute
   '/inventory/stock/movements': typeof AuthedInventoryStockMovementsRoute
+  '/inventory/stock/receive': typeof AuthedInventoryStockReceiveRoute
   '/inventory/stock/value': typeof AuthedInventoryStockValueRoute
   '/procurement/purchase-orders/new': typeof AuthedProcurementPurchaseOrdersNewRoute
   '/procurement/purchase-requests/new': typeof AuthedProcurementPurchaseRequestsNewRoute
@@ -1515,7 +1533,9 @@ export interface FileRoutesById {
   '/_authed/integrations/whatsapp-ai/$conversationId': typeof AuthedIntegrationsWhatsappAiConversationIdRoute
   '/_authed/integrations/whatsapp-ai/faq': typeof AuthedIntegrationsWhatsappAiFaqRoute
   '/_authed/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
+  '/_authed/inventory/stock/issue': typeof AuthedInventoryStockIssueRoute
   '/_authed/inventory/stock/movements': typeof AuthedInventoryStockMovementsRoute
+  '/_authed/inventory/stock/receive': typeof AuthedInventoryStockReceiveRoute
   '/_authed/inventory/stock/value': typeof AuthedInventoryStockValueRoute
   '/_authed/procurement/purchase-orders/new': typeof AuthedProcurementPurchaseOrdersNewRoute
   '/_authed/procurement/purchase-requests/new': typeof AuthedProcurementPurchaseRequestsNewRoute
@@ -1685,7 +1705,9 @@ export interface FileRouteTypes {
     | '/integrations/whatsapp-ai/$conversationId'
     | '/integrations/whatsapp-ai/faq'
     | '/inventory/stock/adjust'
+    | '/inventory/stock/issue'
     | '/inventory/stock/movements'
+    | '/inventory/stock/receive'
     | '/inventory/stock/value'
     | '/procurement/purchase-orders/new'
     | '/procurement/purchase-requests/new'
@@ -1853,7 +1875,9 @@ export interface FileRouteTypes {
     | '/integrations/whatsapp-ai/$conversationId'
     | '/integrations/whatsapp-ai/faq'
     | '/inventory/stock/adjust'
+    | '/inventory/stock/issue'
     | '/inventory/stock/movements'
+    | '/inventory/stock/receive'
     | '/inventory/stock/value'
     | '/procurement/purchase-orders/new'
     | '/procurement/purchase-requests/new'
@@ -2022,7 +2046,9 @@ export interface FileRouteTypes {
     | '/_authed/integrations/whatsapp-ai/$conversationId'
     | '/_authed/integrations/whatsapp-ai/faq'
     | '/_authed/inventory/stock/adjust'
+    | '/_authed/inventory/stock/issue'
     | '/_authed/inventory/stock/movements'
+    | '/_authed/inventory/stock/receive'
     | '/_authed/inventory/stock/value'
     | '/_authed/procurement/purchase-orders/new'
     | '/_authed/procurement/purchase-requests/new'
@@ -2768,11 +2794,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedInventoryStockAdjustRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/inventory/stock/issue': {
+      id: '/_authed/inventory/stock/issue'
+      path: '/inventory/stock/issue'
+      fullPath: '/inventory/stock/issue'
+      preLoaderRoute: typeof AuthedInventoryStockIssueRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/inventory/stock/movements': {
       id: '/_authed/inventory/stock/movements'
       path: '/inventory/stock/movements'
       fullPath: '/inventory/stock/movements'
       preLoaderRoute: typeof AuthedInventoryStockMovementsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/inventory/stock/receive': {
+      id: '/_authed/inventory/stock/receive'
+      path: '/inventory/stock/receive'
+      fullPath: '/inventory/stock/receive'
+      preLoaderRoute: typeof AuthedInventoryStockReceiveRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/inventory/stock/value': {
@@ -3399,7 +3439,9 @@ interface AuthedRouteChildren {
   AuthedIntegrationsWhatsappAiConversationIdRoute: typeof AuthedIntegrationsWhatsappAiConversationIdRoute
   AuthedIntegrationsWhatsappAiFaqRoute: typeof AuthedIntegrationsWhatsappAiFaqRoute
   AuthedInventoryStockAdjustRoute: typeof AuthedInventoryStockAdjustRoute
+  AuthedInventoryStockIssueRoute: typeof AuthedInventoryStockIssueRoute
   AuthedInventoryStockMovementsRoute: typeof AuthedInventoryStockMovementsRoute
+  AuthedInventoryStockReceiveRoute: typeof AuthedInventoryStockReceiveRoute
   AuthedInventoryStockValueRoute: typeof AuthedInventoryStockValueRoute
   AuthedProcurementPurchaseOrdersNewRoute: typeof AuthedProcurementPurchaseOrdersNewRoute
   AuthedProcurementPurchaseRequestsNewRoute: typeof AuthedProcurementPurchaseRequestsNewRoute
@@ -3561,7 +3603,9 @@ const AuthedRouteChildren: AuthedRouteChildren = {
     AuthedIntegrationsWhatsappAiConversationIdRoute,
   AuthedIntegrationsWhatsappAiFaqRoute: AuthedIntegrationsWhatsappAiFaqRoute,
   AuthedInventoryStockAdjustRoute: AuthedInventoryStockAdjustRoute,
+  AuthedInventoryStockIssueRoute: AuthedInventoryStockIssueRoute,
   AuthedInventoryStockMovementsRoute: AuthedInventoryStockMovementsRoute,
+  AuthedInventoryStockReceiveRoute: AuthedInventoryStockReceiveRoute,
   AuthedInventoryStockValueRoute: AuthedInventoryStockValueRoute,
   AuthedProcurementPurchaseOrdersNewRoute:
     AuthedProcurementPurchaseOrdersNewRoute,

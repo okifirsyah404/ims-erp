@@ -193,6 +193,51 @@ export class ItemSerialRepository implements IItemSerialRepository {
 		return rows.map((row) => row.serialNumber);
 	}
 
+	async issue(
+		productId: string,
+		serialNumbers: readonly string[],
+		data: { warehouseId: string; movementId: string | null },
+		tx: TTx,
+	): Promise<string[]> {
+		if (serialNumbers.length === 0) return [];
+		const rows = await tx
+			.update(itemSerials)
+			.set({ status: 'issued', warehouseId: null, binId: null, movementId: data.movementId })
+			.where(
+				and(
+					eq(itemSerials.productId, productId),
+					inArray(itemSerials.serialNumber, [...serialNumbers]),
+					eq(itemSerials.warehouseId, data.warehouseId),
+					eq(itemSerials.status, 'in_stock'),
+					isNull(itemSerials.deletedAt),
+				),
+			)
+			.returning({ serialNumber: itemSerials.serialNumber });
+		return rows.map((row) => row.serialNumber);
+	}
+
+	async receiveIssued(
+		productId: string,
+		serialNumbers: readonly string[],
+		data: { warehouseId: string; binId: string | null; movementId: string | null },
+		tx: TTx,
+	): Promise<string[]> {
+		if (serialNumbers.length === 0) return [];
+		const rows = await tx
+			.update(itemSerials)
+			.set({ status: 'in_stock', warehouseId: data.warehouseId, binId: data.binId, movementId: data.movementId })
+			.where(
+				and(
+					eq(itemSerials.productId, productId),
+					inArray(itemSerials.serialNumber, [...serialNumbers]),
+					eq(itemSerials.status, 'issued'),
+					isNull(itemSerials.deletedAt),
+				),
+			)
+			.returning({ serialNumber: itemSerials.serialNumber });
+		return rows.map((row) => row.serialNumber);
+	}
+
 	async listSerialsInStatuses(productId: string, warehouseId: string, statuses: readonly SerialStatus[]): Promise<string[]> {
 		const rows = await this.database
 			.select({ serialNumber: itemSerials.serialNumber })

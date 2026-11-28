@@ -234,6 +234,13 @@ describe('stock routes — grants decide access', () => {
 		expect(write.status).toBe(403);
 	});
 
+	test('B-29: the project picker of the manual issue screen needs stock:issue, not project:read', async () => {
+		const warehouse = await app.handle(jsonRequest('GET', '/stock/project-options', WAREHOUSE_USER));
+		expect(warehouse.status).not.toBe(403);
+		const finance = await app.handle(jsonRequest('GET', '/stock/project-options', READ_ONLY_USER));
+		expect(finance.status).toBe(403);
+	});
+
 	test('a finance user may not read adjustment documents (no grant at all)', async () => {
 		const response = await app.handle(
 			jsonRequest('GET', '/stock/adjustments', READ_ONLY_USER),

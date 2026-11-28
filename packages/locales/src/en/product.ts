@@ -138,6 +138,7 @@ const product = {
 	'status.applied_warranty': 'Applied to warranty',
 	'status.returned': 'Returned to supplier',
 	'status.damaged': 'Damaged',
+	'status.issued': 'Issued (project / own use)',
 	'unit.new': 'Register unit',
 	'unit.newDescription':
 		'Units are the physical instances of a serialized item.',

@@ -150,6 +150,28 @@ export class MovementRepository implements IMovementRepository {
 	}
 
 	/** Appends one movement row. */
+	listForProject(projectId: string) {
+		return this.database
+			.select({
+				id: movements.id,
+				code: movements.code,
+				movementType: movements.movementType,
+				quantity: movements.quantity,
+				unitCost: movements.unitCost,
+				occurredAt: movements.occurredAt,
+			})
+			.from(movements)
+			.where(
+				and(
+					eq(movements.referenceType, 'project'),
+					eq(movements.referenceId, projectId),
+					eq(movements.status, 'posted'),
+					inArray(movements.movementType, ['receipt', 'issue']),
+				),
+			)
+			.orderBy(asc(movements.occurredAt));
+	}
+
 	async create(
 		data: TMovementCreateData,
 		tx?: TTx,

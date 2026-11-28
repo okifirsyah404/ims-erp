@@ -167,6 +167,9 @@ export function installStockDoubles(): void {
 		async ledgerRows(_warehouseIds: string[]) {
 			return [];
 		},
+		async listForProject() {
+			return [];
+		},
 		async ledgerTotals(_warehouseIds: string[]) {
 			return [];
 		},
@@ -425,8 +428,11 @@ export function installStockDoubles(): void {
 		async isProductActive(productId: string) {
 			return capture.assertedProducts.includes(productId);
 		},
+		// B-29: StockService.postManual reads isSerialized here. The route tests
+		// post plain quantities, so the stock path sees a non-serialized product;
+		// the unit routes keep the serialized snapshot through assertProduct.
 		async productsById(ids: string[]) {
-			return new Map(ids.map((id) => [id, productSnapshot(id)]));
+			return new Map(ids.map((id) => [id, { ...productSnapshot(id), isSerialized: false }]));
 		},
 		async getNameMap(ids: string[]) {
 			return new Map(ids.map((id) => [id, productSnapshot(id).name]));

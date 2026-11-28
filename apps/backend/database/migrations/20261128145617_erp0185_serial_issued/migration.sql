@@ -1,0 +1,1 @@
+ALTER TABLE "inventory"."item_serials" DROP CONSTRAINT "item_serials_status_check", ADD CONSTRAINT "item_serials_status_check" CHECK (status IN ('pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged', 'issued'));

@@ -30,6 +30,24 @@ export class SerialNotFoundError extends AppError {
 	}
 }
 
+/**
+ * A manual stock receipt or issue the screen must correct (B-29).
+ *
+ * @remarks
+ * `serialsRequired`: the product is serialized and the quantity must be a
+ * whole number matched by one serial per unit; `serialsNotAllowed`: the
+ * product has no serials; `serialsUnavailable`: those serials are not in
+ * stock in the warehouse; `projectNotFound`: the project does not exist.
+ */
+export class ManualStockError extends AppError {
+	constructor(
+		kind: 'serialsRequired' | 'serialsNotAllowed' | 'serialsUnavailable' | 'projectNotFound',
+		params?: Record<string, string | number>,
+	) {
+		super(422, `inventory.manualStock.${kind}` as const, `Manual stock: ${kind}`, params);
+	}
+}
+
 /** The serial number already exists for this tenant. */
 export class SerialNumberTakenError extends AppError {
 	constructor() {

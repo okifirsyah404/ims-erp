@@ -3,6 +3,7 @@ import type { ErpContext } from '@authorization/elysia-auth';
 import { GLOBAL_ADMIN_ROLE, hasAppRole } from '@providers/better-auth/ac/admin-ac';
 import { domainPlugin } from '@http/plugin';
 import { created, ok, okPaginated } from '@http/response';
+import { z } from 'zod';
 import {
 	balanceListQuerySchema,
 	issueSchema,
@@ -112,17 +113,31 @@ export class StockController {
 					detail: { description: 'Paginated stock movement ledger' },
 				},
 			)
+			.get(
+				'/project-options',
+				async ({ query }) =>
+					ok(
+						await stockService.projectOptions(
+							z.object({ search: z.string().trim().max(100).optional() }).parse(query).search,
+						),
+					),
+				{
+					// B-29: the warehouse picks the project without project:read.
+					erp: { permission: ['stock:issue'] },
+					detail: { description: 'Active projects a manual stock movement can name' },
+				},
+			)
 			.post(
 				'/receipts',
 				async ({ body, erp, status }) => {
 					const parsed = receiptSchema.parse(body);
 					await assertWarehouseAccessible(stockService, parsed.warehouseId, erp);
-					const result = await stockService.postMovement({
+					// B-29: project and serial numbers are checked by the service.
+					const result = await stockService.postManual('receipt', {
 						actorOrganizationId: erp.organizationId,
 						warehouseId: parsed.warehouseId,
 						binId: parsed.binId ?? null,
 						productId: parsed.productId,
-						movementType: 'receipt',
 						quantity: parsed.quantity,
 						occurredAt: parsed.occurredAt
 							? new Date(parsed.occurredAt)
@@ -131,6 +146,8 @@ export class StockController {
 						referenceId: parsed.referenceId ?? null,
 						createdBy: erp.session.user.id,
 						notes: parsed.notes ?? null,
+						projectId: parsed.projectId ?? null,
+						serialNumbers: parsed.serialNumbers,
 					});
 					return status(201, created(await posted_(erp, result)));
 				},
@@ -144,12 +161,12 @@ export class StockController {
 				async ({ body, erp, status }) => {
 					const parsed = issueSchema.parse(body);
 					await assertWarehouseAccessible(stockService, parsed.warehouseId, erp);
-					const result = await stockService.postMovement({
+					// B-29: project and serial numbers are checked by the service.
+					const result = await stockService.postManual('issue', {
 						actorOrganizationId: erp.organizationId,
 						warehouseId: parsed.warehouseId,
 						binId: parsed.binId ?? null,
 						productId: parsed.productId,
-						movementType: 'issue',
 						quantity: parsed.quantity,
 						occurredAt: parsed.occurredAt
 							? new Date(parsed.occurredAt)
@@ -158,6 +175,8 @@ export class StockController {
 						referenceId: parsed.referenceId ?? null,
 						createdBy: erp.session.user.id,
 						notes: parsed.notes ?? null,
+						projectId: parsed.projectId ?? null,
+						serialNumbers: parsed.serialNumbers,
 					});
 					return status(201, created(await posted_(erp, result)));
 				},

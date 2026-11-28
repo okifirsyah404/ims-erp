@@ -1353,7 +1353,7 @@ Table inventory.item_serials {
   created_at bigint [not null]
   updated_at bigint
   deleted_at bigint
-  Note: "One physical, serialized instance of a product. Was inventory.serial_tracked_items. `returned`: sent back to the supplier on a purchase return; terminal. `damaged`: back from a customer but not sellable; never picked for a delivery."
+  Note: "One physical, serialized instance of a product. Was inventory.serial_tracked_items. `returned`: sent back to the supplier on a purchase return; terminal. `damaged`: back from a customer but not sellable; never picked for a delivery. `issued`: taken out of the warehouse by a manual stock issue (project material or own use, B-29); custody leaves the warehouse and a manual stock receipt can bring it back to in_stock."
   Indexes {
     (organization_id, serial_number) [unique, name: 'item_serials_org_serial_uq', note: 'WHERE organization_id IS NOT NULL']
     (serial_number) [unique, name: 'item_serials_global_serial_uq', note: 'WHERE organization_id IS NULL']
@@ -1362,7 +1362,7 @@ Table inventory.item_serials {
     warehouse_id [name: 'item_serials_warehouse_id_idx']
   }
   Checks {
-    `status IN ('pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged')`
+    `status IN ('pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged', 'issued')`
     `is_provisional_serial = false OR status = 'pre_order'`
     `warranty_expires_on IS NULL OR acquired_on IS NULL OR warranty_expires_on >= acquired_on`
   }
@@ -1512,7 +1512,7 @@ Table inventory.movements {
   to_location text [note: "Free-text off-site detail of an item movement."]
   quantity numeric(18,3) [not null]
   unit_cost bigint [not null, default: 0, note: "IDR minor units the movement was valued at (moving average): the given cost for inbound moves, the balance average for outbound ones."]
-  reference_type text [note: "goods_receipt | delivery_note | sale_return | purchase_return | stock_adjustment | borrowing | maintenance | disposal | manual"]
+  reference_type text [note: "goods_receipt | delivery_note | sale_return | purchase_return | stock_adjustment | borrowing | maintenance | disposal | manual | project. `project` (B-29): a manual receipt or issue for a project; reference_id is then the project id (logical reference to project.projects.id, validated through ProjectLookupService.getProject). Posted issues to a project count as its material cost at quantity x unit_cost."]
   reference_id text
   status text [not null, default: 'posted']
   occurred_at bigint [not null]

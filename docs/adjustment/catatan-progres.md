@@ -2239,6 +2239,22 @@ tidak dipakai.
 
 Tidak ada perubahan kode.
 
+## 2026-11-28 - B-29 Layar terima/keluarkan stok manual (ERP-0185)
+
+Branch `feat/b-29-stok-manual`, belum di-push.
+
+- Menu baru **Terima Stok** dan **Keluarkan Stok** (Inventaris → Barang) untuk
+  bahan proyek dan pemakaian sendiri: gudang, lokasi penyimpanan, barang,
+  jumlah, proyek (opsional), nomor seri, catatan.
+- Barang bernomor seri wajib memilih seri; jumlah mengikuti seri. Seri yang
+  dikeluarkan berstatus baru **Dikeluarkan (proyek / pakai sendiri)** dan bisa
+  diterima kembali.
+- Barang keluar ke proyek dihitung sebagai biaya bahan di halaman proyek.
+  Jurnal akuntansinya belum dibuat (catatan untuk Oki).
+- Skema: status seri `issued` di `inventory.item_serials`; migrasi diterapkan
+  di DB dev.
+- UAT: [`5-pengerjaan/uat/B-29.md`](5-pengerjaan/uat/B-29.md), 4/4 Valid.
+
 ## 2026-11-28 - B-32 Tutup PO kurang kirim (ERP-0184)
 
 Branch `feat/b-32-tutup-po-kurang-kirim`, belum di-push.

@@ -219,6 +219,11 @@ const api = {
 
 	'inventory.unitNotFound': 'Item unit not found',
 	'inventory.serialTaken': 'An item unit with this serial number already exists',
+	// B-29: manual stock receipt / issue.
+	'inventory.manualStock.serialsRequired': 'This item has serial numbers: enter a whole quantity and one serial number per unit ({{count}}).',
+	'inventory.manualStock.serialsNotAllowed': 'This item has no serial numbers; remove the serial numbers.',
+	'inventory.manualStock.serialsUnavailable': 'Serial numbers {{serials}} are not in stock in this warehouse.',
+	'inventory.manualStock.projectNotFound': 'The project was not found or is no longer active. Pick another project.',
 	'inventory.ruleViolation': 'This inventory rule does not allow it: {{rule}}',
 	'inventory.movementNotFound': 'Stock movement not found',
 	'inventory.movementAlreadyReversed':

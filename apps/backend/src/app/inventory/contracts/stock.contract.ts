@@ -119,6 +119,19 @@ export const receiptSchema = z.object({
 	referenceType: z.string().max(64).nullable().optional(),
 	referenceId: z.string().max(64).nullable().optional(),
 	notes: z.string().max(2000).nullable().optional(),
+	/**
+	 * B-29: the project the stock is for (logical reference to
+	 * project.projects.id). Recorded as `reference_type = 'project'`; a posted
+	 * issue counts as the project's material cost.
+	 */
+	projectId: z.uuid().nullable().optional(),
+	/**
+	 * B-29: one serial number per unit for a serialized product (the quantity
+	 * must then be a whole number equal to the count). An issue takes
+	 * `in_stock` units of this warehouse out; a receipt brings `issued` units
+	 * back or registers new ones.
+	 */
+	serialNumbers: z.array(z.string().trim().min(1).max(100)).max(500).optional(),
 });
 
 /** Body for an issue (stock leaving a warehouse). */

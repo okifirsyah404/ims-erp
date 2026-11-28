@@ -213,6 +213,11 @@ const api: Record<keyof typeof en, string> = {
 
 	'inventory.unitNotFound': 'Unit barang tidak ditemukan',
 	'inventory.serialTaken': 'Unit barang dengan nomor seri ini sudah ada',
+	// B-29.
+	'inventory.manualStock.serialsRequired': 'Barang ini bernomor seri: isi jumlah bulat dan satu nomor seri per unit ({{count}}).',
+	'inventory.manualStock.serialsNotAllowed': 'Barang ini tidak bernomor seri; hapus nomor serinya.',
+	'inventory.manualStock.serialsUnavailable': 'Nomor seri {{serials}} tidak ada di stok gudang ini.',
+	'inventory.manualStock.projectNotFound': 'Proyek tidak ditemukan atau sudah tidak aktif. Pilih proyek lain.',
 	'inventory.ruleViolation': 'Aturan inventaris tidak mengizinkan: {{rule}}',
 	'inventory.movementNotFound': 'Pergerakan stok tidak ditemukan',
 	'inventory.movementAlreadyReversed':

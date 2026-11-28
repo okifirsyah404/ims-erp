@@ -101,6 +101,8 @@ const nav = {
 
 	'item.warehouses': 'Warehouses',
 	'item.stock': 'Stock',
+	'item.stockReceive': 'Receive Stock',
+	'item.stockIssue': 'Issue Stock',
 	'item.inventoryValue': 'Inventory Value',
 	'breadcrumb.projectNew': 'New project',
 	'breadcrumb.bastNew': 'New BAST',
