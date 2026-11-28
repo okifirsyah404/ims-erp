@@ -666,6 +666,9 @@ const api = {
 		'Invoices need at least one line item to be issued',
 	'sales.invoiceDueBeforeIssue':
 		'Due date cannot be before the issue date',
+	'sales.invoiceDueDateRequired': 'The due date is required to issue an invoice.',
+	'sales.invoiceCustomerRequired': 'Choose the customer of an invoice without a sales order.',
+	'sales.invoiceCustomerInactive': 'The customer is missing or not active. Choose an active customer.',
 	'sales.receiptNotFound': 'Receipt not found',
 	'sales.receiptExceeds':
 		'The payment exceeds the outstanding amount',

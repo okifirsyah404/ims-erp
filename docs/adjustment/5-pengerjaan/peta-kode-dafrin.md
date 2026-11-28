@@ -883,6 +883,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 | backend | `apps/backend/src/app/sale/services/invoice.service.ts` | Validasi pelanggan aktif lewat kontrak `customer`; jatuh tempo wajib saat terbit (FU9) |
 | locale | `packages/locales/src/{en,id}/finance.ts` / `sales.ts` | Teks |
 | test | `apps/backend/test/unit/invoice-billing.service.test.ts` | Faktur tanpa SO: buat, terbit, bayar |
+| tambahan (dikerjakan 29/11) | `apps/backend/src/app/sale/contracts/invoice.contract.ts` + `invoice.repository.interface.ts` (`title`, `vatEnabled`, `vatRateBps`), `sale/errors/invoice.errors.ts`, `sale/controllers/invoice.controller.ts` (`GET /sales/invoices/customer-options`, hak `invoice:create`), `customer/services/exported-customer.service.ts` (`activeCustomerOptions`), `web-admin/src/components/finance/invoice-list.tsx` (slot tombol), `routes/_authed/sales/invoices/$invoiceId/index.tsx` (faktur tanpa termin), `components/layout/build-crumbs.ts`, locale `api.ts` + `nav.ts`, seeder `invoice-demo.seeder.ts`, test `test/finance/ar-flows.test.ts`, `docs/database/docs.dbml` (catatan `customer_snapshot`), `module-ownership.md`, `role-permission.md` | Keuangan tidak punya `customer:read` → pemilih pelanggan sendiri; PPN dihitung server; FU9 berlaku untuk semua faktur saat terbit; `?ticketId=` mengisi awal dari tiket (B-31); isi awal dari kontrak lisensi belum (belum ada layar penagihan lisensi) |
 
 - **Skema/migrasi:** Tidak (kecuali kolom sumber tiket di B-31).
 - **UAT:**

@@ -85,6 +85,8 @@ const LABELS: Record<string, NavKey> = {
 	'/projects/new': 'breadcrumb.projectNew',
 	'/tickets': 'item.tickets',
 	'/tickets/new': 'breadcrumb.ticketNew',
+	'/sales/invoices': 'item.invoices',
+	'/sales/invoices/new': 'breadcrumb.invoiceNew',
 	'/warranties': 'item.warranty',
 	'/subscription': 'item.subscription',
 	'/integrations/website-catalog': 'item.websiteCatalog',

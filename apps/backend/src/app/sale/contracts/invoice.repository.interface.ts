@@ -79,6 +79,10 @@ export type TCreateInvoiceInput = {
 	dueDate: string | null;
 	currencyCode: string;
 	notes: string | null;
+	/** B-42: free invoice heading; VAT computed server-side when `vatEnabled` is sent. */
+	title?: string | null;
+	vatEnabled?: boolean;
+	vatRateBps?: number | null;
 	items: TInvoiceItemInput[];
 };
 

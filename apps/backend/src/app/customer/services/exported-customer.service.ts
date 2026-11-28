@@ -10,6 +10,7 @@ import { COMPANY_REPOSITORY_TOKEN, CUSTOMER_PERSON_REPOSITORY_TOKEN } from '../c
 import type { ICompanyRepository } from '../contracts/customer.repository.interface';
 import type { ICustomerPersonRepository } from '../contracts/customer.repository.interface';
 import { CustomerNotFoundError } from '../errors/customer.errors';
+import { customerListQuerySchema } from '../contracts/customer.contract';
 
 /** The snapshot documents freeze onto a quotation/order/invoice. */
 export type TCustomerSnapshot = {
@@ -72,6 +73,17 @@ export class ExportedCustomerService {
 		const customer = await this.people.findById(id);
 		if (customer?.status !== 'active') return null;
 		return { ...customer, email: await this.emailOf(customer) };
+	}
+
+	/**
+	 * Up to 20 active customer people matching `search` (code, name, phone),
+	 * for pickers in other modules whose users lack `customer:read`
+	 * (B-42: the finance role writing an invoice without a sales order).
+	 */
+	async activeCustomerOptions(search?: string): Promise<Array<{ id: string; code: string; name: string }>> {
+		const query = customerListQuerySchema.parse({ page: 1, limit: 20, status: 'active', search: search || undefined });
+		const page = await this.people.paginate({ ...query, page: 1, limit: 20 });
+		return page.data.map((person) => ({ id: person.id, code: person.code, name: person.name }));
 	}
 
 	/** An active company, or `null` — for documents naming the entity. */

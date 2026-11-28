@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { useDeferredValue, useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -39,7 +39,18 @@ import {
 const PAGE_SIZE = 20;
 
 /** Invoice list with search and filters; `termKind` narrows it (the DP menu). */
-export function InvoiceList({ title, description, termKind }: { title: string; description: string; termKind?: TInvoiceTermKind }) {
+export function InvoiceList({
+	title,
+	description,
+	termKind,
+	actions,
+}: {
+	title: string;
+	description: string;
+	termKind?: TInvoiceTermKind;
+	/** Buttons beside the heading (B-42: "New invoice"). */
+	actions?: ReactNode;
+}) {
 	const { t, i18n } = useTranslation(['finance', 'common']);
 	const [page, setPage] = useState(1);
 	const [search, setSearch] = useState('');
@@ -121,9 +132,12 @@ export function InvoiceList({ title, description, termKind }: { title: string; d
 
 	return (
 		<div className='flex flex-col gap-6'>
-			<div>
-				<h1 className='text-2xl font-bold'>{title}</h1>
-				<p className='text-sm text-muted-foreground'>{description}</p>
+			<div className='flex flex-wrap items-start justify-between gap-3'>
+				<div>
+					<h1 className='text-2xl font-bold'>{title}</h1>
+					<p className='text-sm text-muted-foreground'>{description}</p>
+				</div>
+				{actions}
 			</div>
 
 			<div className='flex flex-wrap items-center gap-2'>

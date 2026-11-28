@@ -103,6 +103,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'breadcrumb.projectNew': 'Buat proyek',
 	'breadcrumb.bastNew': 'Buat BAST',
 	'breadcrumb.ticketNew': 'Buat tiket',
+	'breadcrumb.invoiceNew': 'Faktur baru',
 	'breadcrumb.contractNew': 'Buat kontrak',
 	'breadcrumb.warranty': 'Surat garansi',
 	'item.borrowings': 'Peminjaman',

@@ -119,7 +119,8 @@ no central code-number module.
   identity folded into `customers` (Q5, Q12, Q16).
 - **Contract**: `ExportedCustomerService` (`assertCustomer`,
   `getActiveCustomer`, `getActiveCompany`, `resolvePortalIdentity`,
-  `getSnapshot`, `findCustomerByCode` - finance's opening AR import, ERP-0142).
+  `getSnapshot`, `findCustomerByCode` - finance's opening AR import, ERP-0142;
+  `activeCustomerOptions` - the invoice-without-order picker, B-42).
 
 ### 5. Supplier - `supplier` (new, split from procurement)
 
@@ -193,7 +194,9 @@ no central code-number module.
   contracts, targets, settings. Company-wide (ADR-0011).
 - The legacy `sales.payments` scaffold is gone; money movement is `payment`.
 - **Contract**: `ExportedOrderService.findOrder`,
-  `ExportedInvoiceService.findById`.
+  `ExportedInvoiceService.findById`. An invoice without an order (B-42)
+  checks and snapshots its customer through `ExportedCustomerService`
+  (`getActiveCustomer`, `getSnapshot`, `activeCustomerOptions`).
 
 ### 10. Procurement - `procurement`
 

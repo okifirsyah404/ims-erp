@@ -5,11 +5,11 @@
  */
 const finance = {
 	'invoices.title': 'Invoices',
-	'invoices.description': 'Every billing term of every sales order: drafts, issued and paid invoices.',
+	'invoices.description': 'Every invoice: sales order billing terms and invoices without a sales order (service, extra cost, license renewal).',
 	'invoices.search': 'Search invoice, order, quotation or customer…',
 	'invoices.allStatuses': 'All statuses',
 	'invoices.overdueOnly': 'Overdue only',
-	'invoices.empty': 'No invoices yet. Create one from a sales order.',
+	'invoices.empty': 'No invoices yet. Bill a sales order from its page, or use New invoice for a service or extra cost.',
 	'invoices.noResults': 'No invoices match the filter.',
 	'invoices.back': 'Back to invoices',
 	'invoices.backToInvoice': 'Back to the invoice',

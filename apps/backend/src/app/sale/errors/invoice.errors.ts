@@ -21,6 +21,27 @@ export class InvoiceNoItemsError extends AppError {
 	}
 }
 
+/** B-42: an invoice without a sales order needs a customer. */
+export class InvoiceCustomerRequiredError extends AppError {
+	constructor() {
+		super(422, 'sales.invoiceCustomerRequired', 'Choose the customer of an invoice without a sales order');
+	}
+}
+
+/** B-42: the chosen customer is missing or not active. */
+export class InvoiceCustomerInactiveError extends AppError {
+	constructor() {
+		super(422, 'sales.invoiceCustomerInactive', 'The customer is missing or not active');
+	}
+}
+
+/** FU9: an invoice is issued only with a due date. */
+export class InvoiceDueDateRequiredError extends AppError {
+	constructor() {
+		super(422, 'sales.invoiceDueDateRequired', 'The due date is required to issue an invoice');
+	}
+}
+
 /** Due date earlier than issue date. */
 export class InvoiceDueBeforeIssueError extends AppError {
 	constructor() {

@@ -120,6 +120,7 @@ import { Route as AuthedSalesDeliveriesIndexRouteImport } from './routes/_authed
 import { Route as AuthedSalesDeliveriesNewRouteImport } from './routes/_authed/sales/deliveries/new'
 import { Route as AuthedSalesDownPaymentsIndexRouteImport } from './routes/_authed/sales/down-payments/index'
 import { Route as AuthedSalesInvoicesIndexRouteImport } from './routes/_authed/sales/invoices/index'
+import { Route as AuthedSalesInvoicesNewRouteImport } from './routes/_authed/sales/invoices/new'
 import { Route as AuthedSalesOrdersIndexRouteImport } from './routes/_authed/sales/orders/index'
 import { Route as AuthedSalesOrdersOrderIdRouteImport } from './routes/_authed/sales/orders/$orderId'
 import { Route as AuthedSalesQuotesIndexRouteImport } from './routes/_authed/sales/quotes/index'
@@ -802,6 +803,11 @@ const AuthedSalesInvoicesIndexRoute =
     path: '/sales/invoices/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedSalesInvoicesNewRoute = AuthedSalesInvoicesNewRouteImport.update({
+  id: '/sales/invoices/new',
+  path: '/sales/invoices/new',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedSalesOrdersIndexRoute = AuthedSalesOrdersIndexRouteImport.update({
   id: '/sales/orders/',
   path: '/sales/orders/',
@@ -1203,6 +1209,7 @@ export interface FileRoutesByFullPath {
   '/procurement/suppliers/$supplierId': typeof AuthedProcurementSuppliersSupplierIdRoute
   '/products/$productId/edit': typeof AuthedProductsProductIdEditRoute
   '/sales/deliveries/new': typeof AuthedSalesDeliveriesNewRoute
+  '/sales/invoices/new': typeof AuthedSalesInvoicesNewRoute
   '/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
   '/sales/returns/new': typeof AuthedSalesReturnsNewRoute
@@ -1373,6 +1380,7 @@ export interface FileRoutesByTo {
   '/procurement/suppliers/$supplierId': typeof AuthedProcurementSuppliersSupplierIdRoute
   '/products/$productId/edit': typeof AuthedProductsProductIdEditRoute
   '/sales/deliveries/new': typeof AuthedSalesDeliveriesNewRoute
+  '/sales/invoices/new': typeof AuthedSalesInvoicesNewRoute
   '/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
   '/sales/returns/new': typeof AuthedSalesReturnsNewRoute
@@ -1545,6 +1553,7 @@ export interface FileRoutesById {
   '/_authed/procurement/suppliers/$supplierId': typeof AuthedProcurementSuppliersSupplierIdRoute
   '/_authed/products/$productId/edit': typeof AuthedProductsProductIdEditRoute
   '/_authed/sales/deliveries/new': typeof AuthedSalesDeliveriesNewRoute
+  '/_authed/sales/invoices/new': typeof AuthedSalesInvoicesNewRoute
   '/_authed/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/_authed/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
   '/_authed/sales/returns/new': typeof AuthedSalesReturnsNewRoute
@@ -1717,6 +1726,7 @@ export interface FileRouteTypes {
     | '/procurement/suppliers/$supplierId'
     | '/products/$productId/edit'
     | '/sales/deliveries/new'
+    | '/sales/invoices/new'
     | '/sales/orders/$orderId'
     | '/sales/quotes/new'
     | '/sales/returns/new'
@@ -1887,6 +1897,7 @@ export interface FileRouteTypes {
     | '/procurement/suppliers/$supplierId'
     | '/products/$productId/edit'
     | '/sales/deliveries/new'
+    | '/sales/invoices/new'
     | '/sales/orders/$orderId'
     | '/sales/quotes/new'
     | '/sales/returns/new'
@@ -2058,6 +2069,7 @@ export interface FileRouteTypes {
     | '/_authed/procurement/suppliers/$supplierId'
     | '/_authed/products/$productId/edit'
     | '/_authed/sales/deliveries/new'
+    | '/_authed/sales/invoices/new'
     | '/_authed/sales/orders/$orderId'
     | '/_authed/sales/quotes/new'
     | '/_authed/sales/returns/new'
@@ -2962,6 +2974,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSalesInvoicesIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/sales/invoices/new': {
+      id: '/_authed/sales/invoices/new'
+      path: '/sales/invoices/new'
+      fullPath: '/sales/invoices/new'
+      preLoaderRoute: typeof AuthedSalesInvoicesNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/sales/orders/': {
       id: '/_authed/sales/orders/'
       path: '/sales/orders'
@@ -3451,6 +3470,7 @@ interface AuthedRouteChildren {
   AuthedProcurementSuppliersSupplierIdRoute: typeof AuthedProcurementSuppliersSupplierIdRoute
   AuthedProductsProductIdEditRoute: typeof AuthedProductsProductIdEditRoute
   AuthedSalesDeliveriesNewRoute: typeof AuthedSalesDeliveriesNewRoute
+  AuthedSalesInvoicesNewRoute: typeof AuthedSalesInvoicesNewRoute
   AuthedSalesOrdersOrderIdRoute: typeof AuthedSalesOrdersOrderIdRoute
   AuthedSalesQuotesNewRoute: typeof AuthedSalesQuotesNewRoute
   AuthedSalesReturnsNewRoute: typeof AuthedSalesReturnsNewRoute
@@ -3620,6 +3640,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
     AuthedProcurementSuppliersSupplierIdRoute,
   AuthedProductsProductIdEditRoute: AuthedProductsProductIdEditRoute,
   AuthedSalesDeliveriesNewRoute: AuthedSalesDeliveriesNewRoute,
+  AuthedSalesInvoicesNewRoute: AuthedSalesInvoicesNewRoute,
   AuthedSalesOrdersOrderIdRoute: AuthedSalesOrdersOrderIdRoute,
   AuthedSalesQuotesNewRoute: AuthedSalesQuotesNewRoute,
   AuthedSalesReturnsNewRoute: AuthedSalesReturnsNewRoute,

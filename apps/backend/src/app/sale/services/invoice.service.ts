@@ -32,7 +32,13 @@ import type {
 import type { IArLedgerPort } from '../../finance/contracts/ar-ledger.port';
 import type { PostingService } from '../../finance/services/posting.service';
 import type { ArAccountResolverService } from '../../finance/services/ar-account-resolver.service';
+import { EXPORTED_CUSTOMER_SERVICE_TOKEN } from '@app/customer/constants/di';
+import type { ExportedCustomerService } from '@app/customer/services/exported-customer.service';
+import { DEFAULT_VAT_RATE_BPS } from '../utils/quotation-totals';
 import {
+	InvoiceCustomerInactiveError,
+	InvoiceCustomerRequiredError,
+	InvoiceDueDateRequiredError,
 	InvoiceDueBeforeIssueError,
 	InvoiceNoItemsError,
 	InvoiceNotDraftError,
@@ -104,6 +110,9 @@ export class InvoiceService {
 		/** ERP-0139: receipts post to the ledger and the AR open item. */
 		@inject(RECEIPT_LEDGER_SERVICE_TOKEN)
 		private readonly receiptLedger?: Pick<ReceiptLedgerService, 'post' | 'reverse'>,
+		/** B-42: an invoice without a sales order bills an active customer (customer contract). */
+		@inject(EXPORTED_CUSTOMER_SERVICE_TOKEN)
+		private readonly customers?: Pick<ExportedCustomerService, 'getActiveCustomer' | 'getSnapshot' | 'activeCustomerOptions'>,
 	) {}
 
 	/**
@@ -130,6 +139,11 @@ export class InvoiceService {
 		return this.repo.summary(organizationId, range);
 	}
 
+	/** Active customers for the invoice-without-order picker (B-42). */
+	customerOptions(search?: string): Promise<Array<{ id: string; code: string; name: string }>> {
+		return this.customers ? this.customers.activeCustomerOptions(search) : Promise.resolve([]);
+	}
+
 	async get(organizationId: string, id: string): Promise<{
 		invoice: TInvoiceSelect;
 		items: TInvoiceItemSelect[];
@@ -145,8 +159,26 @@ export class InvoiceService {
 		input: TCreateInvoiceInput,
 	): Promise<TInvoiceSelect> {
 		this.validateDates(input.issueDate, input.dueDate);
+		// B-42 (KF-S6): an invoice without a sales order (service, extra cost,
+		// license renewal) names an active customer, snapshotted for the print.
+		let customerSnapshot: Awaited<ReturnType<ExportedCustomerService['getSnapshot']>> = null;
+		if (!input.orderId && this.customers) {
+			if (!input.customerId) throw new InvoiceCustomerRequiredError();
+			if (!(await this.customers.getActiveCustomer(input.customerId))) throw new InvoiceCustomerInactiveError();
+			customerSnapshot = await this.customers.getSnapshot({ customerId: input.customerId });
+		}
+		// The server owns the VAT when the caller states it (B-42 form).
+		const vatRateBps =
+			input.vatEnabled === undefined ? null : input.vatEnabled ? (input.vatRateBps ?? DEFAULT_VAT_RATE_BPS) : 0;
+		const items =
+			vatRateBps === null
+				? input.items
+				: input.items.map((item) => ({
+						...item,
+						taxAmount: Math.round(((item.quantity * item.unitPrice - item.discountAmount) * vatRateBps) / 10_000),
+					}));
 		return this.database.transaction(async (tx) => {
-			const totals = this.totalsOf(input.items);
+			const totals = this.totalsOf(items);
 			const code = await this.numbering.next('invoice', {
 				date: input.issueDate
 					? new Date(`${input.issueDate}T12:00:00+07:00`)
@@ -172,10 +204,14 @@ export class InvoiceService {
 					currencyCode: input.currencyCode,
 					status: 'draft',
 					notes: input.notes,
+					...(input.title ? { title: input.title } : {}),
+					...(customerSnapshot ? { customerSnapshot } : {}),
+					...(vatRateBps === null ? {} : { vatEnabled: vatRateBps > 0, vatRateBps }),
+					createdBy: ctx.actorUserId,
 				},
 				tx as TTx,
 			);
-			await this.writeItems(ctx, invoice.id, input.items, tx as TTx);
+			await this.writeItems(ctx, invoice.id, items, tx as TTx);
 			return invoice;
 		});
 	}
@@ -259,6 +295,8 @@ export class InvoiceService {
 
 			const items = await this.repo.listItems(ctx.organizationId, id, tx);
 			if (items.length === 0) throw new InvoiceNoItemsError();
+			// FU9: no invoice leaves draft without a due date.
+			if (!invoice.dueDate) throw new InvoiceDueDateRequiredError();
 			if (
 				invoice.dueDate &&
 				invoice.issueDate &&

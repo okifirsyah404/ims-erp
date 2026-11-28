@@ -9,9 +9,17 @@
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type { TInvoiceSelect, TReceiptSelect, TOrderSelect } from '@drizzle/schemas/sale.schema';
-import { invoiceTermCreateSchema } from '../../src/app/sale/contracts/invoice.contract';
+import { invoiceCreateSchema, invoiceTermCreateSchema } from '../../src/app/sale/contracts/invoice.contract';
 import type { TInvoiceRepository } from '../../src/app/sale/contracts/invoice.repository.interface';
-import { InvoiceNotVoidableError, InvoiceOrderUnavailableError, InvoiceTermError } from '../../src/app/sale/errors/invoice.errors';
+import {
+	InvoiceCustomerInactiveError,
+	InvoiceCustomerRequiredError,
+	InvoiceDueDateRequiredError,
+	InvoiceNotVoidableError,
+	InvoiceOrderUnavailableError,
+	InvoiceTermError,
+} from '../../src/app/sale/errors/invoice.errors';
+import { InvoiceService } from '../../src/app/sale/services/invoice.service';
 import { InvoiceBillingService } from '../../src/app/sale/services/invoice-billing.service';
 import { computeTerm, nextPlannedTerm, sumTerms } from '../../src/app/sale/utils/invoice-terms';
 
@@ -227,5 +235,148 @@ describe('summary and detail', () => {
 		expect(detail.receipts).toEqual([expect.objectContaining({ id: 'r1', invoiceId: dp.id, amount: dp.grandTotal })]);
 		expect(detail.order?.schedule.map((row) => row.description)).toEqual(['DP 30%']);
 		expect(detail.order?.schedule[0]!.payments).toEqual([{ receivedDate: '2026-11-02', method: 'bank_transfer', amount: dp.grandTotal }]);
+	});
+});
+
+/* ------------------------------------------------------------------ */
+/* B-42 (KF-S6, FU9): an invoice without a sales order                 */
+/* ------------------------------------------------------------------ */
+
+const ACTIVE_CUSTOMER = '0190a1b2-0000-7000-8000-0000000000c9';
+const INACTIVE_CUSTOMER = '0190a1b2-0000-7000-8000-0000000000ca';
+
+function freeInvoiceHarness() {
+	const invoiceRows: TInvoiceSelect[] = [];
+	const lineRows: Record<string, unknown>[] = [];
+	const posted: { entryDate: string; lines: unknown[] }[] = [];
+	const openItems: Record<string, unknown>[] = [];
+	const registry: string[] = [];
+	let numbers = 0;
+	const repo = {
+		async insert(row: Record<string, unknown>) {
+			const created = { ...row, id: crypto.randomUUID(), projectId: null, termKind: 'installment', createdAt: new Date() } as unknown as TInvoiceSelect;
+			invoiceRows.push(created);
+			return created;
+		},
+		async replaceItems(_org: string, invoiceId: string, rows: Record<string, unknown>[]) {
+			lineRows.push(...rows.map((row) => ({ ...row, id: crypto.randomUUID(), invoiceId })));
+		},
+		findById: async (_org: string, id: string) => invoiceRows.find((row) => row.id === id) ?? null,
+		listItems: async (_org: string, id: string) => lineRows.filter((row) => row.invoiceId === id) as never,
+		async update(_org: string, id: string, patch: Record<string, unknown>) {
+			const row = invoiceRows.find((item) => item.id === id);
+			return row ? Object.assign(row, patch) : null;
+		},
+		async addReceipt(data: { invoiceId: string; amount: number; code: string; receivedDate: string }) {
+			const invoice = invoiceRows.find((row) => row.id === data.invoiceId)!;
+			const paidTotal = invoice.paidTotal + data.amount;
+			Object.assign(invoice, {
+				paidTotal,
+				outstandingTotal: invoice.grandTotal - paidTotal,
+				status: paidTotal >= invoice.grandTotal ? 'paid' : 'partially_paid',
+			});
+			return { ...data, id: crypto.randomUUID(), status: 'posted' } as unknown as TReceiptSelect;
+		},
+		sumLiveDownPaymentBase: async () => 0,
+	};
+	const invoices = new InvoiceService(
+		{ transaction: async (work: (tx: unknown) => Promise<unknown>) => work('tx') } as never,
+		repo as never,
+		{ openItem: async (_org: string, item: Record<string, unknown>) => void openItems.push(item) } as never,
+		{
+			postBusinessEvent: async (_tx: unknown, event: { entryDate: string; lines: unknown[] }) => {
+				posted.push({ entryDate: event.entryDate, lines: event.lines });
+				return { entry: { id: 'je-1' } };
+			},
+		} as never,
+		{} as never,
+		{ next: async (type: string) => `000${++numbers}/${type === 'invoice' ? 'INV' : 'KW'}/IMS/XI/26` } as never,
+		{ publish: async () => null } as never,
+		{ register: async (input: { code: string }) => void registry.push(input.code), voidBySource: async () => 1 } as never,
+		{ productsById: async () => new Map() } as never,
+		{ createSchedules: async () => undefined } as never,
+		undefined,
+		{ post: async () => undefined, reverse: async () => undefined } as never,
+		{
+			getActiveCustomer: async (id: string) => (id === ACTIVE_CUSTOMER ? ({ id } as never) : null),
+			getSnapshot: async () => ({ code: 'CUS-00009', name: 'PT Servis Jaya', type: 'company', email: null, phone: null, taxId: null, addressLine: null, postalCode: null }) as never,
+			activeCustomerOptions: async (search?: string) =>
+				[{ id: ACTIVE_CUSTOMER, code: 'CUS-00009', name: 'PT Servis Jaya' }].filter((row) => !search || row.name.includes(search)),
+		},
+	);
+	return { invoices, invoiceRows, lineRows, posted, openItems, registry };
+}
+
+const freeBody = (extra: Record<string, unknown> = {}) =>
+	invoiceCreateSchema.parse({
+		customerId: ACTIVE_CUSTOMER,
+		title: 'Jasa servis controller',
+		dueDate: '2026-12-29',
+		vatEnabled: true,
+		items: [{ description: 'Jasa servis', quantity: 1, unitPrice: 50_000_000 }],
+		...extra,
+	});
+
+describe('invoice without a sales order (B-42, KF-S6)', () => {
+	test('create → issue → pay: VAT by the server, customer snapshotted, numbered, paid in full', async () => {
+		const h = freeInvoiceHarness();
+		const draft = await h.invoices.create(ctx, freeBody());
+		expect(draft).toMatchObject({
+			status: 'draft',
+			orderId: null,
+			customerId: ACTIVE_CUSTOMER,
+			title: 'Jasa servis controller',
+			customerSnapshot: expect.objectContaining({ name: 'PT Servis Jaya' }),
+			vatEnabled: true,
+			vatRateBps: 1100,
+			subtotal: 50_000_000,
+			taxTotal: 5_500_000,
+			grandTotal: 55_500_000,
+			createdBy: 'finance',
+		});
+		expect(draft.code).toBe('0001/INV/IMS/XI/26');
+		expect(h.lineRows).toEqual([expect.objectContaining({ description: 'Jasa servis', taxAmount: 5_500_000, lineTotal: 55_500_000 })]);
+
+		const issued = await h.invoices.issue(ctx, draft.id, { issueDate: '2026-11-29', dueDate: null });
+		expect(issued).toMatchObject({ status: 'issued', issueDate: '2026-11-29', dueDate: '2026-12-29', outstandingTotal: 55_500_000 });
+		expect(h.posted).toHaveLength(1);
+		expect(h.openItems).toEqual([expect.objectContaining({ customerId: ACTIVE_CUSTOMER, originalAmount: 55_500_000, dueDate: '2026-12-29' })]);
+		expect(h.registry).toEqual(['0001/INV/IMS/XI/26']);
+
+		await h.invoices.addReceipt(ctx, draft.id, { amount: 55_500_000, receivedDate: '2026-11-30', method: 'bank_transfer', reference: null, notes: null });
+		expect(h.invoiceRows[0]).toMatchObject({ status: 'paid', paidTotal: 55_500_000, outstandingTotal: 0 });
+		expect(h.registry).toEqual(['0001/INV/IMS/XI/26', '0002/KW/IMS/XI/26']);
+	});
+
+	test('no VAT: the lines carry none, whatever the client sent', async () => {
+		const h = freeInvoiceHarness();
+		const draft = await h.invoices.create(
+			ctx,
+			freeBody({ vatEnabled: false, items: [{ description: 'Biaya tambahan', quantity: 2, unitPrice: 10_000_000, taxAmount: 999 }] }),
+		);
+		expect(draft).toMatchObject({ vatEnabled: false, vatRateBps: 0, subtotal: 20_000_000, taxTotal: 0, grandTotal: 20_000_000 });
+	});
+
+	test('the customer picker lists active customers through the customer contract (finance has no customer:read)', async () => {
+		const h = freeInvoiceHarness();
+		expect(await h.invoices.customerOptions('Servis')).toEqual([{ id: ACTIVE_CUSTOMER, code: 'CUS-00009', name: 'PT Servis Jaya' }]);
+		expect(await h.invoices.customerOptions('Tidak ada')).toEqual([]);
+	});
+
+	test('a customer is required and must be active', async () => {
+		const h = freeInvoiceHarness();
+		await expect(h.invoices.create(ctx, freeBody({ customerId: null }))).rejects.toBeInstanceOf(InvoiceCustomerRequiredError);
+		await expect(h.invoices.create(ctx, freeBody({ customerId: INACTIVE_CUSTOMER }))).rejects.toBeInstanceOf(InvoiceCustomerInactiveError);
+		expect(h.invoiceRows).toEqual([]);
+	});
+
+	test('FU9: no invoice is issued without a due date', async () => {
+		const h = freeInvoiceHarness();
+		const draft = await h.invoices.create(ctx, freeBody({ dueDate: null }));
+		await expect(h.invoices.issue(ctx, draft.id, { issueDate: '2026-11-29', dueDate: null })).rejects.toBeInstanceOf(InvoiceDueDateRequiredError);
+		expect(h.posted).toEqual([]);
+		// The issue form may supply it.
+		const issued = await h.invoices.issue(ctx, draft.id, { issueDate: '2026-11-29', dueDate: '2026-12-15' });
+		expect(issued).toMatchObject({ status: 'issued', dueDate: '2026-12-15' });
 	});
 });

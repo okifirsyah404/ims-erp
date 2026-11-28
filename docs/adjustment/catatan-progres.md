@@ -2239,6 +2239,21 @@ tidak dipakai.
 
 Tidak ada perubahan kode.
 
+## 2026-11-29 - B-42 Faktur tanpa SO (ERP-0189)
+
+Branch `feat/b-42-faktur-tanpa-so`, belum di-push.
+
+- Penjualan → Faktur → **Faktur baru**: tagih pelanggan tanpa sales order
+  (jasa, biaya tambahan, perpanjangan lisensi). Isian pelanggan, judul, jatuh
+  tempo (wajib, bawaan 30 hari), baris barang/jasa (dari katalog atau bebas),
+  PPN 11%. Disimpan sebagai draf, lalu diterbitkan dan dibayar seperti faktur
+  biasa.
+- Jatuh tempo kini wajib untuk menerbitkan **semua** faktur (FU9).
+- Bisa diisi awal dari tiket berbayar (`?ticketId=`, dipakai B-31).
+- Tanpa perubahan skema. Seeder: satu draf faktur demo tanpa SO.
+- UAT: [`5-pengerjaan/uat/B-42.md`](5-pengerjaan/uat/B-42.md), 3/3 Valid
+  (tiga temuan saat uji, sudah ditutup).
+
 ## 2026-11-28 - P7-4 Hak role baru (ERP-0187)
 
 Branch `feat/erp-0185-p7-4-hak-role`, belum di-push.
