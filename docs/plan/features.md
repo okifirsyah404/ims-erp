@@ -927,6 +927,11 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   projects, tool borrowing and advances; warehouse reads PO/SO; the invite
   form picks several roles. Verified: backend 1686, web-admin 234, locales
   110, UAT `uat/P7-4.md` all Valid (over HTTP).
+- ERP-0186 `@ims-erp/common` resolves to source (2026-11-28): the package
+  exports `src/index.ts` like `@ims-erp/locales`, so a pull no longer needs a
+  `dist/` rebuild (a stale `dist/` broke `drizzle:migrate-reset` on another
+  machine). Verified with `dist/` deleted: backend tests 1686, builds and
+  `migrate-reset` OK.
 
 - ERP-0170 opening-balance row dialog (2026-11-27): the inline add-row form on
   `/finance/opening-balances` moved to `opening-balance-row-dialog.tsx`; the

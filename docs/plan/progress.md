@@ -12,6 +12,28 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-28 - `@ims-erp/common` resolves to source (ERP-0186)
+
+**Cause.** On another machine `bun run backend:drizzle:migrate-reset` failed
+with `Export named 'errorRef' not found in module packages/common/dist/index.js`.
+The package's `main`/`types` pointed at `dist/`, which is gitignored and only
+rebuilt by `prepare` during `bun install`; a pull without a rebuild left a
+`dist/` older than P7-6 (ERP-0181) and P7-4 (ERP-0185).
+
+**Fix.** `packages/common/package.json`: `main`, `types` and `exports["."]`
+point at `./src/index.ts`, like `@ims-erp/locales`. Every consumer bundles or
+runs TypeScript (Bun runtime and `--compile`, Vite, Astro), and source imports
+already use `.js` specifiers that resolve to `.ts`. The `build` script stays for
+CI and the Dockerfiles; the backend Dockerfile comment was updated.
+
+**Checks (with `packages/common/dist` deleted).** `bunx tsc --noEmit` in
+`apps/backend` and `packages/common`: clean. `bun test` (backend, local env):
+1686 pass. `bun run build` (backend compile): OK. web-admin and web-employee
+`tsc -p tsconfig.app.json --noEmit` and `bun run build`: OK. `bun run typecheck`:
+6/6. `bun run lint`: 7/7, 0 errors. `bunx turbo run test --filter=!@ims-erp/backend`:
+7/7. `bun run backend:drizzle:migrate-reset` on a throwaway database: exit 0
+twice (seeded 41 role accounts each run). `docs/database/` unchanged.
+
 ## 2026-11-28 - P7-4 new role grants (ERP-0185)
 
 **Scope.** Step 7 task P7-4 (K2, K2b, K2d, RO1, RO4, OA8, OA9, OA12, KL-6,
