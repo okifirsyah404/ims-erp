@@ -7,6 +7,8 @@ export type NavContext = {
 	isAppAdmin: boolean;
 	/** True when the user holds an internal role in at least one organization. */
 	hasInternalRole: boolean;
+	/** True when the user is the owner of an organization (M12-2 settings page). */
+	isOwner: boolean;
 	/**
 	 * True when the user is a person in charge of at least one live warehouse
 	 * (ADR-0017).
@@ -26,6 +28,7 @@ export type NavContext = {
 export function leafVisible(item: SidebarItem, ctx: NavContext): boolean {
 	if (item.appAdminOnly) return ctx.isAppAdmin;
 	if (item.orAppAdmin && ctx.isAppAdmin) return true;
+	if (item.ownerOnly) return ctx.isAppAdmin || ctx.isOwner;
 	if (item.warehousePic) return ctx.isAppAdmin || ctx.isPic;
 	if (item.open) return true;
 	if (item.internalRole) return ctx.hasInternalRole;

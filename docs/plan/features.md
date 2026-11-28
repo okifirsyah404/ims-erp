@@ -1153,6 +1153,26 @@ Validation, toast and cache invalidation unchanged. Implemented; browser: dialog
   "M12 T30".
 - Reports UI: `/reports` renders `ReportsPage` (was a stub). Evidence: progress
   2026-11-15 "M12 T30".
+- Single organization — ERP-0179, M12-2 (K12, 2026-11-28, implemented):
+  organization creation is closed (`OrganizationAlreadyExistsError` 409,
+  `organization.singleOrganization`; plugin `allowUserToCreateOrganization`
+  returns false), the web-admin sidebar and employee portal show a static
+  identity card instead of a switcher, and the create button/dialog are gone.
+  Profile, members and roles stay editable; schema, invitations and
+  `organization_id` unchanged (ADR-0031). Evidence:
+  `test/unit/organization-single.test.ts`; browser UAT
+  `docs/adjustment/5-pengerjaan/uat/M12-2.md` open.
+- Roles from the Users page — ERP-0180, M12-14 (KF-R1, 2026-11-28,
+  implemented): `/admin/users` row action "Change roles" opens a multi-role
+  dialog and calls `PATCH /admin/users/:userId/roles`, which writes through
+  the `IOrganizationMemberRolePort` (role ladder + last-owner guard stay in
+  `OrganizationService`) and audits `member.roleChanged`. The `/organizations*`
+  pages were deleted: the profile lives at `/settings/organizations` (owner or
+  app admin) and the dashboard gained a read-only organization identity card.
+  Evidence: `test/unit/user-admin.service.test.ts`,
+  `web-admin/test/unit/filter-nav.test.ts`, `test/build-crumbs.test.ts`;
+  browser UAT `docs/adjustment/5-pengerjaan/uat/M12-14.md` open. KF-R2
+  (employee form overwriting extra roles) still open.
 
 ### planned
 - XLSX/PDF exports for statements (CSV only today) — T30.

@@ -126,12 +126,9 @@ const nav_: Record<keyof typeof nav, string> = {
 	'theme.system': 'Tema sistem',
 
 	'organization.manage': 'Kelola',
-	'organization.new': 'Organisasi baru',
 	'organization.none': 'Tidak ada organisasi',
 	'organization.setUp': 'Siapkan organisasi Anda',
 	'organization.required': 'Pilih organisasi untuk melanjutkan.',
-	'organization.switchFailed': 'Tidak dapat mengganti organisasi',
-	'organization.switched': 'Organisasi diganti',
 
 	'access.denied': 'Anda tidak memiliki akses ke halaman tersebut.',
 
@@ -140,9 +137,6 @@ const nav_: Record<keyof typeof nav, string> = {
 	'user.logOut': 'Keluar',
 
 	'breadcrumb.home': 'Beranda',
-	'breadcrumb.organizations': 'Organisasi',
-	'breadcrumb.organizationEdit': 'Ubah',
-	'breadcrumb.memberEdit': 'Ubah anggota',
 	'breadcrumb.quotationNew': 'Penawaran baru',
 	'breadcrumb.quotationEdit': 'Ubah',
 	'breadcrumb.print': 'Cetak',

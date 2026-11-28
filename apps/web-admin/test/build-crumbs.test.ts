@@ -27,10 +27,7 @@ function match(
 /** Maps keys to human labels, mimicking what `t` does in the app. */
 const labels: Record<string, string> = {
 	'breadcrumb.home': 'Home',
-	'breadcrumb.organizations': 'Organizations',
-	'breadcrumb.organizationEdit': 'Edit',
-	'breadcrumb.memberNew': 'Add member',
-	'breadcrumb.memberEdit': 'Edit member',
+	'item.organizations': 'Organization',
 };
 const lookup = (key: string) => labels[key] ?? key;
 
@@ -49,108 +46,34 @@ describe('buildCrumbs', () => {
 		]);
 	});
 
-	test('skips layout-only routes and labels the organizations list', () => {
+	test('skips layout-only routes and labels the organization settings page', () => {
 		const crumbs = buildCrumbs(
 			[
 				match('__root__', '/'),
 				match('/_authed', '/'),
-				match('/_authed/organizations/', '/organizations/'),
+				match('/_authed/settings/organizations/', '/settings/organizations/'),
 			],
 			lookup,
 		);
 		expect(crumbs.map((crumb) => crumb.label)).toEqual([
 			'Home',
-			'Organizations',
+			'Settings',
+			'Organization',
 		]);
 		expect(crumbs.at(-1)?.href).toBeNull();
 	});
 
-	test('org detail trail: Home > Organizations > {id}', () => {
-		const crumbs = buildCrumbs(
-			[
-				match('__root__', '/'),
-				match('/_authed', '/'),
-				match(
-					'/_authed/organizations/$organizationId',
-					'/organizations/$organizationId',
-					{ organizationId: 'org-1' },
-				),
-			],
-			lookup,
-		);
-		expect(crumbs.map((crumb) => crumb.label)).toEqual([
-			'Home',
-			'Organizations',
-			'org-1',
-		]);
-		// Last crumb is the current page, earlier crumbs are links.
-		expect(crumbs.map((crumb) => crumb.href)).toEqual([
-			'/',
-			'/organizations',
-			null,
-		]);
-	});
-
-	test('edit trail synthesizes the index-route ancestor', () => {
-		const crumbs = buildCrumbs(
-			[
-				match('__root__', '/'),
-				match('/_authed', '/'),
-				match(
-					'/_authed/organizations/$organizationId',
-					'/organizations/$organizationId',
-					{ organizationId: 'org-1' },
-				),
-				match(
-					'/_authed/organizations/$organizationId/edit',
-					'/organizations/$organizationId/edit',
-					{ organizationId: 'org-1' },
-				),
-			],
-			lookup,
-		);
-		expect(crumbs.map((crumb) => crumb.label)).toEqual([
-			'Home',
-			'Organizations',
-			'org-1',
-			'Edit',
-		]);
-	});
-
-	test('member edit falls back to the static label', () => {
-		const crumbs = buildCrumbs(
-			[
-				match(
-					'/_authed/organizations/$organizationId',
-					'/organizations/$organizationId',
-					{ organizationId: 'org-1' },
-				),
-				match(
-					'/_authed/organizations/$organizationId/members/$memberId/edit',
-					'/organizations/$organizationId/members/$memberId/edit',
-					{ organizationId: 'org-1', memberId: 'mem-1' },
-				),
-			],
-			lookup,
-		);
-		expect(crumbs.at(-1)?.label).toBe('Edit member');
-	});
-
 	test('enricher overrides dynamic labels', () => {
 		const enrich: CrumbEnricher = (fullPath) =>
-			fullPath === '/organizations/$organizationId' ? 'Acme Inc' : undefined;
+			fullPath === '/products/$productId' ? 'Access controller' : undefined;
 		const crumbs = buildCrumbs(
-			[
-				match(
-					'/_authed/organizations/$organizationId',
-					'/organizations/$organizationId',
-					{ organizationId: 'org-1' },
-				),
-			],
+			[match('/_authed/products/$productId', '/products/$productId', {
+				productId: 'p-1',
+			})],
 			lookup,
 			enrich,
 		);
-		expect(crumbs.at(-1)?.label).toBe('Acme Inc');
+		expect(crumbs.at(-1)?.label).toBe('Access controller');
 	});
 
 	test('staticData.crumb wins over every fallback', () => {
@@ -158,15 +81,15 @@ describe('buildCrumbs', () => {
 		const crumbs = buildCrumbs(
 			[
 				match(
-					'/_authed/organizations/$organizationId/edit',
-					'/organizations/$organizationId/edit',
+					'/_authed/widgets/$widgetId',
+					'/widgets/$widgetId',
 					{},
-					{ crumb: 'breadcrumb.organizationEdit' },
+					{ crumb: 'breadcrumb.home' },
 				),
 			],
 			lookup,
 		);
-		expect(crumbs.at(-1)?.label).toBe('Edit');
+		expect(crumbs.at(-1)?.label).toBe('Home');
 	});
 
 	test('unknown routes prettify their last path segment', () => {
@@ -188,12 +111,13 @@ describe('buildCrumbs', () => {
 
 	test('static labels are emitted as keys, not English text', () => {
 		const crumbs = buildCrumbs(
-			[match('/_authed/organizations/', '/organizations/')],
+			[match('/_authed/settings/organizations/', '/settings/organizations/')],
 			identity,
 		);
 		expect(crumbs.map((crumb) => crumb.label)).toEqual([
 			'breadcrumb.home',
-			'breadcrumb.organizations',
+			'Settings',
+			'item.organizations',
 		]);
 	});
 });

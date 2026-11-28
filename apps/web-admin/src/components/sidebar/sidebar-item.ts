@@ -41,6 +41,16 @@ export type SidebarItem = {
 	 */
 	orAppAdmin?: true;
 	/**
+	 * Shown to application administrators or to the organization owner
+	 * (M12-2: the company organization profile).
+	 *
+	 * @remarks
+	 * The page edits the one company organization, so an ordinary member —
+	 * even one holding `organization.read` — does not get the entry. The
+	 * backend still checks `organization:update` on the write.
+	 */
+	ownerOnly?: true;
+	/**
 	 * Shown to application administrators or to a warehouse person in charge
 	 * (ADR-0017).
 	 *

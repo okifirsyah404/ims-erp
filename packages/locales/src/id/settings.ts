@@ -216,6 +216,34 @@ const settings: Record<keyof typeof en, string> = {
 	'document.letterheads.deleted': 'Kop surat dihapus',
 	'document.letterheads.pickImage': 'Pilih gambar',
 	'document.letterheads.headerRequired': 'Pilih gambar header',
+
+	// Profil organisasi (M12-2/M12-14): satu perusahaan per instalasi.
+	'organizationSettings.title': 'Organisasi',
+	'organizationSettings.description':
+		'Organisasi perusahaan. Aplikasi memakai satu organisasi, jadi profilnya diubah di sini; anggota dan perannya dikelola di halaman Pengguna.',
+	'organizationSettings.saved': 'Profil organisasi disimpan',
+	'organizationSettings.readOnly':
+		'Anda dapat melihat profil; mengubahnya perlu hak pengaturan organisasi.',
+	'organizationSettings.noOrganization':
+		'Belum ada organisasi aktif. Administrator menyiapkan organisasi perusahaan.',
+	'organizationSettings.details': 'Profil',
+	'organizationSettings.name': 'Nama',
+	'organizationSettings.nameHint': 'Tampil di sidebar dan pada dokumen yang memakai nama organisasi.',
+	'organizationSettings.descriptionLabel': 'Deskripsi',
+	'organizationSettings.descriptionPlaceholder':
+		'Apa yang dilakukan perusahaan ini, siapa yang dilayani, hal lain yang perlu diketahui (opsional).',
+	'organizationSettings.slug': 'Kode',
+	'organizationSettings.slugHint':
+		'Kode permanen untuk URL, konteks API, dan token dokumen {ORG}.',
+	'organizationSettings.image': 'Logo',
+	'organizationSettings.imageHint':
+		'PNG, JPG, WebP, atau HEIC — otomatis dikonversi ke WebP. Tampil di sidebar.',
+	'organizationSettings.imageSaved': 'Logo diperbarui',
+	'organizationSettings.imageCleared': 'Logo dihapus',
+	'organizationSettings.imageInvalid':
+		'Berkas ini tidak dapat dibaca sebagai gambar. Coba berkas lain.',
+	'organizationSettings.membersHint':
+		'Anggota dan perannya diubah di halaman Pengguna.',
 };
 
 export default settings;

@@ -19,7 +19,6 @@ import {
 	DropdownMenuTrigger,
 } from '@ims-erp/ui/components/dropdown-menu';
 import { productQueryOptions } from '@/lib/inventory-api';
-import { organizationMembersQueryOptions, organizationQueryOptions } from '@/lib/organization-api';
 import { buildCrumbs, collapseCrumbs } from './build-crumbs';
 
 const MAX_VISIBLE = 4;
@@ -36,25 +35,6 @@ export function AppBreadcrumb() {
 	const { t } = useTranslation('nav');
 
 	const enrich = (fullPath: string, params: Record<string, string | undefined>) => {
-		const organizationId = params.organizationId;
-		if (fullPath === '/organizations/$organizationId' && organizationId) {
-			const organization = queryClient.getQueryData(
-				organizationQueryOptions(organizationId).queryKey,
-			);
-			if (organization?.name) return organization.name;
-		}
-		const memberId = params.memberId;
-		if (
-			fullPath === '/organizations/$organizationId/members/$memberId/edit' &&
-			organizationId &&
-			memberId
-		) {
-			const members = queryClient.getQueryData(
-				organizationMembersQueryOptions(organizationId).queryKey,
-			);
-			const member = members?.rows.find((row) => row.id === memberId);
-			if (member?.user?.name) return member.user.name;
-		}
 		// Item detail (`/products|components|materials/$productId`): show the name.
 		const productId = params.productId;
 		if (productId && fullPath.endsWith('/$productId')) {

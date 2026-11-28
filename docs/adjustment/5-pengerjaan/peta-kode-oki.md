@@ -373,6 +373,20 @@ Sama dengan [P7-1](#p7-1-audit-di-dalam-transaksi-tinggi-oa5oa7-l-1). Bagian eks
      organisasi tunggal dengan role yang dipilih.
 - **Bergantung pada:** P7-4.
 
+> **Catatan pengerjaan 2026-11-28 (AI, atas keputusan pemilik di sesi ini):**
+> pembuatan organisasi ditutup **total**, bukan hanya organisasi kedua.
+> `OrganizationService.createOrganization` selalu melempar
+> `OrganizationAlreadyExistsError` (409, `organization.singleOrganization`) dan
+> gerbang plugin `allowUserToCreateOrganization` mengembalikan `false`;
+> organisasi pertama hanya datang dari seeder (panggilan sistem Better Auth
+> dengan `userId` eksplisit). Ini menyimpang dari "Seharusnya" di atas yang
+> masih mengizinkan pembuatan pertama lewat HTTP. Konsekuensinya: test
+> "organisasi pertama bisa" diganti `test/unit/organization-single.test.ts`
+> ("selalu ditolak, gateway tidak dipanggil"), dan blok test pembuatan di
+> `organization-create-nested.test.ts`, `notification.producers.test.ts`, serta
+> `multi-organization.test.ts` dipangkas/dihapus. Tombol Tambah dihapus dari
+> halaman Organisasi dan sidebar (bukan hanya disembunyikan). ADR: ADR-0031.
+
 **Prompt AI (salin):**
 
 ```text
@@ -421,6 +435,26 @@ Sama dengan [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-k
   2. Ubah data karyawan Bilal (jabatan) → role tambahan tidak hilang.
   3. Log Audit mencatat perubahan role.
 - **Bergantung pada:** P7-1, P7-4. (Halaman Organisasi tetap ada; K12 diubah 28/11.)
+
+> **Catatan pengerjaan 2026-11-28 (AI, atas permintaan pemilik):** langkah
+> KF-R1 dan perpindahan halaman organisasi dikerjakan **sekaligus**:
+> - `PATCH /admin/users/:userId/roles` (body `{ organizationId, roles }`,
+>   `member:update`) ditambahkan; menulis lewat port
+>   `IOrganizationMemberRolePort` (kontrak `user`, adapter `organization`),
+>   sehingga tangga role + penjaga pemilik terakhir tetap di
+>   `OrganizationService.updateMemberRolesByUser`. Audit `member.roleChanged`.
+> - Halaman `/organizations*` **dihapus total** (daftar, detail, edit profil,
+>   edit role anggota) beserta komponen `org-dashboard`,
+>   `organization-member-card`, `org-image-card`, dan dialog tambah.
+> - Profil organisasi pindah ke `/settings/organizations` (nav flag `ownerOnly`
+>   = owner atau app admin; backend tetap `organization:update`).
+> - Kartu identitas organisasi (nama, kode, deskripsi, dibuat) ditambahkan ke
+>   dashboard; angka proyek/penjualan/stok/laba-rugi/kas tetap di widget yang
+>   sudah ada (data nyata), tidak diduplikasi.
+> - KF-R2 (form karyawan M08 tidak menimpa role tambahan) **belum** dikerjakan:
+>   file `components/hr/employee-edit-form.tsx` di luar lingkup permintaan ini
+>   dan menyentuh modul Dafrin. Dicatat sebagai sisa tugas.
+> - UAT: `docs/adjustment/5-pengerjaan/uat/M12-14.md`.
 
 **Prompt AI (salin):**
 

@@ -24,8 +24,6 @@ import { Route as AuthedDocumentsIndexRouteImport } from './routes/_authed/docum
 import { Route as AuthedDocumentsTemplatesRouteImport } from './routes/_authed/documents/templates'
 import { Route as AuthedFinanceIndexRouteImport } from './routes/_authed/finance/index'
 import { Route as AuthedHrIndexRouteImport } from './routes/_authed/hr/index'
-import { Route as AuthedOrganizationsIndexRouteImport } from './routes/_authed/organizations/index'
-import { Route as AuthedOrganizationsOrganizationIdRouteImport } from './routes/_authed/organizations/$organizationId'
 import { Route as AuthedProcurementIndexRouteImport } from './routes/_authed/procurement/index'
 import { Route as AuthedProductCategoriesIndexRouteImport } from './routes/_authed/product-categories/index'
 import { Route as AuthedProductsIndexRouteImport } from './routes/_authed/products/index'
@@ -100,7 +98,6 @@ import { Route as AuthedInventoryStockIndexRouteImport } from './routes/_authed/
 import { Route as AuthedInventoryStockAdjustRouteImport } from './routes/_authed/inventory/stock/adjust'
 import { Route as AuthedInventoryStockMovementsRouteImport } from './routes/_authed/inventory/stock/movements'
 import { Route as AuthedInventoryStockValueRouteImport } from './routes/_authed/inventory/stock/value'
-import { Route as AuthedOrganizationsOrganizationIdEditRouteImport } from './routes/_authed/organizations/$organizationId.edit'
 import { Route as AuthedProcurementPurchaseOrdersIndexRouteImport } from './routes/_authed/procurement/purchase-orders/index'
 import { Route as AuthedProcurementPurchaseOrdersNewRouteImport } from './routes/_authed/procurement/purchase-orders/new'
 import { Route as AuthedProcurementPurchaseRequestsIndexRouteImport } from './routes/_authed/procurement/purchase-requests/index'
@@ -131,6 +128,7 @@ import { Route as AuthedSalesReturnsNewRouteImport } from './routes/_authed/sale
 import { Route as AuthedSettingsCodeNumbersIndexRouteImport } from './routes/_authed/settings/code-numbers/index'
 import { Route as AuthedSettingsCompanyIndexRouteImport } from './routes/_authed/settings/company/index'
 import { Route as AuthedSettingsDocumentsIndexRouteImport } from './routes/_authed/settings/documents/index'
+import { Route as AuthedSettingsOrganizationsIndexRouteImport } from './routes/_authed/settings/organizations/index'
 import { Route as AuthedSettingsPaymentGatewaysIndexRouteImport } from './routes/_authed/settings/payment-gateways/index'
 import { Route as AuthedSettingsPayrollIndexRouteImport } from './routes/_authed/settings/payroll/index'
 import { Route as AuthedSubscriptionContractIdIndexRouteImport } from './routes/_authed/subscription/$contractId/index'
@@ -176,7 +174,6 @@ import { Route as AuthedSalesQuotesQuotationIdPrintRouteImport } from './routes/
 import { Route as AuthedSalesReturnsSalesReturnIdIndexRouteImport } from './routes/_authed/sales/returns/$salesReturnId/index'
 import { Route as AuthedSalesReturnsSalesReturnIdEditRouteImport } from './routes/_authed/sales/returns/$salesReturnId/edit'
 import { Route as AuthedDocumentsSignaturesMineRequestIdPlaceRouteImport } from './routes/_authed/documents/signatures/mine/$requestId/place'
-import { Route as AuthedOrganizationsOrganizationIdMembersMemberIdEditRouteImport } from './routes/_authed/organizations/$organizationId.members.$memberId.edit'
 import { Route as AuthedProjectsProjectIdBastBastIdIndexRouteImport } from './routes/_authed/projects/$projectId/bast/$bastId/index'
 import { Route as AuthedProjectsProjectIdBastBastIdPrintRouteImport } from './routes/_authed/projects/$projectId/bast/$bastId/print'
 
@@ -255,18 +252,6 @@ const AuthedHrIndexRoute = AuthedHrIndexRouteImport.update({
   path: '/hr/',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedOrganizationsIndexRoute =
-  AuthedOrganizationsIndexRouteImport.update({
-    id: '/organizations/',
-    path: '/organizations/',
-    getParentRoute: () => AuthedRoute,
-  } as any)
-const AuthedOrganizationsOrganizationIdRoute =
-  AuthedOrganizationsOrganizationIdRouteImport.update({
-    id: '/organizations/$organizationId',
-    path: '/organizations/$organizationId',
-    getParentRoute: () => AuthedRoute,
-  } as any)
 const AuthedProcurementIndexRoute = AuthedProcurementIndexRouteImport.update({
   id: '/procurement/',
   path: '/procurement/',
@@ -683,12 +668,6 @@ const AuthedInventoryStockValueRoute =
     path: '/inventory/stock/value',
     getParentRoute: () => AuthedRoute,
   } as any)
-const AuthedOrganizationsOrganizationIdEditRoute =
-  AuthedOrganizationsOrganizationIdEditRouteImport.update({
-    id: '/edit',
-    path: '/edit',
-    getParentRoute: () => AuthedOrganizationsOrganizationIdRoute,
-  } as any)
 const AuthedProcurementPurchaseOrdersIndexRoute =
   AuthedProcurementPurchaseOrdersIndexRouteImport.update({
     id: '/procurement/purchase-orders/',
@@ -862,6 +841,12 @@ const AuthedSettingsDocumentsIndexRoute =
   AuthedSettingsDocumentsIndexRouteImport.update({
     id: '/settings/documents/',
     path: '/settings/documents/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedSettingsOrganizationsIndexRoute =
+  AuthedSettingsOrganizationsIndexRouteImport.update({
+    id: '/settings/organizations/',
+    path: '/settings/organizations/',
     getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedSettingsPaymentGatewaysIndexRoute =
@@ -1134,12 +1119,6 @@ const AuthedDocumentsSignaturesMineRequestIdPlaceRoute =
     path: '/documents/signatures/mine/$requestId/place',
     getParentRoute: () => AuthedRoute,
   } as any)
-const AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute =
-  AuthedOrganizationsOrganizationIdMembersMemberIdEditRouteImport.update({
-    id: '/members/$memberId/edit',
-    path: '/members/$memberId/edit',
-    getParentRoute: () => AuthedOrganizationsOrganizationIdRoute,
-  } as any)
 const AuthedProjectsProjectIdBastBastIdIndexRoute =
   AuthedProjectsProjectIdBastBastIdIndexRouteImport.update({
     id: '/projects/$projectId/bast/$bastId/',
@@ -1163,7 +1142,6 @@ export interface FileRoutesByFullPath {
   '/login/': typeof LoginIndexRoute
   '/reset-password/': typeof ResetPasswordIndexRoute
   '/documents/templates': typeof AuthedDocumentsTemplatesRoute
-  '/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   '/projects/new': typeof AuthedProjectsNewRoute
   '/subscription/new': typeof AuthedSubscriptionNewRoute
   '/tickets/$ticketId': typeof AuthedTicketsTicketIdRoute
@@ -1177,7 +1155,6 @@ export interface FileRoutesByFullPath {
   '/documents/': typeof AuthedDocumentsIndexRoute
   '/finance/': typeof AuthedFinanceIndexRoute
   '/hr/': typeof AuthedHrIndexRoute
-  '/organizations/': typeof AuthedOrganizationsIndexRoute
   '/procurement/': typeof AuthedProcurementIndexRoute
   '/product-categories/': typeof AuthedProductCategoriesIndexRoute
   '/products/': typeof AuthedProductsIndexRoute
@@ -1202,7 +1179,6 @@ export interface FileRoutesByFullPath {
   '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
   '/inventory/stock/movements': typeof AuthedInventoryStockMovementsRoute
   '/inventory/stock/value': typeof AuthedInventoryStockValueRoute
-  '/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
   '/procurement/purchase-orders/new': typeof AuthedProcurementPurchaseOrdersNewRoute
   '/procurement/purchase-requests/new': typeof AuthedProcurementPurchaseRequestsNewRoute
   '/procurement/purchase-returns/new': typeof AuthedProcurementPurchaseReturnsNewRoute
@@ -1277,6 +1253,7 @@ export interface FileRoutesByFullPath {
   '/settings/code-numbers/': typeof AuthedSettingsCodeNumbersIndexRoute
   '/settings/company/': typeof AuthedSettingsCompanyIndexRoute
   '/settings/documents/': typeof AuthedSettingsDocumentsIndexRoute
+  '/settings/organizations/': typeof AuthedSettingsOrganizationsIndexRoute
   '/settings/payment-gateways/': typeof AuthedSettingsPaymentGatewaysIndexRoute
   '/settings/payroll/': typeof AuthedSettingsPayrollIndexRoute
   '/subscription/$contractId/': typeof AuthedSubscriptionContractIdIndexRoute
@@ -1320,7 +1297,6 @@ export interface FileRoutesByFullPath {
   '/sales/quotes/$quotationId/': typeof AuthedSalesQuotesQuotationIdIndexRoute
   '/sales/returns/$salesReturnId/': typeof AuthedSalesReturnsSalesReturnIdIndexRoute
   '/documents/signatures/mine/$requestId/place': typeof AuthedDocumentsSignaturesMineRequestIdPlaceRoute
-  '/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
   '/projects/$projectId/bast/$bastId/print': typeof AuthedProjectsProjectIdBastBastIdPrintRoute
   '/projects/$projectId/bast/$bastId/': typeof AuthedProjectsProjectIdBastBastIdIndexRoute
 }
@@ -1334,7 +1310,6 @@ export interface FileRoutesByTo {
   '/login': typeof LoginIndexRoute
   '/reset-password': typeof ResetPasswordIndexRoute
   '/documents/templates': typeof AuthedDocumentsTemplatesRoute
-  '/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   '/projects/new': typeof AuthedProjectsNewRoute
   '/subscription/new': typeof AuthedSubscriptionNewRoute
   '/tickets/$ticketId': typeof AuthedTicketsTicketIdRoute
@@ -1348,7 +1323,6 @@ export interface FileRoutesByTo {
   '/documents': typeof AuthedDocumentsIndexRoute
   '/finance': typeof AuthedFinanceIndexRoute
   '/hr': typeof AuthedHrIndexRoute
-  '/organizations': typeof AuthedOrganizationsIndexRoute
   '/procurement': typeof AuthedProcurementIndexRoute
   '/product-categories': typeof AuthedProductCategoriesIndexRoute
   '/products': typeof AuthedProductsIndexRoute
@@ -1373,7 +1347,6 @@ export interface FileRoutesByTo {
   '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
   '/inventory/stock/movements': typeof AuthedInventoryStockMovementsRoute
   '/inventory/stock/value': typeof AuthedInventoryStockValueRoute
-  '/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
   '/procurement/purchase-orders/new': typeof AuthedProcurementPurchaseOrdersNewRoute
   '/procurement/purchase-requests/new': typeof AuthedProcurementPurchaseRequestsNewRoute
   '/procurement/purchase-returns/new': typeof AuthedProcurementPurchaseReturnsNewRoute
@@ -1448,6 +1421,7 @@ export interface FileRoutesByTo {
   '/settings/code-numbers': typeof AuthedSettingsCodeNumbersIndexRoute
   '/settings/company': typeof AuthedSettingsCompanyIndexRoute
   '/settings/documents': typeof AuthedSettingsDocumentsIndexRoute
+  '/settings/organizations': typeof AuthedSettingsOrganizationsIndexRoute
   '/settings/payment-gateways': typeof AuthedSettingsPaymentGatewaysIndexRoute
   '/settings/payroll': typeof AuthedSettingsPayrollIndexRoute
   '/subscription/$contractId': typeof AuthedSubscriptionContractIdIndexRoute
@@ -1491,7 +1465,6 @@ export interface FileRoutesByTo {
   '/sales/quotes/$quotationId': typeof AuthedSalesQuotesQuotationIdIndexRoute
   '/sales/returns/$salesReturnId': typeof AuthedSalesReturnsSalesReturnIdIndexRoute
   '/documents/signatures/mine/$requestId/place': typeof AuthedDocumentsSignaturesMineRequestIdPlaceRoute
-  '/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
   '/projects/$projectId/bast/$bastId/print': typeof AuthedProjectsProjectIdBastBastIdPrintRoute
   '/projects/$projectId/bast/$bastId': typeof AuthedProjectsProjectIdBastBastIdIndexRoute
 }
@@ -1507,7 +1480,6 @@ export interface FileRoutesById {
   '/login/': typeof LoginIndexRoute
   '/reset-password/': typeof ResetPasswordIndexRoute
   '/_authed/documents/templates': typeof AuthedDocumentsTemplatesRoute
-  '/_authed/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   '/_authed/projects/new': typeof AuthedProjectsNewRoute
   '/_authed/subscription/new': typeof AuthedSubscriptionNewRoute
   '/_authed/tickets/$ticketId': typeof AuthedTicketsTicketIdRoute
@@ -1521,7 +1493,6 @@ export interface FileRoutesById {
   '/_authed/documents/': typeof AuthedDocumentsIndexRoute
   '/_authed/finance/': typeof AuthedFinanceIndexRoute
   '/_authed/hr/': typeof AuthedHrIndexRoute
-  '/_authed/organizations/': typeof AuthedOrganizationsIndexRoute
   '/_authed/procurement/': typeof AuthedProcurementIndexRoute
   '/_authed/product-categories/': typeof AuthedProductCategoriesIndexRoute
   '/_authed/products/': typeof AuthedProductsIndexRoute
@@ -1546,7 +1517,6 @@ export interface FileRoutesById {
   '/_authed/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
   '/_authed/inventory/stock/movements': typeof AuthedInventoryStockMovementsRoute
   '/_authed/inventory/stock/value': typeof AuthedInventoryStockValueRoute
-  '/_authed/organizations/$organizationId/edit': typeof AuthedOrganizationsOrganizationIdEditRoute
   '/_authed/procurement/purchase-orders/new': typeof AuthedProcurementPurchaseOrdersNewRoute
   '/_authed/procurement/purchase-requests/new': typeof AuthedProcurementPurchaseRequestsNewRoute
   '/_authed/procurement/purchase-returns/new': typeof AuthedProcurementPurchaseReturnsNewRoute
@@ -1621,6 +1591,7 @@ export interface FileRoutesById {
   '/_authed/settings/code-numbers/': typeof AuthedSettingsCodeNumbersIndexRoute
   '/_authed/settings/company/': typeof AuthedSettingsCompanyIndexRoute
   '/_authed/settings/documents/': typeof AuthedSettingsDocumentsIndexRoute
+  '/_authed/settings/organizations/': typeof AuthedSettingsOrganizationsIndexRoute
   '/_authed/settings/payment-gateways/': typeof AuthedSettingsPaymentGatewaysIndexRoute
   '/_authed/settings/payroll/': typeof AuthedSettingsPayrollIndexRoute
   '/_authed/subscription/$contractId/': typeof AuthedSubscriptionContractIdIndexRoute
@@ -1664,7 +1635,6 @@ export interface FileRoutesById {
   '/_authed/sales/quotes/$quotationId/': typeof AuthedSalesQuotesQuotationIdIndexRoute
   '/_authed/sales/returns/$salesReturnId/': typeof AuthedSalesReturnsSalesReturnIdIndexRoute
   '/_authed/documents/signatures/mine/$requestId/place': typeof AuthedDocumentsSignaturesMineRequestIdPlaceRoute
-  '/_authed/organizations/$organizationId/members/$memberId/edit': typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
   '/_authed/projects/$projectId/bast/$bastId/print': typeof AuthedProjectsProjectIdBastBastIdPrintRoute
   '/_authed/projects/$projectId/bast/$bastId/': typeof AuthedProjectsProjectIdBastBastIdIndexRoute
 }
@@ -1680,7 +1650,6 @@ export interface FileRouteTypes {
     | '/login/'
     | '/reset-password/'
     | '/documents/templates'
-    | '/organizations/$organizationId'
     | '/projects/new'
     | '/subscription/new'
     | '/tickets/$ticketId'
@@ -1694,7 +1663,6 @@ export interface FileRouteTypes {
     | '/documents/'
     | '/finance/'
     | '/hr/'
-    | '/organizations/'
     | '/procurement/'
     | '/product-categories/'
     | '/products/'
@@ -1719,7 +1687,6 @@ export interface FileRouteTypes {
     | '/inventory/stock/adjust'
     | '/inventory/stock/movements'
     | '/inventory/stock/value'
-    | '/organizations/$organizationId/edit'
     | '/procurement/purchase-orders/new'
     | '/procurement/purchase-requests/new'
     | '/procurement/purchase-returns/new'
@@ -1794,6 +1761,7 @@ export interface FileRouteTypes {
     | '/settings/code-numbers/'
     | '/settings/company/'
     | '/settings/documents/'
+    | '/settings/organizations/'
     | '/settings/payment-gateways/'
     | '/settings/payroll/'
     | '/subscription/$contractId/'
@@ -1837,7 +1805,6 @@ export interface FileRouteTypes {
     | '/sales/quotes/$quotationId/'
     | '/sales/returns/$salesReturnId/'
     | '/documents/signatures/mine/$requestId/place'
-    | '/organizations/$organizationId/members/$memberId/edit'
     | '/projects/$projectId/bast/$bastId/print'
     | '/projects/$projectId/bast/$bastId/'
   fileRoutesByTo: FileRoutesByTo
@@ -1851,7 +1818,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/documents/templates'
-    | '/organizations/$organizationId'
     | '/projects/new'
     | '/subscription/new'
     | '/tickets/$ticketId'
@@ -1865,7 +1831,6 @@ export interface FileRouteTypes {
     | '/documents'
     | '/finance'
     | '/hr'
-    | '/organizations'
     | '/procurement'
     | '/product-categories'
     | '/products'
@@ -1890,7 +1855,6 @@ export interface FileRouteTypes {
     | '/inventory/stock/adjust'
     | '/inventory/stock/movements'
     | '/inventory/stock/value'
-    | '/organizations/$organizationId/edit'
     | '/procurement/purchase-orders/new'
     | '/procurement/purchase-requests/new'
     | '/procurement/purchase-returns/new'
@@ -1965,6 +1929,7 @@ export interface FileRouteTypes {
     | '/settings/code-numbers'
     | '/settings/company'
     | '/settings/documents'
+    | '/settings/organizations'
     | '/settings/payment-gateways'
     | '/settings/payroll'
     | '/subscription/$contractId'
@@ -2008,7 +1973,6 @@ export interface FileRouteTypes {
     | '/sales/quotes/$quotationId'
     | '/sales/returns/$salesReturnId'
     | '/documents/signatures/mine/$requestId/place'
-    | '/organizations/$organizationId/members/$memberId/edit'
     | '/projects/$projectId/bast/$bastId/print'
     | '/projects/$projectId/bast/$bastId'
   id:
@@ -2023,7 +1987,6 @@ export interface FileRouteTypes {
     | '/login/'
     | '/reset-password/'
     | '/_authed/documents/templates'
-    | '/_authed/organizations/$organizationId'
     | '/_authed/projects/new'
     | '/_authed/subscription/new'
     | '/_authed/tickets/$ticketId'
@@ -2037,7 +2000,6 @@ export interface FileRouteTypes {
     | '/_authed/documents/'
     | '/_authed/finance/'
     | '/_authed/hr/'
-    | '/_authed/organizations/'
     | '/_authed/procurement/'
     | '/_authed/product-categories/'
     | '/_authed/products/'
@@ -2062,7 +2024,6 @@ export interface FileRouteTypes {
     | '/_authed/inventory/stock/adjust'
     | '/_authed/inventory/stock/movements'
     | '/_authed/inventory/stock/value'
-    | '/_authed/organizations/$organizationId/edit'
     | '/_authed/procurement/purchase-orders/new'
     | '/_authed/procurement/purchase-requests/new'
     | '/_authed/procurement/purchase-returns/new'
@@ -2137,6 +2098,7 @@ export interface FileRouteTypes {
     | '/_authed/settings/code-numbers/'
     | '/_authed/settings/company/'
     | '/_authed/settings/documents/'
+    | '/_authed/settings/organizations/'
     | '/_authed/settings/payment-gateways/'
     | '/_authed/settings/payroll/'
     | '/_authed/subscription/$contractId/'
@@ -2180,7 +2142,6 @@ export interface FileRouteTypes {
     | '/_authed/sales/quotes/$quotationId/'
     | '/_authed/sales/returns/$salesReturnId/'
     | '/_authed/documents/signatures/mine/$requestId/place'
-    | '/_authed/organizations/$organizationId/members/$memberId/edit'
     | '/_authed/projects/$projectId/bast/$bastId/print'
     | '/_authed/projects/$projectId/bast/$bastId/'
   fileRoutesById: FileRoutesById
@@ -2301,20 +2262,6 @@ declare module '@tanstack/react-router' {
       path: '/hr'
       fullPath: '/hr/'
       preLoaderRoute: typeof AuthedHrIndexRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/organizations/': {
-      id: '/_authed/organizations/'
-      path: '/organizations'
-      fullPath: '/organizations/'
-      preLoaderRoute: typeof AuthedOrganizationsIndexRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/organizations/$organizationId': {
-      id: '/_authed/organizations/$organizationId'
-      path: '/organizations/$organizationId'
-      fullPath: '/organizations/$organizationId'
-      preLoaderRoute: typeof AuthedOrganizationsOrganizationIdRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/procurement/': {
@@ -2835,13 +2782,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedInventoryStockValueRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/organizations/$organizationId/edit': {
-      id: '/_authed/organizations/$organizationId/edit'
-      path: '/edit'
-      fullPath: '/organizations/$organizationId/edit'
-      preLoaderRoute: typeof AuthedOrganizationsOrganizationIdEditRouteImport
-      parentRoute: typeof AuthedOrganizationsOrganizationIdRoute
-    }
     '/_authed/procurement/purchase-orders/': {
       id: '/_authed/procurement/purchase-orders/'
       path: '/procurement/purchase-orders'
@@ -3050,6 +2990,13 @@ declare module '@tanstack/react-router' {
       path: '/settings/documents'
       fullPath: '/settings/documents/'
       preLoaderRoute: typeof AuthedSettingsDocumentsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/settings/organizations/': {
+      id: '/_authed/settings/organizations/'
+      path: '/settings/organizations'
+      fullPath: '/settings/organizations/'
+      preLoaderRoute: typeof AuthedSettingsOrganizationsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/settings/payment-gateways/': {
@@ -3367,13 +3314,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDocumentsSignaturesMineRequestIdPlaceRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/organizations/$organizationId/members/$memberId/edit': {
-      id: '/_authed/organizations/$organizationId/members/$memberId/edit'
-      path: '/members/$memberId/edit'
-      fullPath: '/organizations/$organizationId/members/$memberId/edit'
-      preLoaderRoute: typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRouteImport
-      parentRoute: typeof AuthedOrganizationsOrganizationIdRoute
-    }
     '/_authed/projects/$projectId/bast/$bastId/': {
       id: '/_authed/projects/$projectId/bast/$bastId/'
       path: '/projects/$projectId/bast/$bastId'
@@ -3407,24 +3347,6 @@ const AuthedAdminRouteWithChildren = AuthedAdminRoute._addFileChildren(
   AuthedAdminRouteChildren,
 )
 
-interface AuthedOrganizationsOrganizationIdRouteChildren {
-  AuthedOrganizationsOrganizationIdEditRoute: typeof AuthedOrganizationsOrganizationIdEditRoute
-  AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute: typeof AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute
-}
-
-const AuthedOrganizationsOrganizationIdRouteChildren: AuthedOrganizationsOrganizationIdRouteChildren =
-  {
-    AuthedOrganizationsOrganizationIdEditRoute:
-      AuthedOrganizationsOrganizationIdEditRoute,
-    AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute:
-      AuthedOrganizationsOrganizationIdMembersMemberIdEditRoute,
-  }
-
-const AuthedOrganizationsOrganizationIdRouteWithChildren =
-  AuthedOrganizationsOrganizationIdRoute._addFileChildren(
-    AuthedOrganizationsOrganizationIdRouteChildren,
-  )
-
 interface AuthedWarehousesWarehouseIdRouteChildren {
   AuthedWarehousesWarehouseIdEditRoute: typeof AuthedWarehousesWarehouseIdEditRoute
 }
@@ -3445,7 +3367,6 @@ interface AuthedRouteChildren {
   AuthedProfilesRoute: typeof AuthedProfilesRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedDocumentsTemplatesRoute: typeof AuthedDocumentsTemplatesRoute
-  AuthedOrganizationsOrganizationIdRoute: typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   AuthedProjectsNewRoute: typeof AuthedProjectsNewRoute
   AuthedSubscriptionNewRoute: typeof AuthedSubscriptionNewRoute
   AuthedTicketsTicketIdRoute: typeof AuthedTicketsTicketIdRoute
@@ -3456,7 +3377,6 @@ interface AuthedRouteChildren {
   AuthedDocumentsIndexRoute: typeof AuthedDocumentsIndexRoute
   AuthedFinanceIndexRoute: typeof AuthedFinanceIndexRoute
   AuthedHrIndexRoute: typeof AuthedHrIndexRoute
-  AuthedOrganizationsIndexRoute: typeof AuthedOrganizationsIndexRoute
   AuthedProcurementIndexRoute: typeof AuthedProcurementIndexRoute
   AuthedProductCategoriesIndexRoute: typeof AuthedProductCategoriesIndexRoute
   AuthedProductsIndexRoute: typeof AuthedProductsIndexRoute
@@ -3551,6 +3471,7 @@ interface AuthedRouteChildren {
   AuthedSettingsCodeNumbersIndexRoute: typeof AuthedSettingsCodeNumbersIndexRoute
   AuthedSettingsCompanyIndexRoute: typeof AuthedSettingsCompanyIndexRoute
   AuthedSettingsDocumentsIndexRoute: typeof AuthedSettingsDocumentsIndexRoute
+  AuthedSettingsOrganizationsIndexRoute: typeof AuthedSettingsOrganizationsIndexRoute
   AuthedSettingsPaymentGatewaysIndexRoute: typeof AuthedSettingsPaymentGatewaysIndexRoute
   AuthedSettingsPayrollIndexRoute: typeof AuthedSettingsPayrollIndexRoute
   AuthedSubscriptionContractIdIndexRoute: typeof AuthedSubscriptionContractIdIndexRoute
@@ -3604,8 +3525,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedProfilesRoute: AuthedProfilesRoute,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedDocumentsTemplatesRoute: AuthedDocumentsTemplatesRoute,
-  AuthedOrganizationsOrganizationIdRoute:
-    AuthedOrganizationsOrganizationIdRouteWithChildren,
   AuthedProjectsNewRoute: AuthedProjectsNewRoute,
   AuthedSubscriptionNewRoute: AuthedSubscriptionNewRoute,
   AuthedTicketsTicketIdRoute: AuthedTicketsTicketIdRoute,
@@ -3617,7 +3536,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedDocumentsIndexRoute: AuthedDocumentsIndexRoute,
   AuthedFinanceIndexRoute: AuthedFinanceIndexRoute,
   AuthedHrIndexRoute: AuthedHrIndexRoute,
-  AuthedOrganizationsIndexRoute: AuthedOrganizationsIndexRoute,
   AuthedProcurementIndexRoute: AuthedProcurementIndexRoute,
   AuthedProductCategoriesIndexRoute: AuthedProductCategoriesIndexRoute,
   AuthedProductsIndexRoute: AuthedProductsIndexRoute,
@@ -3728,6 +3646,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSettingsCodeNumbersIndexRoute: AuthedSettingsCodeNumbersIndexRoute,
   AuthedSettingsCompanyIndexRoute: AuthedSettingsCompanyIndexRoute,
   AuthedSettingsDocumentsIndexRoute: AuthedSettingsDocumentsIndexRoute,
+  AuthedSettingsOrganizationsIndexRoute: AuthedSettingsOrganizationsIndexRoute,
   AuthedSettingsPaymentGatewaysIndexRoute:
     AuthedSettingsPaymentGatewaysIndexRoute,
   AuthedSettingsPayrollIndexRoute: AuthedSettingsPayrollIndexRoute,

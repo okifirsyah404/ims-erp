@@ -7,6 +7,7 @@ import {
 	Funnel,
 	RotateCcw,
 	Trash2,
+	UserCog,
 	UserPlus,
 	UserX,
 	Users as UsersIcon,
@@ -62,6 +63,7 @@ import {
 	listInvitations,
 	resendInvitation,
 	restoreUser,
+	updateUserRoles,
 	usersQueryOptions,
 	type TAdminUser,
 	type TUserListParams,
@@ -75,6 +77,7 @@ import { RowActions } from '@/components/data-table/row-actions';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { InviteDialog } from '@/components/invite/invite-dialog';
+import { UserRolesDialog } from '@/components/admin/user-roles-dialog';
 import {
 	PendingInvitationsPanel,
 	type TInvitationSource,
@@ -82,7 +85,7 @@ import {
 import { useActiveOrganizationId } from '@/lib/use-active-organization';
 import { usePermission } from '@/lib/use-permission';
 import { humanizeIdentifier } from '@/lib/format';
-import { erpRoleLabel, hasRole } from '@ims-erp/common';
+import { erpRoleLabel, hasRole, parseRoleList } from '@ims-erp/common';
 
 /** Sort fields the users table header exposes. */
 const SORT_FIELDS = ['name', 'createdAt', 'joinedAt'] as const;
@@ -141,6 +144,7 @@ function UsersPage() {
 	const canInvite = usePermission(ADMIN_PERMISSIONS.createMembers);
 
 	const [inviteOpen, setInviteOpen] = useState(false);
+	const [rolesUser, setRolesUser] = useState<TAdminUser | null>(null);
 	const [searchDraft, setSearchDraft] = useState(search.search ?? '');
 
 	const params: TUserListParams = {
@@ -203,6 +207,24 @@ function UsersPage() {
 		onError: (mutationError: Error) => toast.error(mutationError.message),
 	});
 
+	/**
+	 * Role change (M12-14). Also refreshes the permission cache: the edited
+	 * member may be the caller, and every nav gate reads those grants.
+	 */
+	const saveRoles = useMutation({
+		mutationFn: ({ userId, roles }: { userId: string; roles: string[] }) =>
+			updateUserRoles(organizationId!, userId, roles),
+		onSuccess: async () => {
+			toast.success(t('users.rolesDialog.saved'));
+			setRolesUser(null);
+			await Promise.all([
+				refresh(),
+				queryClient.invalidateQueries({ queryKey: ['erp-has-permission'] }),
+			]);
+		},
+		onError: (mutationError: Error) => toast.error(mutationError.message),
+	});
+
 	// Invitations here are application-wide: the panel's endpoints are
 	// `/admin/invitations`, which only a global admin can reach.
 	const invitationSource: TInvitationSource = {
@@ -217,8 +239,7 @@ function UsersPage() {
 		invalidate: [['admin-invitations'], ['admin-audit']],
 	};
 
-	const busy = deactivate.isPending || restore.isPending || remove.isPending;
-	const columns = useMemo<ColumnDef<DataTableFeatures, TAdminUser, CellData>[]>(
+	const busy = deactivate.isPending || restore.isPending || remove.isPending;	const columns = useMemo<ColumnDef<DataTableFeatures, TAdminUser, CellData>[]>(
 		() => [
 			{
 				id: 'user',
@@ -267,6 +288,7 @@ function UsersPage() {
 						onDeactivate={() => deactivate.mutate(row.original.id)}
 						onRestore={() => restore.mutate(row.original.id)}
 						onDelete={() => remove.mutate(row.original.id)}
+						onEditRoles={() => setRolesUser(row.original)}
 					/>
 				),
 			},
@@ -437,6 +459,22 @@ function UsersPage() {
 
 			<PendingInvitationsPanel source={invitationSource} />
 
+			{rolesUser && organizationId && (
+				<UserRolesDialog
+					open
+					onOpenChange={(open) => {
+						if (!open) setRolesUser(null);
+					}}
+					userName={rolesUser.name || rolesUser.email}
+					organizationId={organizationId}
+					currentRoles={parseRoleList(rolesUser.organizations[0]?.role ?? '')}
+					saving={saveRoles.isPending}
+					onSave={(roles) =>
+						saveRoles.mutate({ userId: rolesUser.id, roles })
+					}
+				/>
+			)}
+
 			{canInvite && (
 				<InviteDialog
 					mode='admin'
@@ -539,6 +577,7 @@ function UserActions({
 	onDeactivate,
 	onRestore,
 	onDelete,
+	onEditRoles,
 }: {
 	user: TAdminUser;
 	busy: boolean;
@@ -547,12 +586,18 @@ function UserActions({
 	onDeactivate: () => void;
 	onRestore: () => void;
 	onDelete: () => void;
+	onEditRoles: () => void;
 }) {
 	const status = user.deletedAt ? 'deleted' : (user.status ?? 'unknown');
 	const isActive = status === 'active';
 	const canRestore = status === 'deactivated' || status === 'deleted';
+	// A membership is what the role editor edits, so a user with none (or a
+	// soft-deleted account) gets no entry.
+	const canEditRoles = canUpdate && !user.deletedAt && user.organizations.length > 0;
 	const hasActions =
-		(canUpdate && (isActive || canRestore)) || (canDelete && !user.deletedAt);
+		canEditRoles ||
+		(canUpdate && (isActive || canRestore)) ||
+		(canDelete && !user.deletedAt);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const { t } = useTranslation(['admin', 'common']);
 
@@ -565,6 +610,13 @@ function UserActions({
 				label={t('users.openActions')}
 				disabled={busy}
 				actions={[
+					{
+						key: 'roles',
+						label: t('users.editRoles'),
+						icon: UserCog,
+						hidden: !canEditRoles,
+						onSelect: onEditRoles,
+					},
 					{
 						key: 'deactivate',
 						label: t('users.deactivate'),

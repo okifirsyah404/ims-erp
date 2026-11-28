@@ -40,7 +40,7 @@ function NoDashboardAccess({ isAppAdmin }: { isAppAdmin: boolean }) {
 			{isAppAdmin && (
 				<EmptyContent>
 					<Link
-						to='/organizations'
+						to='/settings/organizations'
 						className='inline-flex h-8 items-center rounded-lg border bg-background px-3 text-sm font-medium hover:bg-muted'
 					>
 						{t('nav:organization.manage')}

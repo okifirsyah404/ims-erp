@@ -120,6 +120,12 @@ export interface IOrganizationRepository {
 		memberId: string,
 	): Promise<TOrganizationMember | null>;
 
+	/** Finds a user's membership in an organization (role change by user id). */
+	findMemberByUser(
+		organizationId: string,
+		userId: string,
+	): Promise<TOrganizationMember | null>;
+
 	/** Counts active owners in an organization. */
 	countOwners(organizationId: string): Promise<number>;
 

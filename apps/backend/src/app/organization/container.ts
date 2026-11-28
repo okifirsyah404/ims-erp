@@ -1,6 +1,7 @@
 import type { DependencyContainer } from 'tsyringe';
 import { OrganizationRepository } from './repositories/organization.repository';
 import { OrganizationSlugResolverAdapter } from './adapters/organization-slug-resolver';
+import { OrganizationMemberRoleAdapter } from './adapters/organization-member-role';
 import { BetterAuthOrganizationGateway } from './adapters/better-auth-organization';
 import { OrganizationService } from './services/organization.service';
 import { ExportedOrganizationService } from './services/exported-organization.service';
@@ -11,6 +12,7 @@ import {
 	ORGANIZATION_SERVICE_TOKEN,
 	ORGANIZATION_SLUG_RESOLVER_TOKEN,
 } from './constants/di';
+import { ORGANIZATION_MEMBER_ROLE_TOKEN } from '@app/user/constants/di';
 
 export * from './constants/di';
 
@@ -32,6 +34,11 @@ export function registerOrganization(container: DependencyContainer): void {
 	});
 	container.register(ORGANIZATION_SLUG_RESOLVER_TOKEN, {
 		useClass: OrganizationSlugResolverAdapter,
+	});
+	// Token owned by the user module (its contract): the admin user surface
+	// changes organization roles through it.
+	container.register(ORGANIZATION_MEMBER_ROLE_TOKEN, {
+		useClass: OrganizationMemberRoleAdapter,
 	});
 	container.register(ORGANIZATION_AUTH_GATEWAY_TOKEN, {
 		useClass: BetterAuthOrganizationGateway,

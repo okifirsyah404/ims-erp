@@ -650,12 +650,6 @@ export const navSections: {
 		labelKey: 'section.administration',
 		items: [
 			{
-				titleKey: 'item.organizations',
-				url: '/organizations',
-				icon: Building2,
-				permission: 'organization.read',
-			},
-			{
 				titleKey: 'item.users',
 				url: '/admin/users',
 				icon: Users,
@@ -679,6 +673,15 @@ export const navSections: {
 				url: '/settings/company',
 				icon: Settings,
 				permission: 'company.read',
+			},
+			// The company organization profile (M12-2): one organization, so
+			// there is no list — and only an application admin or the
+			// organization owner may open it.
+			{
+				titleKey: 'item.organizations',
+				url: '/settings/organizations',
+				icon: Building2,
+				ownerOnly: true,
 			},
 			// Every `<schema>.code_numberings` on one page. The backend opens it to
 			// application admins too (`adminOrErpGuard`), hence `orAppAdmin`.

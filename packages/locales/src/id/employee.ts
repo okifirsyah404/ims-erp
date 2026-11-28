@@ -224,7 +224,6 @@ const employee = {
 	'payslips.download': 'Unduh',
 	'payslips.notReady': 'Sedang dibuat',
 	'org.title': 'Organisasi',
-	'org.switch': 'Ganti organisasi',
 	'org.noRecord': 'Tidak ada data karyawan di organisasi ini',
 } as const;
 
