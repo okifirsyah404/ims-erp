@@ -448,6 +448,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 | web-admin | `apps/web-admin/src/routes/_authed/procurement/purchase-orders/$purchaseOrderId/index.tsx`, `apps/web-admin/src/lib/procurement-api.ts` | Tombol Tutup + dialog alasan; badge status |
 | locale | `packages/locales/src/{en,id}/procurement.ts`, `common.ts` (status) | Teks |
 | test | `apps/backend/test/unit/procurement.service.test.ts`, `goods-receipt.service.test.ts` | Tutup hanya dari diterima sebagian; PO tertutup ditolak di BPB |
+| tambahan (dikerjakan 28/11) | `apps/backend/database/migrations/20261128132133_erp0184_po_closed/`, `apps/backend/src/app/procurement/services/purchase-billing.service.ts` (PO tertutup tetap bisa ditagih), `errors/procurement.errors.ts` (`notClosable`), `packages/locales/src/{en,id}/api.ts`, `docs/architecture/role-permission.md` | Hak tutup memakai `purchase_order:cancel` (owner); komitmen anggaran PO tertutup = nilai diterima (`listOpenForProject`), modul finance tidak diubah |
 
 - **Skema/migrasi:** Ya: `procurement.purchase_orders` (status `closed`,
   `closed_by`, `closed_at`, `closed_reason`); `docs.dbml` dulu.

@@ -1,0 +1,140 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "c2e52f09-322b-4a88-90a7-2ca1700c3fea",
+  "prevIds": [
+    "6d2615a0-d3c6-4d53-b875-8986fb9a72c6"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "procurement",
+        "purchase_orders",
+        "closed_by"
+      ],
+      "writes": [
+        "s|col|procurement.purchase_orders.closed_by",
+        "n|col|procurement.purchase_orders.closed_by",
+        "e|col|procurement.purchase_orders.closed_by"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_orders",
+        "n|sch|procurement"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "procurement",
+        "purchase_orders",
+        "closed_at"
+      ],
+      "writes": [
+        "s|col|procurement.purchase_orders.closed_at",
+        "n|col|procurement.purchase_orders.closed_at",
+        "e|col|procurement.purchase_orders.closed_at"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_orders",
+        "n|sch|procurement"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "procurement",
+        "purchase_orders",
+        "closed_reason"
+      ],
+      "writes": [
+        "s|col|procurement.purchase_orders.closed_reason",
+        "n|col|procurement.purchase_orders.closed_reason",
+        "e|col|procurement.purchase_orders.closed_reason"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_orders",
+        "n|sch|procurement"
+      ]
+    },
+    {
+      "statementType": "alter_check",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "purchase_orders"
+      ],
+      "writes": [
+        "s|ck|procurement.purchase_orders.purchase_orders_status_check"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_orders",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_orders.status",
+        "e|col|procurement.purchase_orders.status"
+      ],
+      "sqlHash": "fcca35f6d2bbe848"
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "closed_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "closed_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "closed_reason",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "checks\u0000[\"procurement\",\"purchase_orders\",\"purchase_orders_status_check\"]",
+      "set": {
+        "value": "status IN ('draft', 'submitted', 'approved', 'sent', 'partially_received', 'received', 'cancelled', 'closed')"
+      }
+    }
+  ]
+}

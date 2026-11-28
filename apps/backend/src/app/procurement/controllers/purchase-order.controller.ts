@@ -5,6 +5,7 @@ import { PURCHASE_ORDER_SERVICE_TOKEN } from '../constants/di';
 import {
 	purchaseOrderBodySchema,
 	purchaseOrderCancelSchema,
+	purchaseOrderCloseSchema,
 	purchaseOrderDecisionSchema,
 	purchaseOrderListQuerySchema,
 } from '../contracts/purchase-order.contract';
@@ -55,6 +56,16 @@ export class PurchaseOrderController {
 				async ({ params, body, erp }) =>
 					ok(await service.cancel(erp.session.user.id, id(params), purchaseOrderCancelSchema.parse(body).reason)),
 				{ erp: { permission: ['purchase_order:cancel'] }, detail: { description: 'Cancels while nothing was received' } },
+			)
+			.post(
+				'/:id/close',
+				async ({ params, body, erp }) =>
+					ok(await service.close(erp.session.user.id, id(params), purchaseOrderCloseSchema.parse(body).reason)),
+				{
+					// B-32: the same people who may cancel an order may close a short delivery.
+					erp: { permission: ['purchase_order:cancel'] },
+					detail: { description: 'Partially received → closed with a reason; the rest is no longer expected' },
+				},
 			);
 	}
 }

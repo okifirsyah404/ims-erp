@@ -146,6 +146,11 @@ const procurement = {
 	'pos.rejected': 'Purchase order returned to draft',
 	'pos.cancel': 'Cancel order',
 	'pos.cancelled': 'Purchase order cancelled',
+	// B-32 (KF-B1): close a short delivery.
+	'pos.close': 'Close order',
+	'pos.closed': 'Purchase order {{code}} closed. The rest is no longer expected.',
+	'pos.closeHint':
+		'Use this when the supplier will not deliver the rest. The order leaves Goods receipts, what was received can still be billed, and the project budget keeps only the received value. This cannot be undone.',
 	'pos.ownNoApprove': 'You made this purchase order, so someone else has to approve it.',
 	'pos.readyToReceive': 'Approved: the warehouse can receive it now under Goods receipts. Send the printed PO to the supplier from Print.',
 
@@ -188,6 +193,7 @@ const procurement = {
 	'po.notes': 'Notes (printed below the terms)',
 	'po.rejectionReason': 'Reason returned',
 	'po.cancelledReason': 'Reason cancelled',
+	'po.closedReason': 'Reason closed',
 	'po.reason': 'Reason',
 	'po.print': 'Print',
 	'category.hardware': 'Hardware',
@@ -204,6 +210,7 @@ const procurement = {
 	'status.partially_received': 'Partly received',
 	'status.received': 'Received',
 	'status.cancelled': 'Cancelled',
+	'status.closed': 'Closed (short delivery)',
 
 	'receipts.title': 'Goods receipts',
 	'receipts.description': 'Goods received against purchase orders. Posted at once: stock and cost are updated; corrections go through stock adjustments.',
@@ -291,6 +298,7 @@ const procurement = {
 	'doc.statusText.partially_received': 'Partly received',
 	'doc.statusText.received': 'Received',
 	'doc.statusText.cancelled': 'Cancelled',
+	'doc.statusText.closed': 'Closed: the rest will not be delivered',
 	'doc.buyer': 'Buyer',
 	'doc.seller': 'Supplier',
 	'doc.email': 'Email',

@@ -83,6 +83,9 @@ export const purchaseOrderDecisionSchema = z
 
 export const purchaseOrderCancelSchema = z.object({ reason: z.string().trim().min(1).max(1000) });
 
+/** B-32: closing a short-delivered order needs a reason, like a cancellation. */
+export const purchaseOrderCloseSchema = z.object({ reason: z.string().trim().min(1).max(1000) });
+
 export const purchaseOrderListQuerySchema = z.object({
 	page: z.coerce.number().int().min(1).default(1),
 	limit: z.coerce.number().int().min(1).max(100).default(20),

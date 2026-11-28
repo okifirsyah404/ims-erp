@@ -63,6 +63,8 @@ export const PURCHASE_ORDER_STATUSES = [
 	'partially_received',
 	'received',
 	'cancelled',
+	/** A partially received order whose rest will not come (B-32); final. */
+	'closed',
 ] as const;
 export type PurchaseOrderStatus = (typeof PURCHASE_ORDER_STATUSES)[number];
 
@@ -268,6 +270,10 @@ export const purchaseOrders = procurementSchema.table(
 		cancelledBy: text('cancelled_by'),
 		cancelledAt: unixTimestampNullable('cancelled_at'),
 		cancelledReason: text('cancelled_reason'),
+		/** B-32: closing a short-delivered order; `closed_by` is a logical reference to auth.users.id. */
+		closedBy: text('closed_by'),
+		closedAt: unixTimestampNullable('closed_at'),
+		closedReason: text('closed_reason'),
 		...timestamps,
 	},
 	(table) => [
@@ -278,7 +284,7 @@ export const purchaseOrders = procurementSchema.table(
 		index('purchase_orders_status_idx').on(table.status),
 		check(
 			'purchase_orders_status_check',
-			sql`status IN ('draft', 'submitted', 'approved', 'sent', 'partially_received', 'received', 'cancelled')`,
+			sql`status IN ('draft', 'submitted', 'approved', 'sent', 'partially_received', 'received', 'cancelled', 'closed')`,
 		),
 		check(
 			'purchase_orders_category_check',

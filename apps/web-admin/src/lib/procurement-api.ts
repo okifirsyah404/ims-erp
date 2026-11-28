@@ -24,6 +24,8 @@ export const PURCHASE_ORDER_STATUSES = [
 	'partially_received',
 	'received',
 	'cancelled',
+	/** B-32: partially received, the rest will not come. */
+	'closed',
 ] as const;
 export type TPurchaseOrderStatus = (typeof PURCHASE_ORDER_STATUSES)[number];
 export const PO_STATUS_VARIANT: Record<TPurchaseOrderStatus, 'default' | 'secondary' | 'outline'> = {
@@ -34,6 +36,7 @@ export const PO_STATUS_VARIANT: Record<TPurchaseOrderStatus, 'default' | 'second
 	partially_received: 'secondary',
 	received: 'default',
 	cancelled: 'outline',
+	closed: 'outline',
 };
 
 export type TPoSupplierSnapshot = {
@@ -81,6 +84,8 @@ export type TPurchaseOrder = {
 	letterheadId?: string | null;
 	rejectionReason: string | null;
 	cancelledReason: string | null;
+	/** B-32: why a short-delivered order was closed. */
+	closedReason?: string | null;
 	createdBy: string | null;
 	createdAt: string;
 };
@@ -274,6 +279,9 @@ export const decidePurchaseOrder = (id: string, decision: 'approve' | 'reject', 
 	send<TPurchaseOrder>(`/procurement/purchase-orders/${id}/decision`, 'POST', { decision, reason });
 export const cancelPurchaseOrder = (id: string, reason: string) =>
 	send<TPurchaseOrder>(`/procurement/purchase-orders/${id}/cancel`, 'POST', { reason });
+/** B-32: partially received → closed; the rest is no longer expected. */
+export const closePurchaseOrder = (id: string, reason: string) =>
+	send<TPurchaseOrder>(`/procurement/purchase-orders/${id}/close`, 'POST', { reason });
 
 /** Totals as the server computes them (UX preview). */
 export function purchaseRequestsQueryOptions(params: {

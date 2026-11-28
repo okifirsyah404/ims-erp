@@ -8,7 +8,7 @@ import type { IPurchaseOrderRepository } from '../contracts/procurement.reposito
 import { computePoTotals, poLineTotal } from '../utils/po-totals';
 
 /** Orders whose received goods can be billed. */
-const BILLABLE_STATUSES: readonly PurchaseOrderStatus[] = ['partially_received', 'received'];
+const BILLABLE_STATUSES: readonly PurchaseOrderStatus[] = ['partially_received', 'received', 'closed'];
 
 /** A purchase order as Finance bills it (ERP-0012). */
 export type TBillableOrder = {

@@ -310,4 +310,24 @@ export class PurchaseOrderService {
 		await this.documents.voidBySource('procurement', 'purchase_order', id);
 		return updated;
 	}
+
+	/**
+	 * Closes a short-delivered order (B-32, KF-B1): partially received →
+	 * closed, with a reason. The rest is no longer expected, so the order
+	 * leaves Goods receipts; what was received stays billable and is what the
+	 * project budget keeps committed. The PO stays a live document in the
+	 * registry (it was issued and partly fulfilled).
+	 *
+	 * @throws {PurchaseOrderStateError} `notClosable` unless partially received
+	 */
+	async close(actorUserId: string, id: string, reason: string): Promise<TPurchaseOrderSelect> {
+		await this.require(id);
+		const updated = await this.orders.transition(id, ['partially_received'], 'closed', {
+			closedBy: actorUserId,
+			closedAt: new Date(),
+			closedReason: reason,
+		});
+		if (!updated) throw new PurchaseOrderStateError('notClosable');
+		return updated;
+	}
 }

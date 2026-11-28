@@ -249,13 +249,23 @@ export class PurchaseOrderRepository implements IPurchaseOrderRepository, IPurch
 	}
 
 	listOpenForProject(projectId: string) {
+		// B-32: a closed order no longer waits for its rest, so it commits only
+		// what was received (received quantity x unit price, ex-VAT like subtotal).
+		const receivedValue = sql<number>`(
+			SELECT COALESCE(SUM(ROUND(${purchaseOrderItems.quantityReceived} * ${purchaseOrderItems.unitPrice})), 0)::bigint
+			FROM ${purchaseOrderItems}
+			WHERE ${purchaseOrderItems.purchaseOrderId} = ${purchaseOrders.id} AND ${purchaseOrderItems.deletedAt} IS NULL
+		)`;
 		return this.database
-			.select({ id: purchaseOrders.id, subtotal: purchaseOrders.subtotal })
+			.select({
+				id: purchaseOrders.id,
+				subtotal: sql<number>`CASE WHEN ${purchaseOrders.status} = 'closed' THEN ${receivedValue} ELSE ${purchaseOrders.subtotal} END`.mapWith(Number),
+			})
 			.from(purchaseOrders)
 			.where(
 				and(
 					eq(purchaseOrders.projectId, projectId),
-					inArray(purchaseOrders.status, ['approved', 'sent', 'partially_received', 'received']),
+					inArray(purchaseOrders.status, ['approved', 'sent', 'partially_received', 'received', 'closed']),
 					isNull(purchaseOrders.deletedAt),
 				),
 			);

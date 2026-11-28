@@ -58,6 +58,9 @@ export type TPurchaseOrderTransitionPatch = Partial<
 		| 'sentAt'
 		| 'cancelledBy'
 		| 'cancelledAt'
+		| 'closedBy'
+		| 'closedAt'
+		| 'closedReason'
 		| 'cancelledReason'
 	>
 >;
@@ -97,6 +100,10 @@ export interface IPurchaseOrderRepository extends IPurchaseOrderReceiving {
 	/** Whether anything was received on the PO. */
 	hasReceipts(id: string): Promise<boolean>;
 	/** Approved, sent and (partly) received orders of a project (ERP-0146). */
+	/**
+	 * Committed orders of a project (ERP-0146): approved, sent and (partly) received at
+	 * their subtotal, closed ones (B-32) at the value actually received.
+	 */
 	listOpenForProject(projectId: string): Promise<Array<{ id: string; subtotal: number }>>;
 }
 

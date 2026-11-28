@@ -147,6 +147,11 @@ const procurement: Record<keyof typeof en, string> = {
 	'pos.rejected': 'Purchase order dikembalikan ke draf',
 	'pos.cancel': 'Batalkan order',
 	'pos.cancelled': 'Purchase order dibatalkan',
+	// B-32 (KF-B1).
+	'pos.close': 'Tutup PO',
+	'pos.closed': 'PO {{code}} ditutup. Sisa barang tidak lagi ditunggu.',
+	'pos.closeHint':
+		'Pakai ini bila pemasok tidak akan mengirim sisa barang. PO keluar dari Penerimaan Barang, barang yang sudah diterima tetap bisa ditagih, dan anggaran proyek hanya memakai nilai yang diterima. Tidak bisa dibatalkan.',
 	'pos.ownNoApprove': 'Anda yang membuat purchase order ini, jadi persetujuannya harus oleh orang lain.',
 	'pos.readyToReceive': 'Sudah disetujui: gudang bisa langsung menerimanya di Penerimaan Barang. Kirim PO ke pemasok dari tombol Cetak.',
 
@@ -189,6 +194,7 @@ const procurement: Record<keyof typeof en, string> = {
 	'po.notes': 'Catatan (dicetak di bawah syarat)',
 	'po.rejectionReason': 'Alasan dikembalikan',
 	'po.cancelledReason': 'Alasan dibatalkan',
+	'po.closedReason': 'Alasan ditutup',
 	'po.reason': 'Alasan',
 	'po.print': 'Cetak',
 	'category.hardware': 'Perangkat keras',
@@ -205,6 +211,7 @@ const procurement: Record<keyof typeof en, string> = {
 	'status.partially_received': 'Diterima sebagian',
 	'status.received': 'Diterima',
 	'status.cancelled': 'Dibatalkan',
+	'status.closed': 'Ditutup (kurang kirim)',
 
 	'receipts.title': 'Penerimaan barang',
 	'receipts.description': 'Barang yang diterima dari purchase order. Langsung diposting: stok dan HPP diperbarui; koreksi lewat penyesuaian stok.',
@@ -291,6 +298,7 @@ const procurement: Record<keyof typeof en, string> = {
 	'doc.statusText.partially_received': 'Diterima sebagian',
 	'doc.statusText.received': 'Diterima',
 	'doc.statusText.cancelled': 'Dibatalkan',
+	'doc.statusText.closed': 'Ditutup: sisa barang tidak dikirim',
 	'doc.buyer': 'Pembeli / Pemesan',
 	'doc.seller': 'Penjual / Pemasok',
 	'doc.email': 'Email',

@@ -185,7 +185,8 @@ describe('goods receipts', () => {
 		await expect(
 			service.create({ userId: 'wh', organizationId: 'org' }, body([{ purchaseOrderItemId: crypto.randomUUID(), quantity: 1 }])),
 		).rejects.toBeInstanceOf(GoodsReceiptLineError);
-		for (const status of ['draft', 'submitted', 'received', 'cancelled'] as const) {
+		// B-32: a closed (short-delivered) order no longer takes receipts either.
+		for (const status of ['draft', 'submitted', 'received', 'cancelled', 'closed'] as const) {
 			order.status = status;
 			await expect(
 				service.create({ userId: 'wh', organizationId: 'org' }, body([{ purchaseOrderItemId: LINE_A, quantity: 1 }])),

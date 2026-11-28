@@ -2701,10 +2701,13 @@ Table procurement.purchase_orders {
   cancelled_by text [note: "Logical reference to auth.users.id."]
   cancelled_at bigint
   cancelled_reason text
+  closed_by text [note: "Logical reference to auth.users.id. Who closed a short-delivered order (B-32)."]
+  closed_at bigint
+  closed_reason text [note: "Required when closing: why the rest will not be delivered (B-32, KF-B1)."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Purchase order to a supplier, company-wide. draft -> submitted -> approved -> partially_received -> received; rejection returns to draft; cancelled while nothing was received. An approved order is received directly (B-21, K3); `sent` (with sent_by/sent_at) is historical: rows marked as sent before the step was removed stay receivable, and no new row gets it. Undoing every receipt returns the order to approved. One-level approval, never by the creator. The supplier bill and its payment stay in Finance."
+  Note: "Purchase order to a supplier, company-wide. draft -> submitted -> approved -> partially_received -> received; rejection returns to draft; cancelled while nothing was received. A partially received order can be closed with a reason (B-32): closed is final, the rest is no longer expected or receivable, it can still be billed for what was received, and its project budget commitment becomes the received value. An approved order is received directly (B-21, K3); `sent` (with sent_by/sent_at) is historical: rows marked as sent before the step was removed stay receivable, and no new row gets it. Undoing every receipt returns the order to approved. One-level approval, never by the creator. The supplier bill and its payment stay in Finance."
   Indexes {
     supplier_company_id [name: 'purchase_orders_supplier_company_id_idx']
     status [name: 'purchase_orders_status_idx']

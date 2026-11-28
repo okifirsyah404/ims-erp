@@ -12,6 +12,60 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-28 - B-32 close a short-delivered purchase order (ERP-0184)
+
+**Scope.** Step 8 task B-32 (KF-B1), after B-21 (#181) was merged.
+
+**Gate 1.** Read `docs/database/docs.dbml` (`procurement.purchase_orders`),
+`integrity-and-consistency.md` and `data-dictionary.md` (no PO status list
+there; the vocabulary lives in the table note). Skipped `logical-references.md`
+reading beyond regeneration: the only new logical reference is `closed_by` →
+auth.users, like the other `*_by` columns.
+
+**Gate 2 (manual grill, answers).** Ownership: procurement. Tenant: company-wide
+PO, no `organization_id`. Soft delete: unchanged. Types: `closed_at` bigint
+unix ms, `closed_by` text nullable (logical ref), `closed_reason` text
+(required by the service). Status: `closed` only from `partially_received`,
+final. Permission: existing `purchase_order:cancel` (owner). Budget: a closed
+order commits received quantity x unit price (ex-VAT, like `subtotal`). GR/IR
+and billing: bills follow received quantities already; `closed` added to the
+billable statuses. Returns and receipt undo do not apply to closed orders
+(their status filters exclude it). The registry entry stays live.
+
+**Schema.** `docs.dbml` first (three columns, note), then
+`procurement.schema.ts` (status constant, columns, CHECK). `bun docs/database/gen-logical-references.ts`
+(216 refs) and `bun docs/database/validate-dbml.ts`: OK. `bunx --bun drizzle-kit generate --name erp0184_po_closed`
+→ `20261128132133_erp0184_po_closed`: three `ADD COLUMN` (nullable) and the
+status CHECK re-created with `closed`; inspected. `bun run drizzle:migrate`
+applied it to the local dev DB (columns present).
+
+**Backend.** `PurchaseOrderService.close(actor, id, reason)`;
+`POST /procurement/purchase-orders/:id/close`; `purchaseOrderCloseSchema`;
+`TPurchaseOrderTransitionPatch` gained the closed columns;
+`PurchaseOrderStateError('notClosable')` (`api` key en+id);
+`listOpenForProject` returns the received value for closed orders;
+`purchase-billing.service.ts` bills closed orders. Goods receipts already
+exclude `closed` (B-21 status list); a test pins it.
+
+**Web-admin.** PO detail: "Tutup PO" for partially received orders (with the
+cancel permission), reason dialog that states the consequences first (RF-23,
+RF-31), badge and "Alasan ditutup" line, toast with the PO number.
+`lib/procurement-api.ts`: status `closed`, `closePurchaseOrder`,
+`closedReason`. Locales `procurement` en+id: `pos.close`, `pos.closed`,
+`pos.closeHint`, `po.closedReason`, `status.closed`, `doc.statusText.closed`.
+
+**Checks.**
+- `bun test test/unit/procurement.service.test.ts test/unit/goods-receipt.service.test.ts`: 20 pass.
+- `bun run test` (root): 8/8 (backend 1667, web-admin 230, locales 110). `bun run lint`: 7/7, 0 errors. tsc backend and web-admin clean.
+- `bun docs/architecture/gen-role-permission.ts`: 816 routes (adds `POST …/:id/close`, owner).
+- Browser UAT `docs/adjustment/5-pengerjaan/uat/B-32.md`: 4/4 Valid. The user signed in as the owner (`admin`) themselves; PO `PO/DEV-HIT/HW/1126/003` (6 of 10 received) closed with a reason, left Goods receipts; `purchasing_seed` got 403 on close; `listOpenForProject` returned 30,000,000 minor (received value) with a temporary project id that was reset afterwards.
+
+**Seed (A-10).** No new seeder; the B-21 UAT order was used (one extra receipt
+of 2 pcs, `0002/BPB/DEV/XI/26`).
+
+**Next task.** B-30 (warranty check without a project) or B-42 (invoice
+without an SO).
+
 ## 2026-11-28 - B-21 receive approved purchase orders directly (ERP-0183)
 
 **Scope.** Step 8 task B-21 (K3 / B1, FU6): remove "Mark as sent"; an approved
