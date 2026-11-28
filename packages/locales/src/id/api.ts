@@ -64,6 +64,7 @@ const api: Record<keyof typeof en, string> = {
 	'procurement.poState.notApproved': 'Hanya purchase order yang disetujui yang bisa ditandai terkirim',
 	'procurement.poState.notCancellable': 'Purchase order ini tidak bisa dibatalkan lagi',
 	'procurement.poState.received': 'Barang sudah diterima; purchase order tidak bisa dibatalkan',
+	'procurement.poState.notClosable': 'Hanya purchase order yang diterima sebagian yang bisa ditutup',
 	'procurement.selfApproval': 'Anda tidak bisa menyetujui atau menolak purchase order buatan sendiri',
 	'procurement.poCodeTaken': 'Nomor PO {{code}} sudah dipakai',
 	'procurement.receiptBin': 'Lokasi penyimpanan bukan milik gudang yang dipilih',

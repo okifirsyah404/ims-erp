@@ -913,6 +913,11 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   appears in Goods receipts at once (historical `sent` rows stay receivable)
   and the approval toast says it is ready for the warehouse (FU6). Verified:
   backend 1666, web-admin 230, locales 110, UAT `uat/B-21.md` all Valid.
+- ERP-0184 B-32 close a short-delivered PO (2026-11-28): a partially received
+  order can be closed with a reason (new status `closed` and `closed_*`
+  columns); it leaves Goods receipts, stays billable for what arrived, and the
+  project budget keeps only the received value. Verified: backend 1667,
+  web-admin 230, locales 110, migration applied, UAT `uat/B-32.md` all Valid.
 
 - ERP-0170 opening-balance row dialog (2026-11-27): the inline add-row form on
   `/finance/opening-balances` moved to `opening-balance-row-dialog.tsx`; the

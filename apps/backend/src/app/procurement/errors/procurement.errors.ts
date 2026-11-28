@@ -28,7 +28,7 @@ export class PurchaseOrderItemUnavailableError extends AppError {
 
 /** A transition that does not start from the PO's status (also races). */
 export class PurchaseOrderStateError extends AppError {
-	constructor(kind: 'notDraft' | 'notSubmitted' | 'notApproved' | 'notCancellable' | 'received') {
+	constructor(kind: 'notDraft' | 'notSubmitted' | 'notApproved' | 'notCancellable' | 'received' | 'notClosable') {
 		super(422, `procurement.poState.${kind}` as const, `Purchase order state: ${kind}`);
 	}
 }

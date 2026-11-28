@@ -392,6 +392,24 @@ describe('purchase orders', () => {
 		await expect(orders.cancel('owner', order.id, 'lagi')).rejects.toBeInstanceOf(PurchaseOrderStateError);
 	});
 
+	test('B-32 (KF-B1): only a partially received order can be closed, with its reason recorded', async () => {
+		const supplier = suppliers.addCompany();
+		const order = await orders.create('purchasing', body(supplier.id));
+		// Not received yet (draft, submitted, approved): closing is refused.
+		for (const status of ['draft', 'submitted', 'approved', 'received', 'cancelled'] as const) {
+			orderRepo.rows.find((row) => row.id === order.id)!.status = status;
+			await expect(orders.close('owner', order.id, 'Pemasok tidak sanggup')).rejects.toBeInstanceOf(PurchaseOrderStateError);
+		}
+		orderRepo.rows.find((row) => row.id === order.id)!.status = 'partially_received';
+		const closed = await orders.close('owner', order.id, 'Pemasok tidak sanggup mengirim sisa 4 unit');
+		expect(closed).toMatchObject({ status: 'closed', closedBy: 'owner', closedReason: 'Pemasok tidak sanggup mengirim sisa 4 unit' });
+		expect(closed.closedAt).toBeInstanceOf(Date);
+		// Final: a second close (or a cancel) is refused; the PO stays live in the registry.
+		await expect(orders.close('owner', order.id, 'lagi')).rejects.toBeInstanceOf(PurchaseOrderStateError);
+		await expect(orders.cancel('owner', order.id, 'lagi')).rejects.toBeInstanceOf(PurchaseOrderStateError);
+		expect(voided).toEqual([]);
+	});
+
 	test('a line may order a purchase request line; a refused claim names the PO line', async () => {
 		const supplier = suppliers.addCompany();
 		const requestLine = crypto.randomUUID();

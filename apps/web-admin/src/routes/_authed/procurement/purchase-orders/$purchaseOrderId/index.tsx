@@ -26,6 +26,7 @@ import { authClient } from '@/lib/auth-client';
 import { formatBusinessDate, formatIdr } from '@/lib/format';
 import {
 	cancelPurchaseOrder,
+	closePurchaseOrder,
 	decidePurchaseOrder,
 	PO_STATUS_VARIANT,
 	purchaseOrderQueryOptions,
@@ -116,7 +117,7 @@ function PurchaseOrderDetailPage() {
 	const canApprove = usePermission('purchase_order.approve');
 	const canCancel = usePermission('purchase_order.cancel');
 	const canReceive = usePermission('stock.receive');
-	const [dialog, setDialog] = useState<'reject' | 'cancel' | null>(null);
+	const [dialog, setDialog] = useState<'reject' | 'cancel' | 'close' | null>(null);
 	const [reason, setReason] = useState('');
 	const [busy, setBusy] = useState(false);
 	const { data, isPending, isError, error } = useQuery(purchaseOrderQueryOptions(purchaseOrderId));
@@ -214,6 +215,12 @@ function PurchaseOrderDetailPage() {
 							{t('procurement:pos.cancel')}
 						</Button>
 					)}
+					{/* B-32 (KF-B1): a short delivery is closed, not cancelled; same permission as cancelling. */}
+					{data.status === 'partially_received' && canCancel && (
+						<Button variant='outline' disabled={busy} onClick={() => setDialog('close')}>
+							{t('procurement:pos.close')}
+						</Button>
+					)}
 				</div>
 			</div>
 			{data.status === 'submitted' && canApprove && own && (
@@ -225,6 +232,11 @@ function PurchaseOrderDetailPage() {
 			{data.status === 'draft' && data.rejectionReason && (
 				<p className='text-sm text-destructive'>
 					{t('procurement:po.rejectionReason')}: {data.rejectionReason}
+				</p>
+			)}
+			{data.status === 'closed' && data.closedReason && (
+				<p className='text-sm text-muted-foreground'>
+					{t('procurement:po.closedReason')}: {data.closedReason}
 				</p>
 			)}
 			{data.status === 'cancelled' && data.cancelledReason && (
@@ -290,13 +302,29 @@ function PurchaseOrderDetailPage() {
 								() =>
 									dialog === 'reject'
 										? decidePurchaseOrder(purchaseOrderId, 'reject', reason.trim())
-										: cancelPurchaseOrder(purchaseOrderId, reason.trim()),
-								dialog === 'reject' ? t('procurement:pos.rejected') : t('procurement:pos.cancelled'),
+										: dialog === 'close'
+											? closePurchaseOrder(purchaseOrderId, reason.trim())
+											: cancelPurchaseOrder(purchaseOrderId, reason.trim()),
+								dialog === 'reject'
+									? t('procurement:pos.rejected')
+									: dialog === 'close'
+										? t('procurement:pos.closed', { code: data.code ?? '' })
+										: t('procurement:pos.cancelled'),
 							);
 						}}
 					>
 						<DialogHeader>
-							<DialogTitle>{dialog === 'reject' ? t('procurement:pos.reject') : t('procurement:pos.cancel')}</DialogTitle>
+							<DialogTitle>
+								{dialog === 'reject'
+									? t('procurement:pos.reject')
+									: dialog === 'close'
+										? t('procurement:pos.close')
+										: t('procurement:pos.cancel')}
+							</DialogTitle>
+							{/* RF-23/31: say what closing does before it is confirmed. */}
+							{dialog === 'close' && (
+								<p className='text-sm text-muted-foreground'>{t('procurement:pos.closeHint')}</p>
+							)}
 						</DialogHeader>
 						<FieldGroup className='py-4'>
 							<Field>

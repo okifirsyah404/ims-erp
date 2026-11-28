@@ -2239,6 +2239,19 @@ tidak dipakai.
 
 Tidak ada perubahan kode.
 
+## 2026-11-28 - B-32 Tutup PO kurang kirim (ERP-0184)
+
+Branch `feat/b-32-tutup-po-kurang-kirim`, belum di-push.
+
+- PO yang diterima sebagian bisa **ditutup** dengan alasan (status baru
+  "Ditutup (kurang kirim)"). Sisa barang tidak lagi ditunggu dan PO hilang dari
+  Penerimaan Barang. Barang yang sudah diterima tetap bisa ditagih; anggaran
+  proyek hanya memakai nilai yang diterima.
+- Hanya Pemilik (hak batal PO) yang bisa menutup.
+- Skema: kolom `closed_by`, `closed_at`, `closed_reason` di
+  `procurement.purchase_orders`; migrasi diterapkan di DB dev.
+- UAT: [`5-pengerjaan/uat/B-32.md`](5-pengerjaan/uat/B-32.md), 4/4 Valid.
+
 ## 2026-11-28 - B-21 PO disetujui langsung diterima (ERP-0183)
 
 Branch `feat/b-21-po-tanpa-tandai-terkirim`, belum di-push.

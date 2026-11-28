@@ -70,6 +70,7 @@ const api = {
 	'procurement.poState.notApproved': 'Only an approved purchase order can be marked as sent',
 	'procurement.poState.notCancellable': 'This purchase order can no longer be cancelled',
 	'procurement.poState.received': 'Goods were already received; the purchase order cannot be cancelled',
+	'procurement.poState.notClosable': 'Only a partially received purchase order can be closed',
 	'procurement.selfApproval': 'You cannot approve or reject your own purchase order',
 	'procurement.poCodeTaken': 'PO number {{code}} is already used',
 	'procurement.receiptBin': 'The storage does not belong to the chosen warehouse',
