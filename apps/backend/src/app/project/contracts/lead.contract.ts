@@ -6,63 +6,21 @@ import {
 	LEAD_STATUSES,
 } from '@drizzle/schemas/project.schema';
 import { createCustomerSchema } from '@app/customer/contracts/customer.contract';
+import { createLeadSchema, updateLeadSchema } from '@ims-erp/common';
 
 /**
  * Request schemas for the lead endpoints (`/leads`, ADR-0011 step 3b).
  *
  * @remarks
- * Timestamps are unix milliseconds; money is integer IDR minor units.
+ * Timestamps are unix milliseconds; money is integer IDR minor units. The
+ * create/update rules are the shared `@ims-erp/common` lead schema
+ * (`crm/lead.schema.ts`), the same one the web lead form validates with
+ * (P7-6, TF-A).
  */
-
-const optionalText = (max: number) =>
-	z
-		.string()
-		.trim()
-		.max(max)
-		.nullish()
-		.transform((value) => (value ? value : null));
-
-const phone = z
-	.string()
-	.trim()
-	.max(30)
-	.regex(/^[0-9+()\-\s]*$/)
-	.nullish()
-	.transform((value) => (value ? value : null));
-
-const email = z
-	.union([z.literal(''), z.email().max(254)])
-	.nullish()
-	.transform((value) => (value ? value.toLowerCase() : null));
 
 const timestamp = z.number().int().positive();
 
-const leadFields = {
-	name: z.string().trim().min(1).max(200),
-	companyName: optionalText(200),
-	phone,
-	whatsapp: phone,
-	email,
-	source: z.enum(LEAD_SOURCES),
-	needs: optionalText(2000),
-	/** Integer IDR minor units (ADR-0002). */
-	estimatedValue: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).nullish(),
-	nextFollowUpAt: timestamp.nullish(),
-};
-
-export const createLeadSchema = z
-	.object({
-		...leadFields,
-		/** Honoured only for callers with `lead:assign`; ignored otherwise. */
-		assignedTo: z.string().min(1).nullish(),
-	})
-	.strict()
-	.refine((value) => value.phone || value.whatsapp || value.email, {
-		message: 'At least one of phone, WhatsApp, or email is required',
-		path: ['phone'],
-	});
-
-export const updateLeadSchema = z.object(leadFields).partial().strict();
+export { createLeadSchema, updateLeadSchema };
 
 export const leadStatusSchema = z
 	.object({

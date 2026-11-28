@@ -52,7 +52,6 @@ function LeadListPage() {
 	const [assigned, setAssigned] = useState<'me' | 'unassigned' | ''>('');
 	const [followUpDue, setFollowUpDue] = useState(false);
 	const [creating, setCreating] = useState(false);
-	const [submitting, setSubmitting] = useState(false);
 	const deferredSearch = useDeferredValue(search.trim());
 	const filtered = deferredSearch !== '' || status !== '' || source !== '' || assigned !== '' || followUpDue;
 	const { data, isPending, isError, error } = useQuery(
@@ -121,18 +120,12 @@ function LeadListPage() {
 		[t, i18n.language],
 	);
 
+	/** Failures reach the dialog, which shows them per field (P7-6). */
 	async function handleCreate(input: TLeadInput) {
-		setSubmitting(true);
-		try {
-			const created = await createLead(input);
-			await queryClient.invalidateQueries({ queryKey: ['crm', 'leads'] });
-			toast.success(t('crm:leads.saved'));
-			void navigate({ to: '/crm/leads/$leadId', params: { leadId: created.id } });
-		} catch (cause) {
-			toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
-		} finally {
-			setSubmitting(false);
-		}
+		const created = await createLead(input);
+		await queryClient.invalidateQueries({ queryKey: ['crm', 'leads'] });
+		toast.success(t('crm:leads.saved'));
+		void navigate({ to: '/crm/leads/$leadId', params: { leadId: created.id } });
 	}
 
 	return (
@@ -239,9 +232,8 @@ function LeadListPage() {
 			{creating && (
 				<LeadFormDialog
 					lead={null}
-					submitting={submitting}
 					onClose={() => setCreating(false)}
-					onSave={(input) => void handleCreate(input)}
+					onSave={handleCreate}
 				/>
 			)}
 		</div>

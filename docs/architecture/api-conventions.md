@@ -82,8 +82,24 @@ the HTTP status (401/404) but its body envelope still says `status: 200`
   401 unauthenticated, 403 unauthorized, 404 absent-or-soft-deleted,
   409 unique-conflict race (`23505`), 422 for state-rule violations when 409
   is wrong).
+- **Validation errors list every problem** (P7-6, TF-1): a 400 carries one
+  `errors[]` entry per issue, each `{ field, key, params?, message }`.
+  `field` is the dot path (`name`, `lines.0.quantity`; `null` for the whole
+  body), `key` is a shared key from `@ims-erp/common` `forms/form-error.ts`
+  (`required`, `invalidFormat`, `min`, `max`, `minLength`, `maxLength`,
+  `notNegative`, `notPast`, `dateOrder`, `taken`, `exceedsRemaining`,
+  `emptyTable`, `contactRequired`, `unknownField`), and `message` is the
+  `api:validation.<key>` text in the request language (never Zod's English).
+  Zod routes are re-parsed to get every issue; TypeBox routes use
+  `ValidationError.all`; a `ZodError` thrown by a handler is mapped the same
+  way. Custom rules report a key with `formRule(key, path)`. Web forms re-word
+  the key with their own field label (`common:formError.<key>`).
 - Internal failures surface as 500 without leaking internals; no
   connection strings, no stack traces, no raw driver messages to clients.
+  The 500 message carries a reference (RF-27): `errorRef(requestId)` (first
+  eight hex digits of the envelope `requestId`, upper-case); the server logs
+  the full `requestId` and `ref` with the error. Field errors carry no
+  reference.
 - Unique-violation races are translated once, at the service layer, not in
   repositories or controllers.
 

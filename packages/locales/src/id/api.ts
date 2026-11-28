@@ -16,9 +16,26 @@ const api: Record<keyof typeof en, string> = {
 	'common.fileInvalid': 'Unggah file PDF, PNG, JPG, atau WebP maksimal {{max}} MB',
 	'common.payloadTooLarge': 'Data yang dikirim terlalu besar',
 	'common.authenticationRequired': 'Autentikasi diperlukan',
+	// RF-27: a server error (not a field error) carries a reference to report.
 	'common.internalError':
-		'Terjadi kesalahan di server. Coba lagi; bila terus terjadi, hubungi administrator.',
+		'Terjadi kesalahan di server (ref: {{ref}}). Coba lagi atau laporkan nomor ini ke admin.',
 	'common.forbidden': 'Akses ditolak',
+
+	// Field validation messages (P7-6, pattern 4.5).
+	'validation.required': 'Wajib diisi.',
+	'validation.invalidFormat': 'Isian tidak valid.',
+	'validation.min': 'Minimal {{min}}.',
+	'validation.max': 'Maksimal {{max}}.',
+	'validation.minLength': 'Minimal {{min}} karakter.',
+	'validation.maxLength': 'Maksimal {{max}} karakter.',
+	'validation.notNegative': 'Tidak boleh negatif.',
+	'validation.notPast': 'Tidak boleh di waktu yang sudah lewat.',
+	'validation.dateOrder': 'Tidak boleh sebelum {{other}}.',
+	'validation.taken': '{{value}} sudah dipakai. Gunakan yang lain.',
+	'validation.exceedsRemaining': 'Melebihi sisa ({{remaining}}).',
+	'validation.emptyTable': 'Tambahkan minimal satu baris.',
+	'validation.contactRequired': 'Isi minimal satu kontak: telepon, WhatsApp, atau email.',
+	'validation.unknownField': 'Isian tidak dikenal.',
 
 	'location.provinceNotFound': 'Provinsi tidak ditemukan',
 	'location.regencyNotFound': 'Kabupaten/kota tidak ditemukan',

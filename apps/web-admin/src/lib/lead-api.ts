@@ -1,6 +1,7 @@
 import type { TApiPaginatedResponse, TApiResponse } from '@ims-erp/common';
 import { queryOptions } from '@tanstack/react-query';
 import { currentLanguage } from '@/i18n';
+import { networkError, readEnvelope } from './api-error';
 import { authClient } from './auth-client';
 import { erpRoleGrants } from './permissions';
 import type { TCustomerInput } from './customer-api';
@@ -98,21 +99,23 @@ export type TLeadListParams = {
 	followUpDue?: boolean;
 };
 
+/** Failures throw {@link ApiError} (all field errors, server reference; P7-6). */
 async function request<T>(path: string, init?: RequestInit): Promise<TApiResponse<T>> {
-	const response = await fetch(`${API_URL}${path}`, {
-		credentials: 'include',
-		headers: {
-			// Server error messages come back in the UI language.
-			'Accept-Language': currentLanguage(),
-			...(init?.body != null ? { 'Content-Type': 'application/json' } : {}),
-		},
-		...init,
-	});
-	const envelope = (await response.json()) as TApiResponse<T>;
-	if (!response.ok) {
-		throw new Error(envelope.errors?.[0]?.message ?? envelope.message ?? 'Request failed');
+	let response: Response;
+	try {
+		response = await fetch(`${API_URL}${path}`, {
+			credentials: 'include',
+			headers: {
+				// Server error messages come back in the UI language.
+				'Accept-Language': currentLanguage(),
+				...(init?.body != null ? { 'Content-Type': 'application/json' } : {}),
+			},
+			...init,
+		});
+	} catch (cause) {
+		throw networkError(cause);
 	}
-	return envelope;
+	return readEnvelope<T>(response);
 }
 
 const send = async <T>(path: string, method: string, body?: unknown) =>

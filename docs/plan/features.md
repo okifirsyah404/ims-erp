@@ -896,6 +896,12 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   a purchase order" and "New bill". Added `test/bills-table.test.tsx`, which
   fails when the old branching is restored. Verified: web-admin 218 tests,
   tsc 0, browser empty payables + New bill dialog.
+- ERP-0181 P7-6 form foundation (2026-11-28): the API returns every validation
+  error with `field` + shared key in the request language and a reference on a
+  500; web-admin gained `readApiError`, `FormField`, `FormErrorSummary`, the
+  required `*`, and the lead form (FU1) runs on TanStack Form with the shared
+  `@ims-erp/common` lead schema. Verified: backend 1660, web-admin 228,
+  locales 110, tsc + lint clean, UAT `uat/P7-6.md` all Valid.
 
 - ERP-0170 opening-balance row dialog (2026-11-27): the inline add-row form on
   `/finance/opening-balances` moved to `opening-balance-row-dialog.tsx`; the

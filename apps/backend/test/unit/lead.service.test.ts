@@ -15,7 +15,8 @@ import type {
 	TLeadActivitySelect,
 	TLeadSelect,
 } from '@drizzle/schemas/project.schema';
-import type { ErpPermissionRequest } from '@ims-erp/common';
+import { type ErpPermissionRequest, LEAD_SOURCE_VALUES, zodIssuesToFormErrors } from '@ims-erp/common';
+import { LEAD_SOURCES } from '@drizzle/schemas/project.schema';
 import { createLeadSchema } from '../../src/app/project/contracts/lead.contract';
 import type {
 	ILeadActivityRepository,
@@ -211,6 +212,24 @@ describe('LeadService', () => {
 
 	test('a contact channel is required on manual leads', () => {
 		expect(() => createLeadSchema.parse({ name: 'X', source: 'phone' })).toThrow();
+	});
+
+	test('the shared lead schema names the field and key of each refusal (P7-6, TF-A)', () => {
+		const input = { name: ' ', source: 'phone' };
+		const parsed = createLeadSchema.safeParse(input);
+		expect(parsed.success).toBe(false);
+		expect(zodIssuesToFormErrors(parsed.error?.issues ?? [], input)).toEqual([
+			{ field: 'name', key: 'required' },
+			{ field: 'contact', key: 'contactRequired' },
+		]);
+		const negative = { name: 'Budi', source: 'phone', phone: '0812', estimatedValue: -1 };
+		expect(zodIssuesToFormErrors(createLeadSchema.safeParse(negative).error?.issues ?? [], negative)).toEqual([
+			{ field: 'estimatedValue', key: 'notNegative' },
+		]);
+	});
+
+	test('the backend lead sources and the shared schema list the same values', () => {
+		expect([...LEAD_SOURCE_VALUES]).toEqual([...LEAD_SOURCES]);
 	});
 
 	test('activities set the next follow-up; lost leads need a reason elsewhere and block conversion', async () => {
