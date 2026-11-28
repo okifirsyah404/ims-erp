@@ -86,6 +86,31 @@ export interface IItemSerialRepository {
 		tx: TTx,
 	): Promise<string[]>;
 
+	/**
+	 * B-29: takes `in_stock` units of one warehouse out on a manual issue
+	 * (`issued`); custody leaves the warehouse.
+	 *
+	 * @returns The serial numbers actually issued
+	 */
+	issue(
+		productId: string,
+		serialNumbers: readonly string[],
+		data: { warehouseId: string; movementId: string | null },
+		tx: TTx,
+	): Promise<string[]>;
+
+	/**
+	 * B-29: brings `issued` units back into a warehouse on a manual receipt.
+	 *
+	 * @returns The serial numbers actually brought back
+	 */
+	receiveIssued(
+		productId: string,
+		serialNumbers: readonly string[],
+		data: { warehouseId: string; binId: string | null; movementId: string | null },
+		tx: TTx,
+	): Promise<string[]>;
+
 	/** Serial numbers of the item's units in `statuses` in one warehouse. */
 	listSerialsInStatuses(productId: string, warehouseId: string, statuses: readonly SerialStatus[]): Promise<string[]>;
 

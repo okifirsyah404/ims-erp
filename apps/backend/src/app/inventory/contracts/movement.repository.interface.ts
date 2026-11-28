@@ -74,6 +74,12 @@ export interface IMovementRepository {
 	/** Fetches one movement by id. */
 	findById(id: string): Promise<TProductMovementSelect | null>;
 
+	/**
+	 * B-29: posted manual receipts and issues for one project
+	 * (`reference_type = 'project'`), oldest first. Reversed rows are left out.
+	 */
+	listForProject(projectId: string): Promise<Pick<TProductMovementSelect, 'id' | 'code' | 'movementType' | 'quantity' | 'unitCost' | 'occurredAt'>[]>;
+
 	/** Appends one movement row, optionally inside a caller's transaction. */
 	create(
 		data: TMovementCreateData,

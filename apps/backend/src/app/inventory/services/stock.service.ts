@@ -24,9 +24,14 @@ import { EXPORTED_WAREHOUSE_SERVICE_TOKEN } from '@app/warehouse/constants/di';
 import type { ExportedWarehouseService } from '@app/warehouse/services/exported-warehouse.service';
 import {
 	InventoryReferenceError,
+	ManualStockError,
 	MovementAlreadyReversedError,
 	MovementNotFoundError,
 } from '../errors/inventory.errors';
+import { SERIAL_UNIT_SERVICE_TOKEN } from '../constants/di';
+import type { SerialUnitService } from './serial-unit.service';
+import { PROJECT_LOOKUP_SERVICE_TOKEN } from '@app/project/constants/di';
+import type { ProjectLookupService } from '@app/project/services/project-lookup.service';
 import type { TTx } from '@drizzle/types';
 import { applyMovementCost, type TCostState } from '../utils/moving-average';
 import { INVENTORY_NUMBERING_SERVICE_TOKEN } from '../constants/di';
@@ -88,6 +93,14 @@ export type TPostedMovement = {
 	balance: TStockSelect;
 	/** The balance scope the row lives in (the warehouse's, not the caller's). */
 	scopeOrganizationId: string | null;
+};
+
+/** A manual receipt or issue from the stock screens (B-29). */
+export type TManualMovementInput = Omit<TPostMovementInput, 'movementType' | 'unitCost' | 'targetWarehouseId'> & {
+	/** The project the stock is for; recorded as `reference_type = 'project'`. */
+	projectId?: string | null;
+	/** One serial per unit for a serialized product. */
+	serialNumbers?: readonly string[];
 };
 
 /**
@@ -155,7 +168,77 @@ export class StockService {
 		 * its balance commit as one unit.
 		 */
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
+		/** B-29: serial units a manual receipt or issue moves; optional for older tests. */
+		@inject(SERIAL_UNIT_SERVICE_TOKEN)
+		private readonly serials?: Pick<SerialUnitService, 'issueUnits' | 'receiveManualUnits'>,
+		/** B-29: the project a manual movement names (repository-only facade). */
+		@inject(PROJECT_LOOKUP_SERVICE_TOKEN)
+		private readonly projects?: Pick<ProjectLookupService, 'getProject' | 'activeProjectOptions'>,
 	) {}
+
+	/** Active projects for the manual stock screens' project picker (B-29). */
+	projectOptions(search?: string) {
+		return this.projects ? this.projects.activeProjectOptions(search) : Promise.resolve([]);
+	}
+
+	/**
+	 * Posts a manual receipt or issue from the stock screens (B-29, KF-G1).
+	 *
+	 * @remarks
+	 * - A `projectId` must name a live project; the movement then carries
+	 *   `reference_type = 'project'` and `reference_id = projectId`, and a
+	 *   posted issue counts as that project's material cost.
+	 * - A serialized product needs one serial per unit (whole quantity). An
+	 *   issue moves `in_stock` units of this warehouse to `issued`; a receipt
+	 *   brings `issued` units back or registers new ones.
+	 * - The movement, its balance and the serial changes commit together.
+	 *
+	 * Accounting is not posted here (as before for manual movements); the
+	 * posting rule for project material is a finance task.
+	 *
+	 * @throws {ManualStockError} serials or project do not fit
+	 * @throws {InsufficientStockError} an issue would go below zero
+	 */
+	async postManual(kind: 'receipt' | 'issue', input: TManualMovementInput): Promise<TPostedMovement> {
+		const product = (await this.products.productsById([input.productId])).get(input.productId);
+		if (!product) throw new InventoryReferenceError('product');
+		const serials = [...new Set((input.serialNumbers ?? []).map((serial) => serial.trim()).filter(Boolean))];
+		if (product.isSerialized) {
+			const units = Number(input.quantity);
+			if (!Number.isInteger(units) || serials.length !== units) {
+				throw new ManualStockError('serialsRequired', { count: Number.isInteger(units) ? units : 0 });
+			}
+		} else if (serials.length > 0) {
+			throw new ManualStockError('serialsNotAllowed');
+		}
+		if (input.projectId) {
+			// Only an active project takes material; closed or cancelled ones are refused.
+			const project = await this.projects?.getProject(input.projectId);
+			if (!project || project.status !== 'active') throw new ManualStockError('projectNotFound');
+		}
+		const { projectId, serialNumbers: _serials, ...rest } = input;
+		return this.database.transaction(async (tx) => {
+			const posted = await this.postMovement(
+				{
+					...rest,
+					movementType: kind,
+					referenceType: projectId ? 'project' : (rest.referenceType ?? null),
+					referenceId: projectId ?? rest.referenceId ?? null,
+				},
+				tx,
+			);
+			if (serials.length > 0 && this.serials) {
+				const unit = { warehouseId: input.warehouseId, movementId: posted.movement.id };
+				if (kind === 'issue') {
+					const missing = await this.serials.issueUnits(product.id, serials, unit, tx);
+					if (missing.length > 0) throw new ManualStockError('serialsUnavailable', { serials: missing.join(', ') });
+				} else {
+					await this.serials.receiveManualUnits(product.id, serials, { ...unit, binId: input.binId ?? null }, tx);
+				}
+			}
+			return posted;
+		});
+	}
 
 	/** Fetches one page of the movement ledger, with item/warehouse names. */
 	async paginateMovements(

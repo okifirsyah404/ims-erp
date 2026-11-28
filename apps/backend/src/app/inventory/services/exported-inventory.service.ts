@@ -1,4 +1,6 @@
 import { inject, injectable } from 'tsyringe';
+import { MOVEMENT_REPOSITORY_TOKEN } from '../constants/di';
+import type { IMovementRepository } from '../contracts/movement.repository.interface';
 import { EXPORTED_PRODUCT_SERVICE_TOKEN } from '@app/product/constants/di';
 import type { ExportedProductService } from '@app/product/services/exported-product.service';
 import {
@@ -77,7 +79,35 @@ export class ExportedInventoryService {
 		private readonly borrowings: Pick<IBorrowingRequestRepository, 'countOpenByOriginWarehouse'>,
 		@inject(ProductKindsPort)
 		private readonly products: ProductKindsPort,
+		/** B-29: manual movements for a project; optional for older tests. */
+		@inject(MOVEMENT_REPOSITORY_TOKEN)
+		private readonly movements?: Pick<IMovementRepository, 'listForProject'>,
 	) {}
+
+	/**
+	 * Material a project took from the warehouses by manual stock movements
+	 * (B-29): each posted issue at quantity x unit cost, and a manual receipt
+	 * for the project (material brought back from site) as a negative value.
+	 *
+	 * @remarks
+	 * The project module adds these to the materials shipped on its sales
+	 * order's delivery notes. Values are integer IDR minor units.
+	 */
+	async projectMaterialMovements(
+		projectId: string,
+	): Promise<Array<{ id: string; code: string; shippedAt: Date | null; value: number }>> {
+		if (!this.movements) return [];
+		const rows = await this.movements.listForProject(projectId);
+		return rows.map((row) => {
+			const value = Math.round(Number(row.quantity) * row.unitCost);
+			return {
+				id: row.id,
+				code: row.code,
+				shippedAt: row.occurredAt,
+				value: row.movementType === 'issue' ? value : -value,
+			};
+		});
+	}
 
 	/**
 	 * Alive item units per warehouse, optionally of one item kind.

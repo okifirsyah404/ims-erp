@@ -643,7 +643,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-816 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+817 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -1123,6 +1123,7 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | POST | `/stock/issues` | org member + permission | `stock:issue` | `owner`, `warehouse` |
 | GET | `/stock/movements` | org member + permission | `stock:read` | `owner`, `admin`, `operations_manager`, `purchasing`, `warehouse`, `finance`, `auditor` |
 | POST | `/stock/movements/:id/reverse` | org member + permission | `stock_adjustment:post` | `owner`, `operations_manager` |
+| GET | `/stock/project-options` | org member + permission | `stock:issue` | `owner`, `warehouse` |
 | POST | `/stock/receipts` | org member + permission | `stock:receive` | `owner`, `warehouse` |
 | GET | `/stock/valuation` | org member + permission | `stock:read` `product:read_cost` | `owner`, `purchasing`, `finance` |
 

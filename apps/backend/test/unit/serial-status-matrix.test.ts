@@ -31,9 +31,10 @@ import { InventoryRuleViolationError } from '../../src/app/inventory/errors/inve
 /** Statuses a kind may hold, per ADR-0008. Source of truth for the assertions. */
 const EXPECTED: Record<ProductKind, readonly SerialStatus[]> = {
 	// ERP-0068: any stocked unit can go back to its supplier.
-	product: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged'],
-	component: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged'],
-	material: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged'],
+	// B-29: any stocked unit can be issued by hand (project material or own use).
+	product: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged', 'issued'],
+	component: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged', 'issued'],
+	material: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged', 'issued'],
 };
 
 describe('item kind × status matrix', () => {

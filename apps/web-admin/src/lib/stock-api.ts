@@ -3,6 +3,8 @@ import type {
 	TApiResponse,
 } from '@ims-erp/common';
 import { queryOptions } from '@tanstack/react-query';
+import { currentLanguage } from '@/i18n';
+import { networkError, readEnvelope } from '@/lib/api-error';
 
 /**
  * API client for the stock ledger and balance endpoints (`/stock/*`).
@@ -129,7 +131,14 @@ export type TStockMovementInput = {
 	referenceType?: string | null;
 	referenceId?: string | null;
 	notes?: string | null;
+	/** B-29: the project the stock is for (shown on the movement, counted as project material). */
+	projectId?: string | null;
+	/** B-29: one serial per unit for a serialized item. */
+	serialNumbers?: string[];
 };
+
+/** An active project the manual stock screens can name (B-29). */
+export type TStockProjectOption = { id: string; code: string; title: string; customerName: string };
 
 /** Filter for the movement ledger. */
 export type TMovementListParams = {
@@ -155,23 +164,26 @@ export type TBalanceListParams = {
 	inStockOnly?: boolean;
 };
 
+/** Failures throw `ApiError` (field errors, server reference; P7-6). */
 async function request<T>(
 	path: string,
 	init?: RequestInit,
 ): Promise<TApiResponse<T>> {
-	const response = await fetch(`${API_URL}${path}`, {
-		credentials: 'include',
-		headers:
-			init?.body != null ? { 'Content-Type': 'application/json' } : undefined,
-		...init,
-	});
-	const envelope = (await response.json()) as TApiResponse<T>;
-	if (!response.ok) {
-		throw new Error(
-			envelope.errors?.[0]?.message ?? envelope.message ?? 'Request failed',
-		);
+	let response: Response;
+	try {
+		response = await fetch(`${API_URL}${path}`, {
+			credentials: 'include',
+			headers: {
+				// Server error messages come back in the UI language.
+				'Accept-Language': currentLanguage(),
+				...(init?.body != null ? { 'Content-Type': 'application/json' } : {}),
+			},
+			...init,
+		});
+	} catch (cause) {
+		throw networkError(cause);
 	}
-	return envelope;
+	return readEnvelope<T>(response);
 }
 
 /** Builds a query string, skipping absent and empty values. */
@@ -184,6 +196,35 @@ function toQuery(params: Record<string, unknown>): string {
 	const query = search.toString();
 	return query ? `?${query}` : '';
 }
+
+/** B-29: splits the receipt's serial textarea (lines or commas) into unique, trimmed serials. */
+export function parseSerialLines(text: string): string[] {
+	return [...new Set(text.split(/[\n,]+/).map((line) => line.trim()).filter(Boolean))];
+}
+
+/** B-29: active projects for the manual issue / receipt project picker. */
+export const stockProjectOptionsQueryOptions = (search: string) =>
+	queryOptions({
+		queryKey: ['stock', 'project-options', search] as const,
+		queryFn: async () => (await request<TStockProjectOption[]>(`/stock/project-options${toQuery({ search })}`)).data ?? [],
+		staleTime: 30_000,
+	});
+
+/**
+ * B-29: serial numbers of one item in one warehouse with a status: `in_stock`
+ * units an issue may take out, or `issued` units a receipt may bring back.
+ */
+export const warehouseSerialsQueryOptions = (productId: string, warehouseId: string, status: 'in_stock' | 'issued') =>
+	queryOptions({
+		queryKey: ['stock', 'serials', productId, warehouseId, status] as const,
+		queryFn: async () => {
+			const envelope = (await request<Array<{ serialNumber: string }>>(
+				`/products/${productId}/units${toQuery({ status, warehouseId: status === 'in_stock' ? warehouseId : undefined, limit: 100 })}`,
+			)) as TApiPaginatedResponse<{ serialNumber: string }>;
+			return envelope.data.map((unit) => unit.serialNumber);
+		},
+		enabled: productId !== '' && warehouseId !== '',
+	});
 
 /** Fetches one page of balances. */
 export async function listBalances(params: TBalanceListParams = {}) {

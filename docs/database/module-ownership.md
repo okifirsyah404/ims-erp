@@ -180,7 +180,9 @@ no central code-number module.
 - **Contract**: `ExportedInventoryService` (`availableByProducts`,
   `productIdsInWarehouse`, `countSerials`, `serialExists`, `countLiveUnits`,
   `countOpenBorrowingsByOriginWarehouse`, `countMaterialStocks`,
-  `countSerialKindsByWarehouse`, `countItemsByWarehouse`, `isItemOwnedBy`)
+  `countSerialKindsByWarehouse`, `countItemsByWarehouse`, `isItemOwnedBy`,
+  `projectMaterialMovements` - manual stock issues/receipts for a project,
+  read by `project` as material cost, B-29)
   plus the stock, item and serial-unit services other modules call through DI
   tokens (`StockService`, `ItemService`, `SerialUnitService`).
 
@@ -242,7 +244,10 @@ no central code-number module.
   with PostGIS radius verification), KPIs, changes, work plans, leads
   and lead activities/attachments, warranties, and the license tables
   (applications, contracts, keys, activations, events, API keys).
-- **Contract**: project/lead/warranty reads through its services.
+- **Contract**: project/lead/warranty reads through its services;
+  `ProjectLookupService` (repository-only: `getProject`, `liveProjectOfOrder`,
+  `hasLiveProject`, `activeProjectOptions` - the inventory stock screens'
+  project picker, B-29).
 
 ### 15. Ticket - `ticket` (absorbs `aftersales` tickets)
 

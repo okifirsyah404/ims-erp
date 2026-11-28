@@ -69,6 +69,8 @@ const LABELS: Record<string, NavKey> = {
 	'/inventory/stock': 'item.stock',
 	'/inventory/stock/adjustments': 'item.stockAdjustments',
 	'/inventory/stock/movements': 'item.itemMovements',
+	'/inventory/stock/receive': 'item.stockReceive',
+	'/inventory/stock/issue': 'item.stockIssue',
 	'/warehouses': 'item.warehouses',
 	'/warehouses/$warehouseId': 'item.warehouses',
 	'/warehouses/$warehouseId/edit': 'item.warehouses',

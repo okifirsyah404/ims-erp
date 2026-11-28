@@ -267,6 +267,52 @@ export class SerialUnitService {
 	}
 
 	/**
+	 * Issues serialized units on a manual stock issue (`in_stock → issued`,
+	 * B-29), inside the caller's transaction.
+	 *
+	 * @returns The serials that were not in stock in that warehouse (the
+	 * caller fails its transaction when any are left)
+	 */
+	async issueUnits(
+		productId: string,
+		serialNumbers: readonly string[],
+		data: { warehouseId: string; movementId: string | null },
+		tx: TTx,
+	): Promise<string[]> {
+		const product = await this.products.assertProduct(productId);
+		assertTransitionAllowed(product.productKind as ProductKind, 'in_stock', 'issued');
+		const issued = await this.units.issue(productId, serialNumbers, data, tx);
+		return serialNumbers.filter((serial) => !issued.includes(serial));
+	}
+
+	/**
+	 * Receives serialized units on a manual stock receipt (B-29), inside the
+	 * caller's transaction: an `issued` unit comes back `in_stock`; a serial
+	 * not known yet is registered as a new `in_stock` unit.
+	 *
+	 * @throws {SerialNumberTakenError} A serial exists in another status
+	 */
+	async receiveManualUnits(
+		productId: string,
+		serialNumbers: readonly string[],
+		data: { warehouseId: string; binId: string | null; movementId: string | null },
+		tx: TTx,
+	): Promise<void> {
+		const product = await this.products.assertProduct(productId);
+		assertTransitionAllowed(product.productKind as ProductKind, 'issued', 'in_stock');
+		const back = await this.units.receiveIssued(productId, serialNumbers, data, tx);
+		for (const serialNumber of serialNumbers.filter((serial) => !back.includes(serial))) {
+			// Unknown serials are new units; a serial held in any other status
+			// is refused by registerUnit's uniqueness check.
+			await this.registerUnit(
+				productId,
+				{ serialNumber, status: 'in_stock', warehouseId: data.warehouseId, binId: data.binId, movementId: data.movementId },
+				tx,
+			);
+		}
+	}
+
+	/**
 	 * Moves a unit to a new status, enforcing the kind/transition matrix.
 	 *
 	 * @param unitId - The unit to transition

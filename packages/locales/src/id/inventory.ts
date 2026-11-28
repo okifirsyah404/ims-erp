@@ -6,6 +6,41 @@
  * "ready to hand out". The stored value stays `in_stock` (ADR-0008).
  */
 const inventory = {
+	// B-29 (KF-G1).
+	'manualStock.receiveTitle': 'Terima stok',
+	'manualStock.receiveDescription':
+		'Catat barang masuk gudang di luar Penerimaan Barang (PO): sisa bahan dari proyek, stok sendiri, atau barang yang ditemukan saat hitung stok.',
+	'manualStock.issueTitle': 'Keluarkan stok',
+	'manualStock.issueDescription':
+		'Catat barang keluar gudang untuk bahan proyek atau pemakaian sendiri. Barang yang dikeluarkan ke proyek dihitung sebagai biaya bahan proyek itu.',
+	'manualStock.receiptFormTitle': 'Barang masuk',
+	'manualStock.issueFormTitle': 'Barang keluar',
+	'manualStock.warehouse': 'Gudang',
+	'manualStock.pickWarehouse': 'Pilih gudang',
+	'manualStock.bin': 'Lokasi penyimpanan',
+	'manualStock.binHelp': 'Kosongkan bila gudang tidak punya lokasi penyimpanan.',
+	'manualStock.noBin': 'Tanpa lokasi penyimpanan',
+	'manualStock.product': 'Barang',
+	'manualStock.searchProduct': 'Cari kode atau nama barang',
+	'manualStock.quantity': 'Jumlah',
+	'manualStock.quantityHelp': 'Dalam satuan barang, lebih dari 0. Barang bernomor seri: jumlah mengikuti nomor seri.',
+	'manualStock.project': 'Proyek',
+	'manualStock.searchProject': 'Cari kode atau judul proyek',
+	'manualStock.noProjects': 'Tidak ada proyek aktif yang cocok.',
+	'manualStock.projectHelpIssue': 'Pilih proyek yang memakai barang ini; kosongkan untuk pemakaian sendiri.',
+	'manualStock.projectHelpReceipt': 'Pilih proyek asal barang yang kembali; mengurangi biaya bahan proyek itu.',
+	'manualStock.serials': 'Nomor seri',
+	'manualStock.serialsHelpIssue': 'Centang nomor seri yang keluar dari gudang ini.',
+	'manualStock.serialsHelpReceipt': 'Satu nomor seri per baris. Nomor seri yang dikeluarkan sebelumnya bisa diklik untuk ditambahkan.',
+	'manualStock.serialsIssued': 'Dikeluarkan sebelumnya:',
+	'manualStock.pickWarehouseFirst': 'Pilih gudang dulu.',
+	'manualStock.noSerialsInStock': 'Tidak ada nomor seri barang ini yang siap di gudang ini.',
+	'manualStock.notes': 'Catatan',
+	'manualStock.submitReceipt': 'Terima',
+	'manualStock.submitIssue': 'Keluarkan',
+	'manualStock.receivedDone': 'Stok diterima: mutasi {{code}}.',
+	'manualStock.issuedDone': 'Stok dikeluarkan: mutasi {{code}}.',
+	'manualStock.viewMovements': 'Buka Mutasi Stok',
 	'adminOnly':
 		'Pengelolaan inventaris hanya tersedia untuk administrator aplikasi.',
 

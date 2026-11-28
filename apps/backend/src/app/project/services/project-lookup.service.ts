@@ -14,7 +14,7 @@ import type { IProjectRepository } from '../contracts/project.repository.interfa
 export class ProjectLookupService {
 	constructor(
 		@inject(PROJECT_REPOSITORY_TOKEN)
-		private readonly projects: Pick<IProjectRepository, 'findLiveBySalesOrder' | 'findById'>,
+		private readonly projects: Pick<IProjectRepository, 'findLiveBySalesOrder' | 'findById' | 'paginate'>,
 		/** ERP-0149: licence renewals for finance's cash forecast; optional for older tests. */
 		@inject(LICENSING_REPOSITORY_TOKEN)
 		private readonly licensing?: Pick<ILicensingRepository, 'paginateContracts'>,
@@ -39,5 +39,20 @@ export class ProjectLookupService {
 	/** One project without caller visibility (After-Sales validates ticket links). */
 	getProject(id: string): Promise<TProjectSelect | null> {
 		return this.projects.findById(id);
+	}
+
+	/**
+	 * Active projects matching a search, for pickers in other modules
+	 * (B-29: the warehouse issuing material to a project). Only the fields a
+	 * picker shows; no costs and no caller visibility.
+	 */
+	async activeProjectOptions(search?: string): Promise<Array<{ id: string; code: string; title: string; customerName: string }>> {
+		const page = await this.projects.paginate({ page: 1, limit: 20, search, status: 'active' });
+		return page.data.map((project) => ({
+			id: project.id,
+			code: project.code,
+			title: project.title,
+			customerName: project.customerName,
+		}));
 	}
 }

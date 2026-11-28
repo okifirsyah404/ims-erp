@@ -1,0 +1,38 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "291251fa-3e14-4bd3-ba6b-6762eb76ff6c",
+  "prevIds": [
+    "c2e52f09-322b-4a88-90a7-2ca1700c3fea"
+  ],
+  "footprints": [
+    {
+      "statementType": "alter_check",
+      "statementTarget": [
+        "table",
+        "inventory",
+        "item_serials"
+      ],
+      "writes": [
+        "s|ck|inventory.item_serials.item_serials_status_check"
+      ],
+      "reads": [
+        "n|tbl|inventory.item_serials",
+        "n|sch|inventory",
+        "n|col|inventory.item_serials.status",
+        "e|col|inventory.item_serials.status"
+      ],
+      "sqlHash": "27120cd1a743dc08"
+    }
+  ],
+  "deltas": [
+    {
+      "op": "alter",
+      "key": "checks\u0000[\"inventory\",\"item_serials\",\"item_serials_status_check\"]",
+      "set": {
+        "value": "status IN ('pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged', 'issued')"
+      }
+    }
+  ]
+}

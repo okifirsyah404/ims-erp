@@ -57,6 +57,8 @@ export const SERIAL_STATUSES = [
 	'applied_warranty',
 	'returned',
 	'damaged',
+	/** B-29: taken out by a manual stock issue (project material or own use). */
+	'issued',
 ] as const;
 export type TSerialStatus = (typeof SERIAL_STATUSES)[number];
 

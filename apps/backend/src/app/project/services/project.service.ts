@@ -24,6 +24,8 @@ import type { ErpPermissionRequest, TPaginationResult } from '@ims-erp/common';
 import { businessDateOf } from '@utils/business-date.util';
 import { type IObjectStorage, OBJECT_STORAGE_TOKEN } from '@providers/s3/object-storage';
 import { inject, injectable } from 'tsyringe';
+import { EXPORTED_INVENTORY_SERVICE_TOKEN } from '@app/inventory/constants/di';
+import type { ExportedInventoryService } from '@app/inventory/services/exported-inventory.service';
 import type { TTx } from '@drizzle/types';
 import { inTransaction, type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import { POSTING_SERVICE_TOKEN } from '@app/finance/constants/di';
@@ -155,6 +157,9 @@ export class ProjectService {
 			/** ERP-0146: the project budget check on cost entry. */
 		@inject(PROJECT_BUDGET_SERVICE_TOKEN)
 		private readonly budgets?: Pick<ProjectBudgetService, 'check'>,
+		/** B-29: material taken out by manual stock issues for this project. */
+		@inject(EXPORTED_INVENTORY_SERVICE_TOKEN)
+		private readonly inventory?: Pick<ExportedInventoryService, 'projectMaterialMovements'>,
 	) {}
 
 	// Visibility -------------------------------------------------------------
@@ -271,8 +276,14 @@ export class ProjectService {
 			this.repository.listTasks(id),
 			this.repository.listEvidence(id),
 			ctx.canSeeCost ? this.repository.listCosts(id) : Promise.resolve(null),
-			// ADR-0014: a project without a sales order has no shipped materials.
-			ctx.canSeeCost ? (orderId ? this.sales.shippedMaterials(orderId) : Promise.resolve([])) : Promise.resolve(null),
+			// ADR-0014: a project without a sales order has no shipped materials;
+			// B-29 adds what was issued from stock for the project by hand.
+			ctx.canSeeCost
+				? Promise.all([
+						orderId ? this.sales.shippedMaterials(orderId) : Promise.resolve([]),
+						this.inventory ? this.inventory.projectMaterialMovements(id) : Promise.resolve([]),
+					]).then(([shipped, manual]) => [...shipped, ...manual])
+				: Promise.resolve(null),
 		]);
 		const people = await this.people([
 			project.picUserId,

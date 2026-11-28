@@ -139,6 +139,7 @@ const product = {
 	'status.applied_warranty': 'Dipakai garansi',
 	'status.returned': 'Diretur ke pemasok',
 	'status.damaged': 'Rusak',
+	'status.issued': 'Dikeluarkan (proyek / pakai sendiri)',
 	'unit.new': 'Daftarkan unit',
 	'unit.newDescription':
 		'Unit adalah wujud fisik dari barang bernomor seri.',
