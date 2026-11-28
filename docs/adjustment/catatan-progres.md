@@ -2306,3 +2306,118 @@ diperbarui. Cek tautan: 357 tautan, 0 rusak. Log lama (`progress.md`,
 `backlog.md`, catatan ini) tidak diubah.
 
 Tidak ada perubahan kode aplikasi.
+
+## 2026-11-28 — Urutan prioritas tugas Dafrin
+
+`5-pengerjaan/peta-kode-dafrin.md` mendapat bagian "Urutan prioritas" yang
+disusun dari baris "Bergantung pada". Isinya delapan gelombang:
+
+1. P7-6 lalu P7-5.
+2. Tugas bebas.
+3. Tugas setelah P7-6.
+4. P7-3.
+5. Halaman inti.
+6. SDM dan biaya lapangan.
+7. Tugas yang menunggu Oki atau Aqim.
+8. B-38 dan B-46.
+
+P7-6 didahulukan karena ditunggu 8 tugas. P7-5 tidak ditunggu tugas lain.
+
+Ditemukan dua pasangan yang saling bergantung: B-44 dengan B-45, dan B-38
+dengan B-46. Masing-masing dirancang bersama.
+
+Branch `feat/p7-6-dasar-form` dibuat dari `main` setelah PR #175 di-merge.
+
+## 2026-11-28 — Urutan tugas dijadikan daftar bernomor
+
+Atas permintaan programmer B, delapan gelombang di entri sebelumnya diganti
+dengan **satu daftar bernomor** di bagian "Indeks" kedua peta kode. Tujuannya
+agar AI langsung menuju tugas yang benar tanpa menafsirkan gelombang.
+
+| Peta kode | Isi daftar |
+|---|---|
+| `peta-kode-dafrin.md` | 30 tugas, nomor 1 = P7-6 |
+| `peta-kode-oki.md` | 46 tugas, nomor 1 = P7-1 |
+
+Setiap baris punya kolom "Mulai setelah". Tugas yang masih menunggu orang
+lain ditulis dengan nama orangnya.
+
+Aturan pakainya: ambil nomor terkecil yang syaratnya sudah masuk `main`.
+Aturan ini juga ditulis di langkah 1 `5-pengerjaan/README.md`.
+
+Di peta kode Oki ada delapan entri yang sama dengan tugas lain (misalnya
+M12-1 = P7-1). Entri itu tidak diberi nomor sendiri.
+
+## 2026-11-28 — K12 diubah: organisasi tetap satu, tidak dihapus
+
+Programmer B mendapati peta kode Oki hanya memuat tahap 1 K12 (menyembunyikan
+organisasi). Setelah diskusi, dan setelah menimbang dampak menghapus
+organisasi ke fitur Better Auth (role di `members`, undangan, sesi),
+diputuskan **organisasi tidak dihapus**.
+
+ERP tetap memakai **satu organisasi**:
+
+- server menolak membuat organisasi kedua;
+- tombol Tambah organisasi dihapus;
+- pemilih organisasi disembunyikan di web-admin dan portal karyawan;
+- sesi otomatis ke organisasi tunggal.
+
+Yang tetap seperti sekarang:
+
+- halaman Organisasi (profil, anggota, role);
+- undangan (`auth.user_invitations`);
+- role di `auth.members.role`;
+- `organization_id` (diisi organisasi tunggal).
+
+M12-2 di peta kode Oki ditulis ulang. Tugas ini kecil dan tanpa migrasi,
+cukup ADR singkat "satu organisasi". M12-3 gugur. OA2 sekarang berarti kolom
+tetap selamanya.
+
+Usulan sementara "hapus sekaligus" yang sempat ditulis di PR #177 diganti
+dalam PR yang sama.
+
+**Perlu diberitahukan ke Pemilik**, karena opsi (b) bertahap sudah disetujui
+pada 27/11.
+
+## 2026-11-28 - M12-2 dikerjakan (keputusan pemilik di sesi kerja)
+
+Keputusan tambahan saat pengerjaan: pembuatan organisasi ditutup **total**,
+bukan hanya organisasi kedua. Organisasi pertama hanya dari seeder (panggilan
+sistem Better Auth dengan `userId` eksplisit). Ini menyimpang dari
+"Seharusnya" entri M12-2 yang masih mengizinkan pembuatan pertama lewat HTTP;
+dicatat di entri peta kode Oki ("Catatan pengerjaan").
+
+Yang berubah: service selalu melempar `OrganizationAlreadyExistsError`
+(409, `organization.singleOrganization`), gerbang plugin mengembalikan
+`false`, tombol + dialog Tambah organisasi dihapus (bukan disembunyikan),
+pemilih organisasi menjadi kartu identitas statis di web-admin dan portal
+karyawan, kunci locale mati dibersihkan. ADR: ADR-0031.
+
+Test: `organization-single.test.ts` baru; blok test pembuatan di
+`organization-create-nested.test.ts` dan `notification.producers.test.ts`
+dipangkas; `multi-organization.test.ts` dihapus. UAT M12-2: langkah 3 Valid
+(unit test), langkah 1, 2, 4 menunggu browser (dan PH-UNDANG untuk langkah 4).
+
+## 2026-11-28 - M12-14 (lanjutan M12-2): halaman Organisasi dibubarkan
+
+Permintaan pemilik: http://localhost:5173/organizations redundan dengan
+/admin/users dan dashboard. Hasilnya:
+
+- /organizations* dihapus **total**, tanpa redirect, beserta entri menu
+  Administrasi (halaman Organisasi).
+- Profil organisasi pindah ke /settings/organizations; hanya owner atau app
+  admin yang melihat entri menunya (nav flag `ownerOnly`).
+- Ubah role pindah ke /admin/users (aksi baris "Ubah peran", dialog centang).
+  Backend: `PATCH /admin/users/:userId/roles` lewat port
+  `IOrganizationMemberRolePort` (kontrak di modul `user`, adapter di
+  `organization`), audit `member.roleChanged`. Tangga role dan penjaga
+  pemilik terakhir tetap satu jalur dengan `updateMemberRole`.
+- Dashboard dapat kartu identitas organisasi (nama, kode, deskripsi, dibuat).
+  Angka proyek/penjualan/stok/laba-rugi/kas tetap di widget nyata yang sudah
+  ada, tidak diduplikasi.
+- Tidak ada UI hapus organisasi.
+- Notifikasi organisasi (`org.org_created`/`org.member_added`) membuka
+  dashboard (`/`), bukan halaman organisasi.
+
+Sisa: KF-R2 (form karyawan M08 masih menimpa daftar role saat simpan) belum
+dikerjakan; di luar lingkup permintaan ini. UAT: `uat/M12-14.md`.

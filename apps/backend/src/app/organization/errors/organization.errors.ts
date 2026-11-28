@@ -19,6 +19,19 @@ export class OrganizationNotFoundError extends Error {
 	}
 }
 
+/**
+ * Single-organization guard: this ERP uses exactly one company (decision
+ * K12, M12-2), so no further organization may be created.
+ */
+export class OrganizationAlreadyExistsError extends Error {
+	readonly status = 409;
+	readonly key: ApiKey = 'organization.singleOrganization';
+	constructor() {
+		super('This application uses a single company');
+		this.name = 'OrganizationAlreadyExistsError';
+	}
+}
+
 /** Last-organization guard: the final live organization cannot be deleted. */
 export class LastOrganizationError extends Error {
 	readonly status = 409;

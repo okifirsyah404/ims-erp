@@ -2,9 +2,10 @@
  * ERP-0047 Phase 5: the organization module is the first notification producer.
  *
  * @remarks
- * Three paths notify, all through `ExportedNotificationService` (D7):
- * `addMember`, `createOrganization` (creator + nested active users), and the
- * invitation claim that actually creates a membership. Invite *send* and
+ * Two paths notify, all through `ExportedNotificationService` (D7):
+ * `addMember` and the invitation claim that actually creates a membership.
+ * Organization creation is closed (K12, M12-2: one company), so its
+ * notification path no longer exists. Invite *send* and
  * rejected/expired tokens never notify.
  *
  * The outage case uses the **real** `ExportedNotificationService` over a
@@ -18,8 +19,6 @@ import { OrganizationService } from '../../src/app/organization/services/organiz
 import { InvitationService } from '../../src/app/user/services/invitation.service';
 import { ExportedNotificationService } from '../../src/app/notification/services/exported-notification.service';
 import type { TNotifyInput } from '../../src/app/notification/services/exported-notification.service';
-
-const ACTOR = { userId: 'u-admin', email: 'admin@example.com' };
 
 function recordingNotifications() {
 	const calls: TNotifyInput[] = [];
@@ -108,83 +107,6 @@ describe('addMember producer', () => {
 				{ callerRoles: ['owner'], isPlatformAdmin: false },
 			),
 		).resolves.toEqual({ id: 'member-u-new' });
-	});
-});
-
-describe('createOrganization producer', () => {
-	test('the creator gets org.org_created', async () => {
-		const { calls, service: pushNotifications } = recordingNotifications();
-		const service = makeOrganizationService({ pushNotifications });
-
-		await service.createOrganization(
-			new Headers(),
-			{ name: 'Entragate', slug: 'entragate', creatorUserId: 'u-creator' } as never,
-			ACTOR,
-		);
-
-		expect(calls).toHaveLength(1);
-		expect(calls[0]).toMatchObject({
-			userIds: ['u-creator'],
-			templateCode: 'org.org_created',
-			tags: ['Entragate'],
-			variables: { organizationName: 'Entragate' },
-			sourceType: 'organization',
-			sourceId: 'org-1',
-		});
-	});
-
-	test('an attached active user gets org.member_added, not the creator template', async () => {
-		const { calls, service: pushNotifications } = recordingNotifications();
-		const service = makeOrganizationService({
-			pushNotifications,
-			users: { findActiveByEmail: async () => ({ id: 'u-budi' }) },
-		});
-
-		const result = await service.createOrganization(
-			new Headers(),
-			{
-				name: 'Entragate',
-				slug: 'entragate',
-				creatorUserId: 'u-creator',
-				users: [
-					{ email: 'budi@example.com', name: 'Budi', roles: ['admin', 'finance'] },
-				],
-			} as never,
-			ACTOR,
-		);
-
-		expect(result.members[0]).toMatchObject({ status: 'added' });
-		expect(calls.map((call) => call.templateCode)).toEqual([
-			'org.org_created',
-			'org.member_added',
-		]);
-		expect(calls[1]).toMatchObject({
-			userIds: ['u-budi'],
-			variables: { organizationName: 'Entragate', role: 'admin, finance' },
-			tags: ['Entragate'],
-		});
-	});
-
-	test('an invited (not yet active) user is not notified — the claim is', async () => {
-		const { calls, service: pushNotifications } = recordingNotifications();
-		const service = makeOrganizationService({
-			pushNotifications,
-			invitations: { invite: async () => ({ invitation: { id: 'inv-1' } }) },
-		});
-
-		await service.createOrganization(
-			new Headers(),
-			{
-				name: 'Entragate',
-				slug: 'entragate',
-				users: [{ email: 'ani@example.com', name: 'Ani', roles: ['member'] }],
-			} as never,
-			ACTOR,
-		);
-
-		// No creatorUserId, so only the invitation path ran — and it produced
-		// no notification: an invite email is not an in-app notification.
-		expect(calls).toHaveLength(0);
 	});
 });
 

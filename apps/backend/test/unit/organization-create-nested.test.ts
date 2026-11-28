@@ -1,6 +1,7 @@
 /**
- * ERP-0041 unit tests: nested-users per-item isolation on organization
- * create, WebP image validation, and the org-logo worker's skip rule.
+ * ERP-0041 unit tests: the organization create/profile contract (creation is
+ * closed by K12, M12-2), WebP image validation, and the org-logo worker's
+ * skip rule.
  */
 import { describe, expect, test } from 'bun:test';
 import type { IOrganizationAuthGateway } from '../../src/app/organization/contracts/organization-auth.gateway.interface';
@@ -11,8 +12,6 @@ import {
 	OrganizationImageInvalidError,
 } from '../../src/app/organization/utils/organization-image';
 import { processOrgLogoJob } from '../../src/app/organization/queues/org-logo.worker';
-
-const ACTOR = { userId: 'u-admin', email: 'admin@example.com' };
 
 type Repos = {
 	repository: IOrganizationRepository;
@@ -79,99 +78,7 @@ function makeService(overrides: Partial<Repos> = {}) {
 	return { service, addedMembers, inviteInputs, deliverFlags };
 }
 
-describe('nested users on organization create (ERP-0041)', () => {
-	test('creator email is skipped', async () => {
-		const { service } = makeService();
-		const result = await service.createOrganization(
-			new Headers(),
-			{
-				name: 'Org',
-				slug: 'org',
-				users: [{ email: 'creator@example.com', name: 'Creator', roles: ['admin'] }],
-			} as never,
-			ACTOR,
-			'creator@example.com',
-		);
-		expect(result.members).toEqual([
-			{ email: 'creator@example.com', status: 'skipped', reason: 'creator' },
-		]);
-	});
-
-	test('active user joins directly via addMember', async () => {
-		const { service, addedMembers, inviteInputs } = makeService({
-			users: { findActiveByEmail: async () => ({ id: 'u-1' }) } as never,
-		});
-		const result = await service.createOrganization(
-			new Headers(),
-			{
-				name: 'Org',
-				slug: 'org',
-				users: [{ email: 'budi@example.com', name: 'Budi', roles: ['admin', 'finance'] }],
-			} as never,
-			ACTOR,
-		);
-		expect(result.members).toEqual([
-			{ email: 'budi@example.com', status: 'added', memberId: 'member-u-1' },
-		]);
-		expect(addedMembers[0]?.roles).toEqual(['admin', 'finance']);
-		expect(inviteInputs).toHaveLength(0);
-	});
-
-	test('unknown email runs the invitation pipeline; sendInvites=false skips delivery', async () => {
-		const { service, inviteInputs, deliverFlags, addedMembers } = makeService();
-		const result = await service.createOrganization(
-			new Headers(),
-			{
-				name: 'Org',
-				slug: 'org',
-				sendInvites: false,
-				users: [{ email: 'ani@example.com', name: 'Ani', roles: ['member'] }],
-			} as never,
-			ACTOR,
-		);
-		expect(result.members).toEqual([
-			{ email: 'ani@example.com', status: 'invited', invitationId: 'inv-1' },
-		]);
-		expect(inviteInputs[0]?.organizationRoles).toEqual(['member']);
-		expect(deliverFlags).toEqual([false]);
-		expect(addedMembers).toHaveLength(0);
-	});
-
-	test('per-item isolation: one failed row does not stop the rest', async () => {
-		const { service, inviteInputs } = makeService({
-			invitations: {
-				invite: async (input: Record<string, unknown>) => {
-					if ((input as { email: string }).email === 'bad@example.com') {
-						throw new Error('boom');
-					}
-					return { invitation: { id: 'inv-1' } };
-				},
-			} as never,
-		});
-		const result = await service.createOrganization(
-			new Headers(),
-			{
-				name: 'Org',
-				slug: 'org',
-				users: [
-					{ email: 'bad@example.com', name: 'Bad', roles: ['member'] },
-					{ email: 'good@example.com', name: 'Good', roles: ['member'] },
-				],
-			} as never,
-			ACTOR,
-		);
-		expect(result.members[0]).toMatchObject({
-			email: 'bad@example.com',
-			status: 'failed',
-		});
-		expect(result.members[1]).toMatchObject({
-			email: 'good@example.com',
-			status: 'invited',
-		});
-		// inviteInputs type unused after dropping the count assert.
-		void inviteInputs;
-	});
-
+describe('organization create contract and profile update (K12: creation closed)', () => {
 	test('duplicate emails in the request are rejected (zod refine)', async () => {
 		const { createOrganizationSchema } = await import(
 			'../../src/app/organization/contracts/organization.contract'
@@ -185,35 +92,6 @@ describe('nested users on organization create (ERP-0041)', () => {
 			],
 		});
 		expect(parsed.success).toBe(false);
-	});
-
-	test('description is forwarded to the gateway and echoed in the response', async () => {
-		const createInputs: Array<{ description?: string }> = [];
-		const { service } = makeService({
-			repository: {
-				findById: async (id: string) => ({
-					id,
-					name: 'Org',
-					slug: 'org',
-					logo: null,
-					description: 'Access control for offices.',
-					deletedAt: null,
-				}),
-			} as unknown as IOrganizationRepository,
-			gateway: {
-				createOrganization: async (input: { description?: string }) => {
-					createInputs.push(input);
-					return { id: 'org-1' };
-				},
-			} as unknown as IOrganizationAuthGateway,
-		});
-		const result = await service.createOrganization(
-			new Headers(),
-			{ name: 'Org', slug: 'org', description: 'Access control for offices.' } as never,
-			ACTOR,
-		);
-		expect(createInputs[0]?.description).toBe('Access control for offices.');
-		expect(result.organization.description).toBe('Access control for offices.');
 	});
 
 	test('update forwards description and evicts the cached row', async () => {

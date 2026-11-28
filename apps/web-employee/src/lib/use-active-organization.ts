@@ -11,10 +11,9 @@ import { useOrganizationStore } from './organization-store';
  * `<OrganizationContextSync />`, which re-seeds it whenever the session changes.
  *
  * Returns `null` while the session is loading or the caller has no active
- * organization. There is deliberately NO "first organization" fallback:
- * with multiple organizations that would silently read another organization's
- * data. Callers must render a placeholder and send the user through the
- * organization switcher instead.
+ * organization. There is deliberately NO "first organization" fallback: the
+ * server always activates the single company organization (K12, M12-2), so a
+ * missing value means "not resolved yet", not "pick any".
  */
 export function useActiveOrganizationId(): string | null {
 	return useOrganizationStore((state) => state.activeOrganizationId);

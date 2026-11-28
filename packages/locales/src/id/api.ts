@@ -331,6 +331,8 @@ const api: Record<keyof typeof en, string> = {
 	'organization.lastOwner':
 		'Tidak dapat menghapus atau menurunkan pemilik terakhir',
 	'organization.roleNotAssignable': 'Peran tidak dapat diberikan: {{roles}}',
+	'organization.singleOrganization':
+		'Aplikasi hanya memakai satu perusahaan',
 
 	'aftersales.ticketState.comment': 'Tiket yang sudah ditutup tidak menerima pesan baru',
 	'portal.stage.preparation': 'Persiapan',

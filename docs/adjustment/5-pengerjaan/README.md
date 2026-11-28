@@ -70,12 +70,11 @@ flowchart TD
 
 ### Langkah rinci
 
-1. **Ambil tugas.** Urutan dari
-   [`../4-rencana-kerja/rencana-langkah-7.md`](../4-rencana-kerja/rencana-langkah-7.md)
-   (langkah 7) lalu baris **Tinggi** di
-   [`../4-rencana-kerja/peta-halaman.md`](../4-rencana-kerja/peta-halaman.md)
-   (langkah 8). Satu PR = satu paket/tugas. Jangan mengerjakan tugas yang
-   ketergantungannya belum masuk `main`.
+1. **Ambil tugas.** Ikuti **tabel bernomor** di bagian "Indeks" peta kode
+   masing-masing ([`peta-kode-dafrin.md`](peta-kode-dafrin.md),
+   [`peta-kode-oki.md`](peta-kode-oki.md)): ambil nomor terkecil yang semua
+   isi kolom "Mulai setelah" sudah masuk `main`. Satu PR = satu tugas.
+   Jangan mengerjakan tugas yang ketergantungannya belum masuk `main`.
 2. **Buka entri di peta kode.** Hanya buka file yang tercantum. Bila ternyata
    perlu file lain, tambahkan ke entri peta kode di PR yang sama.
 3. **Branch** dari `origin/main` terbaru, nama `feat/erp-XXXX-<slug>` atau

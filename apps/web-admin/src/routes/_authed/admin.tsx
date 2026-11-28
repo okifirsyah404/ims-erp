@@ -17,8 +17,8 @@ export const Route = createFileRoute('/_authed/admin')({
  * Renders an in-place 403 rather than redirecting: a link sent to an
  * organization admin should say why it does not open, not silently bounce
  * them somewhere else. UX only — the backend refuses these endpoints on its
- * own, and an organization admin's own members/invitations live under
- * `/organizations/:id`.
+ * own, and an organization admin's own members/invitations are read through
+ * the same `/admin/users` surface since K12 (M12-14).
  */
 function AdminLayout() {
 	const { isAppAdmin, isPending } = useIsAppAdmin();

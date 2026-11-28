@@ -4,7 +4,9 @@ import type { TAdminUser, TUserQuery } from '../contracts/admin.contract';
 import {
 	USER_MANAGEMENT_AUTH_GATEWAY_TOKEN,
 	USER_MANAGEMENT_REPOSITORY_TOKEN,
+	ORGANIZATION_MEMBER_ROLE_TOKEN,
 } from '../constants/di';
+import type { IOrganizationMemberRolePort } from '../contracts/organization-member-role.port';
 import type { IUserManagementRepository } from '../contracts/user-management.repository.interface';
 import type { IUserManagementAuthGateway } from '../contracts/user-management-auth.gateway.interface';
 import { AUDIT_SERVICE_TOKEN } from '../../audit/constants/di';
@@ -38,6 +40,9 @@ export class UserAdminService {
 		@inject(USER_MANAGEMENT_AUTH_GATEWAY_TOKEN)
 		private readonly gateway: IUserManagementAuthGateway,
 		@inject(AUDIT_SERVICE_TOKEN) private readonly audit: AuditService,
+		/** Cross-module producer entry point (M12-14); `user` owns no membership table. */
+		@inject(ORGANIZATION_MEMBER_ROLE_TOKEN)
+		private readonly memberRoles: IOrganizationMemberRolePort,
 	) {}
 
 	/**
@@ -159,9 +164,55 @@ export class UserAdminService {
 		});
 	}
 
+	/**
+	 * Replaces a user's organization roles (M12-14, KF-R1).
+	 *
+	 * @param userId - The member's user id
+	 * @param organizationId - The organization the membership belongs to
+	 * @param roles - The complete new role list
+	 * @param actor - Audit actor (the caller), never client input
+	 * @param assignment - Caller's role tier, from the guard-resolved session
+	 *
+	 * @remarks
+	 * The membership lives in `auth.members`, owned by the organization
+	 * module, so the write goes through
+	 * {@link IOrganizationMemberRolePort} — the same service the
+	 * organization's own member edit calls, which keeps the role-tier ladder
+	 * and the last-owner guard in one place. Audited as `member.roleChanged`.
+	 */
+	async updateRoles(
+		userId: string,
+		organizationId: string,
+		roles: string[],
+		actor: TActor,
+		assignment: { callerRoles: readonly string[]; isPlatformAdmin: boolean },
+		headers: Headers,
+	): Promise<{ id: string; role: string }> {
+		const user = await this.requireUser(userId);
+		const result = await this.memberRoles.updateRolesByUser({
+			headers,
+			organizationId,
+			userId,
+			roles,
+			callerRoles: assignment.callerRoles,
+			isPlatformAdmin: assignment.isPlatformAdmin,
+		});
+
+		await this.audit.record({
+			actorUserId: actor.userId,
+			actorEmail: actor.email,
+			action: 'member.roleChanged',
+			targetType: 'user',
+			targetId: userId,
+			meta: { email: user.email, organizationId, roles: result.role },
+			request: { ip: actor.ip, userAgent: actor.userAgent },
+		});
+
+		return result;
+	}
+
 	/** Loads a live (or, with `includeDeleted`, any) user row. */
-	private async requireUser(userId: string, includeDeleted = false) {
-		const user = includeDeleted
+	private async requireUser(userId: string, includeDeleted = false) {		const user = includeDeleted
 			? await this.users.findAnyById(userId)
 			: await this.users.findById(userId);
 		if (!user) throw new UserNotFoundError(userId);

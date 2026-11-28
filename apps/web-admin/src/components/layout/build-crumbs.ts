@@ -43,12 +43,9 @@ const LABELS: Record<string, NavKey> = {
 	'/hr/payroll': 'item.payroll',
 	'/hr/tasks': 'item.hrTasks',
 	'/hr/schedule': 'item.schedule',
-	'/organizations/': 'breadcrumb.organizations',
-	'/organizations/$organizationId/edit': 'breadcrumb.organizationEdit',
-	'/organizations/$organizationId/members/$memberId/edit':
-		'breadcrumb.memberEdit',
 	'/admin/company': 'item.companyProfile',
 	'/settings/company': 'item.companyProfile',
+	'/settings/organizations': 'item.organizations',
 	'/settings/code-numbers': 'item.codeNumbers',
 	'/settings/payment-gateways': 'item.paymentGateways',
 	'/settings/documents': 'item.documentSettings',

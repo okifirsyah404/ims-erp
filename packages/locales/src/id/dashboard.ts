@@ -35,6 +35,16 @@ const dashboard: Record<keyof typeof en, string> = {
 	'action.retry': 'Coba lagi',
 	'action.viewAll': 'Lihat semua',
 
+	// Kartu organisasi perusahaan (M12-2). Lima angka usaha punya widget
+	// sendiri dengan data nyata, jadi kartu ini hanya identitas.
+	'organization.title': 'Organisasi',
+	'organization.description':
+		'Organisasi perusahaan. Anggota dan perannya dikelola di halaman Pengguna.',
+	'organization.name': 'Nama',
+	'organization.code': 'Kode',
+	'organization.created': 'Dibuat',
+	'organization.descriptionLabel': 'Deskripsi',
+
 	'error.unavailable': 'Angka ini belum bisa ditampilkan.',
 	'empty.noAccounts': 'Belum ada akun kas atau bank.',
 	'empty.noOrganization': 'Pilih organisasi di pemilih organisasi (sidebar) untuk melihat angkanya.',

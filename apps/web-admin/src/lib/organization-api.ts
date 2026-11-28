@@ -121,23 +121,8 @@ export type TCreateOrganizationResult = {
 	>;
 };
 
-export async function createOrganization(input: {
-	name: string;
-	slug: string;
-	logo?: string | null;
-	/** Optional free-text description (trimmed server-side; empty clears). */
-	description?: string | null;
-	/** Nested users: active emails join directly, unknown emails get invited. */
-	users?: Array<{ email: string; name: string; roles: string[] }>;
-	/** Deliver invitation emails (default true). */
-	sendInvites?: boolean;
-}) {
-	const envelope = await request<TCreateOrganizationResult>('/organizations', {
-		method: 'POST',
-		body: JSON.stringify(input),
-	});
-	return envelope.data;
-}
+// `createOrganization` was removed with K12 (M12-2): the ERP uses one
+// company, so `POST /organizations` always answers 409 and no UI calls it.
 
 /** Uploads the org profile image; the server normalises it to WebP. */
 export async function uploadOrganizationImage(
@@ -182,16 +167,6 @@ export async function updateOrganization(
 	return envelope.data;
 }
 
-export async function deleteOrganization(organizationId: string) {
-	await request(`/organizations/${organizationId}`, { method: 'DELETE' });
-}
-
-export async function restoreOrganization(organizationId: string) {
-	await request(`/organizations/${organizationId}/restore`, {
-		method: 'POST',
-	});
-}
-
 export async function listMembers(
 	organizationId: string,
 	params?: { page?: number; limit?: number; role?: string },
@@ -211,17 +186,6 @@ export async function listMembers(
 	};
 }
 
-export async function addMember(
-	organizationId: string,
-	input: { userId: string; roles: string[] },
-) {
-	const envelope = await request<{ id: string }>(
-		`/organizations/${organizationId}/members`,
-		{ method: 'POST', body: JSON.stringify(input) },
-	);
-	return envelope.data;
-}
-
 export async function updateMemberRole(
 	organizationId: string,
 	memberId: string,
@@ -232,12 +196,6 @@ export async function updateMemberRole(
 		{ method: 'PATCH', body: JSON.stringify({ roles }) },
 	);
 	return envelope.data;
-}
-
-export async function removeMember(organizationId: string, memberId: string) {
-	await request(`/organizations/${organizationId}/members/${memberId}`, {
-		method: 'DELETE',
-	});
 }
 
 // Reusable query options.

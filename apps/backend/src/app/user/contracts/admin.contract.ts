@@ -55,6 +55,23 @@ export const userQuerySchema = z.object({
 });
 export type TUserQuery = z.infer<typeof userQuerySchema>;
 
+/**
+ * Role change from the admin user surface (M12-14).
+ *
+ * @remarks
+ * The organization id is explicit because the route is user-scoped: with one
+ * company (K12) the client sends the organization from the row's own
+ * membership, and the server validates it as a live membership. `roles` is the
+ * complete new list; the role-tier ladder, the last-owner guard and the audit
+ * entry are enforced by the organization module behind the
+ * `IOrganizationMemberRolePort`.
+ */
+export const updateUserRolesSchema = z.object({
+	organizationId: z.string().min(1).max(64),
+	roles: z.array(z.string().min(1).max(50)).min(1).max(20),
+});
+export type TUpdateUserRoles = z.infer<typeof updateUserRolesSchema>;
+
 /** Sortable columns for the admin user listing. */
 export type TUserSortField = (typeof USER_SORT_FIELDS)[number];
 /** Sort directions for the admin user listing. */

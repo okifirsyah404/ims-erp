@@ -224,7 +224,6 @@ const employee = {
 	'payslips.download': 'Download',
 	'payslips.notReady': 'Still being generated',
 	'org.title': 'Organization',
-	'org.switch': 'Switch organization',
 	'org.noRecord': 'No employee record in this organization',
 } as const;
 

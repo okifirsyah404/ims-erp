@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useQuery } from '@tanstack/react-query';
 import { hasInternalRole as hasInternalRoleOf } from '@/lib/internal-role';
+import { isOwnerRole } from '@/lib/internal-role';
 import { myOrganizationsQueryOptions } from '@/lib/organization-api';
 import { useSelfUserImageRefresh } from '@/lib/user-api';
 import { useWarehouseAccess } from '@/lib/use-warehouse-access';
@@ -46,12 +47,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const { isAppAdmin, isPic, isPending: accessPending } = useWarehouseAccess();
 	const { data: myOrgs, isPending: myOrgsPending } = useQuery(myOrganizationsQueryOptions);
 	const hasInternalRole = (myOrgs ?? []).some((org) => hasInternalRoleOf(org.role));
+	const isOwner = (myOrgs ?? []).some((org) => isOwnerRole(org.role));
 	const loading = pending || myOrgsPending || accessPending;
 
 	const sections = filterNav(navSections, {
 		can,
 		isAppAdmin,
 		hasInternalRole,
+		isOwner,
 		isPic,
 	});
 

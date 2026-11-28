@@ -40,62 +40,64 @@ portal karyawan ke `apps/web-employee/src/`, kecuali ditulis lengkap.
 
 ## Indeks
 
-| ID | Judul | Prioritas | Paket / urutan |
-|---|---|---|---|
-| [P7-1](#p7-1-audit-di-dalam-transaksi-tinggi-oa5oa7-l-1) | Audit di dalam transaksi | Tinggi | Langkah 7, Oki #1 |
-| [P7-2](#p7-2-ubah-adr-0006-tinggi-k1-k1a-e5) | Ubah ADR-0006 | Tinggi | Langkah 7, Oki #2 |
-| [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-10-b4) | Hak role baru | Tinggi | Langkah 7, Oki #3 |
-| [P7-7](#p7-7-server-siap-pakai-dan-batas-login-tinggi-nm-5-nm-6-l-10-l-11) | Server siap pakai + batas login | Tinggi | Langkah 7, kapan saja |
-| [M12-1](#m12-1-audit-peristiwa-wajib-tinggi) | Audit peristiwa wajib | Tinggi | = P7-1 |
-| [M12-2](#m12-2-k12-tahap-1-sembunyikan-organisasi-tinggi-oa1-oa2) | K12 tahap 1: sembunyikan Organisasi | Tinggi | Langkah 8, sesudah M12-14 |
-| [M12-5](#m12-5-erp-permissionsts-tinggi) | `erp-permissions.ts` | Tinggi | = P7-4 |
-| [M12-14](#m12-14-ubah-role-dari-halaman-pengguna--bug-form-karyawan-tinggi-kf-r1-kf-r2) | Ubah role dari halaman Pengguna + bug form karyawan | Tinggi | Langkah 8, awal |
-| [M12-15](#m12-15-atur-ulang-kata-sandi-oleh-admin-tinggi-kf-r3) | Atur ulang kata sandi oleh admin | Tinggi | Langkah 8 |
-| [M12-16](#m12-16-ekspor-daftar-utama--pdf-laporan-berkop-tinggi-kf-r5-kf-r6) | Ekspor daftar utama + PDF laporan berkop | Tinggi | Langkah 8 |
-| [M09-1](#m09-1-keuangan-membaca-bagan-akun-tinggi-ob1) | Keuangan membaca bagan akun | Tinggi | = P7-4 |
-| [M09-2](#m09-2-pemilih-akun-berpencarian-tinggi-ob2) | Pemilih akun berpencarian | Tinggi | Langkah 8 |
-| [M09-3](#m09-3-layar-pembayaran-pemasok-tinggi-ob3) | Layar pembayaran pemasok (baru) | Tinggi | Langkah 8 |
-| [M09-4](#m09-4-siapkan-dan-buka-kembali-periode-tinggi-ob4-ob6-ro1-ro4) | Siapkan dan buka kembali periode | Tinggi | Langkah 8 (hak di P7-4) |
-| [M09-7](#m09-7-kasbon-dan-pertanggungjawaban-satu-langkah-tinggi-ob9-ob13-ro5-ro6-kl-10) | Kasbon + pertanggungjawaban satu langkah | Tinggi | Langkah 8, sesudah P7-3 |
-| [M09-8](#m09-8-write-off-langsung-ke-beban-tinggi-ob10) | Write-off langsung ke beban | Tinggi | Langkah 8 |
-| [M09-15](#m09-15-pindah-dana-antar-kasbank-tinggi-kf-k1) | Pindah dana antar kas/bank | Tinggi | Langkah 8 |
-| [M09-16](#m09-16-batalkan-transaksi-kasbank-tinggi-kf-k2) | Batalkan transaksi kas/bank | Tinggi | Langkah 8 |
-| [M09-17 + M10-13](#m09-17--m10-13-pph-23-dipotong-pelanggan-tinggi-kf-k3-kf-t3) | PPh 23 dipotong pelanggan | Tinggi | Langkah 8, bersama B-33 |
-| [M09-18](#m09-18-pembayaran-upah-freelance-tinggi-kl-4) | Pembayaran upah freelance | Tinggi | Langkah 8, sesudah B-45 |
-| [M09-19](#m09-19-biaya-perjalanan-kasbon-nota-klaim-batas-tinggi-bp-1bp-6) | Biaya perjalanan | Tinggi | Langkah 8, sesudah M09-7 |
-| [M10-1](#m10-1-jenis-pajak-memakai-kosakata-server-tinggi-oc1) | Jenis pajak kosakata server | Tinggi | Langkah 8 |
-| [M10-2](#m10-2-hitung-ulang-catatan-pajak-draf-tinggi-oc2) | Hitung ulang catatan pajak draf | Tinggi | Langkah 8 |
-| [M10-3](#m10-3-masa-bupot-otomatis-tinggi-oc3) | Masa Bupot otomatis | Tinggi | Langkah 8 |
-| [M10-9](#m10-9-gerbang-sebelum-lapor-tinggi-sebelum-lapor-oc8) | Gerbang sebelum lapor | Tinggi sebelum lapor | Sebelum rilis |
-| [M10-11](#m10-11-terutang--dibayar--sisa-per-masa-tinggi-kf-t1) | Terutang / dibayar / sisa per masa | Tinggi | Langkah 8 |
-| [M10-12](#m10-12-pengaturan-rezim-pajak-sedang-tinggi-bila-umkm-kf-t2) | Pengaturan rezim pajak | Sedang (Tinggi bila UMKM) | Menunggu Bella |
-| [M06-1](#m06-1-daftar-unit-yang-bisa-dipinjam-tinggi-od1) | Daftar unit yang bisa dipinjam | Tinggi | Langkah 8 |
-| [M06-2](#m06-2-persetujuan-sendiri-peminjaman-ikut-k1-tinggi-od2) | Persetujuan sendiri peminjaman ikut K1 | Tinggi | Sesudah P7-1/P7-2 |
-| [M06-3](#m06-3-sen-di-penyimpanan-rupiah-di-layar-tinggi-od3) | Sen di penyimpanan, rupiah di layar | Tinggi | Langkah 8 |
-| [M06-6](#m06-6-tolak-hapusnonaktif-aset-yang-dipinjam-tinggi-od6) | Tolak hapus/nonaktif aset dipinjam | Tinggi | Langkah 8 |
-| [M06-14](#m06-14-satu-jalur-penyusutan-tinggi-kf-a1) | Satu jalur penyusutan | Tinggi | Langkah 8 |
-| [PH-PINJAM](#ph-pinjam-halaman-peminjaman-aset-tinggi-od4-c13-od7-fu13) | Halaman Peminjaman Aset | Tinggi | Bersama M06-1 |
-| [M11-4](#m11-4-adr-dan-schema-investor-tinggi-iv-1) | ADR + schema investor | Tinggi | Langkah 8, M11 #1 |
-| [M11-5](#m11-5-daftar-investor-dan-dana-tinggi-iv-2iv-4-iv-7-iv-8) | Daftar investor dan dana | Tinggi | M11 #2 |
-| [M11-6](#m11-6-bagi-hasil-tahunan-tinggi-iv-5) | Bagi hasil tahunan | Tinggi | M11 #3 |
-| [M11-7](#m11-7-portal-investor-tinggi-iv-6-iv-9-iv-10) | Portal investor | Tinggi | M11 #4 |
-| [PK-9](#pk-9-layar-admin-kunjungan-lokasi-tinggi-kf-e1) | Layar admin kunjungan lokasi | Tinggi | Langkah 8 |
-| [PK-10](#pk-10-menu-portal-per-penempatan-dan-freelance-tinggi-kl-2-kl-5-kl-10) | Menu portal per penempatan/freelance | Tinggi | Sesudah B-45, P7-4 |
-| [PH-PORTAL](#ph-portal-portal-karyawan-kasbon-riwayat-lokasi-lupa-sandi-radius-tinggi-ob13-og1og3-pk-1) | Portal: kasbon, riwayat lokasi, lupa sandi, radius | Tinggi | Langkah 8 |
-| [PH-MASUK](#ph-masuk-halaman-masuk-tanpa-google-pesan-nonaktif-tinggi-k13-oa3-oa14) | Masuk tanpa Google, pesan nonaktif | Tinggi | Langkah 8 |
-| [PH-UNDANG](#ph-undang-pengguna--undang-tinggi-oa12-oa13-k12) | Pengguna / Undang | Tinggi | Bersama M12-2 |
-| [PH-IMPOR](#ph-impor-impor-data-awal-modul-oki-tinggi-l-12-nm-1-nm-2) | Impor data awal (bagian Oki) | Tinggi | Bersama |
-| [PH-LAPHARIAN](#ph-lapharian-portal-laporan-harian-tinggi-b-44-dafrin--oki) | Portal: laporan harian (layar) | Tinggi | Sesudah B-44 |
-| [PH-WA](#ph-wa-profil-pengguna-nomor-wa-staf-tinggi-b-46) | Profil pengguna: nomor WA staf | Tinggi | Bersama B-46 |
-| [PH-DASBOR](#ph-dasbor-dasbor-sedang-rd1rd3-of1of3) | Dasbor (M01-1..M01-4) | Sedang | Langkah 9 |
-| [X-1](#x-1-autentikasi-dan-organisasi-tinggi) | Auth/organisasi | Tinggi | = M12-2, M12-4, P7-4 |
-| [X-2](#x-2-aturan-persetujuan-k1-bersama-tinggi) | Aturan K1 bersama | Tinggi | = P7-3 (Dafrin) |
-| [X-3](#x-3-penomoran-bersama-tinggi) | Penomoran | Tinggi | = P7-5 (Dafrin menulis) |
-| [X-4](#x-4-audit-sebagai-aktivitas-bisnis-tinggi) | Audit aktivitas bisnis | Tinggi | = P7-1 |
-| [X-5](#x-5-chromium-untuk-pdf-tinggi-untuk-produksi) | Chromium untuk PDF | Tinggi produksi | = P7-7 |
-| [X-7](#x-7-deploy-s3-smtp-scheduler-web-investor-backup-tinggi-untuk-produksi) | Deploy S3/SMTP/scheduler/backup | Tinggi produksi | P7-7 + X-13 |
-| [X-13](#x-13-backup-harian-dan-panduan-deploy-tinggi-nm-3-nm-10-l-13) | Backup harian + panduan deploy | Tinggi | Langkah 8–9 |
-| [X-14](#x-14-n8n-dan-waha-self-host-tinggi-n8-1-n8-2) | n8n + WAHA self-host | Tinggi | Langkah 8 |
+**Cara memakai:** kerjakan dari **nomor terkecil** yang semua isi kolom
+"Mulai setelah" sudah masuk `main`. Kalau masih menunggu orang lain, lompat
+ke nomor berikutnya yang sudah bisa, lalu kembali. Jangan membuka tugas di
+luar daftar ini. Urutan disusun 2026-11-28 dari baris "Bergantung pada"
+setiap entri: tugas yang ditunggu banyak tugas lain ada di atas. Tugas
+yang menunggu Dafrin, Aqim, atau Bella ditulis dengan nama orangnya.
+
+| No | Tugas | Judul | Prioritas | Mulai setelah |
+|---|---|---|---|---|
+| 1 | [P7-1](#p7-1-audit-di-dalam-transaksi-tinggi-oa5oa7-l-1) | Audit di dalam transaksi | Tinggi | — (mulai sekarang) |
+| 2 | [P7-2](#p7-2-ubah-adr-0006-tinggi-k1-k1a-e5) | Ubah ADR-0006 | Tinggi | P7-1 |
+| 3 | [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-10-b4) | Hak role baru | Tinggi | — |
+| 4 | [P7-7](#p7-7-server-siap-pakai-dan-batas-login-tinggi-nm-5-nm-6-l-10-l-11) | Server siap pakai + batas login | Tinggi | — (bagian dev); Aqim: server dan SMTP untuk produksi |
+| 5 | [M12-14](#m12-14-ubah-role-dari-halaman-pengguna--bug-form-karyawan-tinggi-kf-r1-kf-r2) | Ubah role dari halaman Pengguna + bug form karyawan | Tinggi | P7-1, P7-4 |
+| 6 | [M12-2](#m12-2-k12-satu-organisasi-tambah-organisasi-dimatikan-tinggi-oa1-oa2) | K12: satu organisasi, tambah organisasi dimatikan | Tinggi | P7-4 |
+| 7 | [PH-UNDANG](#ph-undang-pengguna--undang-tinggi-oa12-oa13-k12) | Pengguna / Undang | Tinggi | M12-2, P7-4 |
+| 8 | [M12-15](#m12-15-atur-ulang-kata-sandi-oleh-admin-tinggi-kf-r3) | Atur ulang kata sandi oleh admin | Tinggi | P7-1 |
+| 9 | [PH-MASUK](#ph-masuk-halaman-masuk-tanpa-google-pesan-nonaktif-tinggi-k13-oa3-oa14) | Masuk tanpa Google, pesan nonaktif | Tinggi | — |
+| 10 | [M09-2](#m09-2-pemilih-akun-berpencarian-tinggi-ob2) | Pemilih akun berpencarian | Tinggi | P7-4 |
+| 11 | [M09-15](#m09-15-pindah-dana-antar-kasbank-tinggi-kf-k1) | Pindah dana antar kas/bank | Tinggi | M09-2 |
+| 12 | [M09-3](#m09-3-layar-pembayaran-pemasok-tinggi-ob3) | Layar pembayaran pemasok (baru) | Tinggi | M09-2, P7-1 |
+| 13 | [M09-4](#m09-4-siapkan-dan-buka-kembali-periode-tinggi-ob4-ob6-ro1-ro4) | Siapkan dan buka kembali periode | Tinggi | P7-1, P7-4 |
+| 14 | [M09-16](#m09-16-batalkan-transaksi-kasbank-tinggi-kf-k2) | Batalkan transaksi kas/bank | Tinggi | P7-1 |
+| 15 | [M09-8](#m09-8-write-off-langsung-ke-beban-tinggi-ob10) | Write-off langsung ke beban | Tinggi | — |
+| 16 | [M10-1](#m10-1-jenis-pajak-memakai-kosakata-server-tinggi-oc1) | Jenis pajak kosakata server | Tinggi | — |
+| 17 | [M10-2](#m10-2-hitung-ulang-catatan-pajak-draf-tinggi-oc2) | Hitung ulang catatan pajak draf | Tinggi | M10-1 |
+| 18 | [M10-3](#m10-3-masa-bupot-otomatis-tinggi-oc3) | Masa Bupot otomatis | Tinggi | — |
+| 19 | [M06-3](#m06-3-sen-di-penyimpanan-rupiah-di-layar-tinggi-od3) | Sen di penyimpanan, rupiah di layar | Tinggi | — |
+| 20 | [M06-14](#m06-14-satu-jalur-penyusutan-tinggi-kf-a1) | Satu jalur penyusutan | Tinggi | M06-3 |
+| 21 | [M06-6](#m06-6-tolak-hapusnonaktif-aset-yang-dipinjam-tinggi-od6) | Tolak hapus/nonaktif aset dipinjam | Tinggi | — |
+| 22 | [M06-1](#m06-1-daftar-unit-yang-bisa-dipinjam-tinggi-od1) | Daftar unit yang bisa dipinjam | Tinggi | P7-4 |
+| 23 | [M09-7](#m09-7-kasbon-dan-pertanggungjawaban-satu-langkah-tinggi-ob9-ob13-ro5-ro6-kl-10) | Kasbon + pertanggungjawaban satu langkah | Tinggi | P7-1, P7-2, P7-4; Dafrin: P7-3 |
+| 24 | [M06-2](#m06-2-persetujuan-sendiri-peminjaman-ikut-k1-tinggi-od2) | Persetujuan sendiri peminjaman ikut K1 | Tinggi | P7-1, P7-2; Dafrin: P7-3 |
+| 25 | [PH-PINJAM](#ph-pinjam-halaman-peminjaman-aset-tinggi-od4-c13-od7-fu13) | Halaman Peminjaman Aset | Tinggi | M06-1, M06-2 |
+| 26 | [PH-PORTAL](#ph-portal-portal-karyawan-kasbon-riwayat-lokasi-lupa-sandi-radius-tinggi-ob13-og1og3-pk-1) | Portal: kasbon, riwayat lokasi, lupa sandi, radius | Tinggi | P7-7, M09-7; persetujuan Dafrin (absensi lokasi) |
+| 27 | [PK-9](#pk-9-layar-admin-kunjungan-lokasi-tinggi-kf-e1) | Layar admin kunjungan lokasi | Tinggi | persetujuan Dafrin (modul `project`) |
+| 28 | [M12-16](#m12-16-ekspor-daftar-utama--pdf-laporan-berkop-tinggi-kf-r5-kf-r6) | Ekspor daftar utama + PDF laporan berkop | Tinggi | P7-1, P7-7; endpoint ekspor Dafrin |
+| 29 | [M09-17 + M10-13](#m09-17--m10-13-pph-23-dipotong-pelanggan-tinggi-kf-k3-kf-t3) | PPh 23 dipotong pelanggan | Tinggi | dikerjakan bersama Dafrin B-33 |
+| 30 | [M10-11](#m10-11-terutang--dibayar--sisa-per-masa-tinggi-kf-t1) | Terutang / dibayar / sisa per masa | Tinggi | M09-17, M10-3 |
+| 31 | [M09-18](#m09-18-pembayaran-upah-freelance-tinggi-kl-4) | Pembayaran upah freelance | Tinggi | M09-3; Dafrin: B-45 |
+| 32 | [PK-10](#pk-10-menu-portal-per-penempatan-dan-freelance-tinggi-kl-2-kl-5-kl-10) | Menu portal per penempatan/freelance | Tinggi | P7-4, M09-18; Dafrin: B-45 |
+| 33 | [M09-19](#m09-19-biaya-perjalanan-kasbon-nota-klaim-batas-tinggi-bp-1bp-6) | Biaya perjalanan | Tinggi | M09-7, PH-PORTAL; dikerjakan bersama Dafrin B-48 |
+| 34 | [PH-LAPHARIAN](#ph-lapharian-portal-laporan-harian-tinggi-b-44-dafrin--oki) | Portal: laporan harian (layar) | Tinggi | Dafrin: B-44 |
+| 35 | [PH-IMPOR](#ph-impor-impor-data-awal-modul-oki-tinggi-l-12-nm-1-nm-2) | Impor data awal (bagian Oki) | Tinggi | Dafrin: P7-6, P7-3 |
+| 36 | [M11-4](#m11-4-adr-dan-schema-investor-tinggi-iv-1) | ADR + schema investor | Tinggi | Aqim: rincian dana per proyek (IV-5); boleh diselipkan lebih awal begitu jawabannya ada |
+| 37 | [M11-5](#m11-5-daftar-investor-dan-dana-tinggi-iv-2iv-4-iv-7-iv-8) | Daftar investor dan dana | Tinggi | M11-4, P7-1 |
+| 38 | [M11-6](#m11-6-bagi-hasil-tahunan-tinggi-iv-5) | Bagi hasil tahunan | Tinggi | M11-5; Aqim: aturan rinci |
+| 39 | [M11-7](#m11-7-portal-investor-tinggi-iv-6-iv-9-iv-10) | Portal investor | Tinggi | M11-5, M11-6, P7-7 |
+| 40 | [X-13](#x-13-backup-harian-dan-panduan-deploy-tinggi-nm-3-nm-10-l-13) | Backup harian + panduan deploy | Tinggi | P7-7; Aqim: akses server, lokasi backup |
+| 41 | [X-7](#x-7-deploy-s3-smtp-scheduler-web-investor-backup-tinggi-untuk-produksi) | Deploy S3/SMTP/scheduler/backup | Tinggi produksi | P7-7, X-13 |
+| 42 | [X-14](#x-14-n8n-dan-waha-self-host-tinggi-n8-1-n8-2) | n8n + WAHA self-host | Tinggi | P7-7, X-13; Dafrin: B-46 |
+| 43 | [PH-WA](#ph-wa-profil-pengguna-nomor-wa-staf-tinggi-b-46) | Profil pengguna: nomor WA staf | Tinggi | X-14; Dafrin: B-46 |
+| 44 | [M10-9](#m10-9-gerbang-sebelum-lapor-tinggi-sebelum-lapor-oc8) | Gerbang sebelum lapor | Tinggi sebelum lapor | M09-3, M10-3; Bella: keputusan (sebelum lapor pajak) |
+| 45 | [M10-12](#m10-12-pengaturan-rezim-pajak-sedang-tinggi-bila-umkm-kf-t2) | Pengaturan rezim pajak | Sedang (Tinggi bila UMKM) | Bella: rezim pajak |
+| 46 | [PH-DASBOR](#ph-dasbor-dasbor-sedang-rd1rd3-of1of3) | Dasbor (M01-1..M01-4) | Sedang | P7-4; kartu modul Dafrin (langkah 9) |
+
+**Tanpa nomor sendiri** (dikerjakan di tugas lain; entrinya tetap ada di bawah sebagai rincian): M12-1 = P7-1, M12-5 = P7-4, M09-1 = P7-4, X-1 = M12-2 + P7-4 (satu organisasi), X-2 = P7-3 (Dafrin), X-3 = P7-5 (Dafrin), X-4 = P7-1, X-5 = P7-7.
+
 
 ---
 
@@ -302,46 +304,98 @@ Sama dengan [P7-1](#p7-1-audit-di-dalam-transaksi-tinggi-oa5oa7-l-1). Bagian eks
 
 **Prompt AI (salin):** tugas ini penunjuk; pakai prompt di entri yang dirujuk.
 
-### M12-2 K12 tahap 1: sembunyikan Organisasi (Tinggi, OA1, OA2)
+### M12-2 K12: satu organisasi, tambah organisasi dimatikan (Tinggi, OA1, OA2)
+
+> **Diubah 2026-11-28 (programmer B):** organisasi **tidak dihapus**.
+> Menghapusnya berdampak ke role, undangan, dan sesi yang dikelola plugin
+> organisasi Better Auth, dan merombaknya makan waktu lama. ERP tetap
+> memakai **satu organisasi** (perusahaan). M12-3 (role ke tingkat pengguna)
+> gugur.
+>
+> **Dokumen yang ikut diperbarui (A-14):** ADR singkat "satu organisasi"
+> (mengubah ADR-0001, ADR-0007, dan ADR-0012 multi-organisasi; nomor dipesan
+> saat PR); `docs/architecture/role-permission.md` (generator) bila rute
+> atau hak berubah.
 
 - **Seharusnya:**
-  - Pemilih organisasi dan halaman Organisasi **disembunyikan**; sesi selalu ke organisasi tunggal (OA1 b, tahap 1).
-  - Kolom `organization_id` tetap diisi perusahaan tunggal sampai tahap 3 (OA2 a).
-  - ADR baru menggantikan ADR-0001/0007/0012 dan mengubah ADR-0006/0008.
-  - Isian organisasi di dialog undang dihapus (lihat PH-UNDANG).
-- **Sekarang:** `OrganizationSwitcher` di sidebar (`components/sidebar/main-sidebar.tsx:61`); menu Organisasi di `components/sidebar/nav-config.ts:653-654`; header `x-organization-id` dikirim dari 9 file `lib/*-api.ts`; organisasi aktif diatur di `src/providers/better-auth/options/session.auth.ts` dan `ac/auth-hooks.ts`.
+  - Server **menolak membuat organisasi kedua**: bila sudah ada satu
+    organisasi, `POST /organizations` dan jalur plugin Better Auth
+    mengembalikan galat dengan kunci terjemahan ("Aplikasi hanya memakai
+    satu perusahaan"). Pembuatan organisasi pertama (instalasi baru, seed)
+    tetap bisa.
+  - Tombol **Tambah organisasi** dan dialognya hilang dari halaman Organisasi
+    dan pemilih organisasi.
+  - **Pemilih organisasi disembunyikan** di web-admin dan portal karyawan;
+    sesi otomatis ke organisasi tunggal.
+  - Halaman **Organisasi tetap ada** untuk Pemilik: ubah profil, anggota,
+    dan role.
+  - Isian organisasi di form Undang disembunyikan; undangan otomatis ke
+    organisasi tunggal (PH-UNDANG).
+  - **Tidak berubah:** database, undangan (`auth.user_invitations`), role di
+    `auth.members.role`, header `x-organization-id`, dan kolom
+    `organization_id` (tetap diisi organisasi tunggal, OA2).
+- **Sekarang:**
+  - Semua pengguna dengan tanda admin aplikasi boleh membuat organisasi
+    (`apps/backend/src/providers/better-auth/plugins/organization.auth.ts:28`,
+    `allowUserToCreateOrganization`); rute buat organisasi di
+    `src/app/organization/controllers/organization-bootstrap.controller.ts:46`
+    (`POST /organizations`, memanggil `organizationService.createOrganization`).
+  - Tombol Tambah: `apps/web-admin/src/routes/_authed/organizations/index.tsx:247`
+    dan `components/sidebar/organization-switcher.tsx:264`
+    (`CreateOrganizationDialog`).
+  - Pemilih organisasi: `components/sidebar/main-sidebar.tsx:61`; web-employee
+    `src/lib/use-active-organization.ts`,
+    `src/components/organization/organization-context-sync.tsx`.
 - **File yang diubah:**
 
 | Lapisan | Path | Perubahan |
 |---|---|---|
-| backend | `src/providers/better-auth/options/session.auth.ts`, `src/providers/better-auth/ac/auth-hooks.ts` | Sesi baru selalu `activeOrganizationId` = organisasi tunggal |
-| web-admin | `components/sidebar/main-sidebar.tsx`, `components/sidebar/organization-switcher.tsx` | Pemilih tidak dirender |
-| web-admin | `components/sidebar/nav-config.ts` | Daun Organisasi disembunyikan |
-| web-admin | `routes/_authed/organizations/*` | Redirect ke `/admin/users` (rute tetap untuk tahap 2) |
-| web-admin | `lib/organization-store.ts`, `lib/use-active-organization.ts` | Nilai tetap organisasi tunggal |
-| portal | `apps/web-employee/src/lib/use-organization-switch.ts`, `apps/web-employee/src/components/organization/` | Sama untuk portal karyawan |
-| locale | `packages/locales/src/{en,id}/nav.ts` | Hapus kunci yang mati (dead-key test) |
-| test | `apps/web-admin` test sidebar (dicek saat desain), `test/unit/organization-mine.test.ts` | Pemilih tidak muncul, sesi ke organisasi tunggal |
-| docs | `docs/architecture/decisions/ADR-00xx-single-company-stage-1.md` **(baru)** | ADR K12 (nomor dipesan saat PR) |
+| backend | `src/providers/better-auth/plugins/organization.auth.ts` | `allowUserToCreateOrganization` menolak bila sudah ada organisasi |
+| backend | `src/app/organization/services/organization.service.ts` (`createOrganization`), `src/app/organization/errors/` | Cek "sudah ada organisasi" → galat domain baru dengan kunci terjemahan |
+| backend | `src/providers/better-auth/options/session.auth.ts`, `ac/auth-hooks.ts` | Sesi baru selalu `activeOrganizationId` = organisasi tunggal |
+| web-admin | `routes/_authed/organizations/index.tsx`, `components/sidebar/organization-switcher.tsx`, `components/organization/create-organization-dialog.tsx` | Tombol dan dialog Tambah organisasi dihapus |
+| web-admin | `components/sidebar/main-sidebar.tsx` | Pemilih organisasi tidak dirender |
+| web-employee | `src/lib/use-active-organization.ts`, `src/components/organization/` | Pemilih disembunyikan; organisasi tunggal otomatis |
+| locale | `packages/locales/src/{en,id}/api.ts`, `admin.ts` / `nav.ts` | Pesan galat baru; kunci tombol Tambah yang mati dihapus (dead-key test) |
+| test | `apps/backend/test/unit/organization*.test.ts`, test sidebar web-admin | Organisasi kedua ditolak; organisasi pertama bisa; pemilih tidak muncul |
+| docs | `docs/architecture/decisions/ADR-00xx-single-organization.md` **(baru)** | ADR singkat satu organisasi |
 
-- **Skema/migrasi:** tidak (tahap 1).
-- **Test:** di atas.
+- **Skema/migrasi:** tidak.
+- **Test:** di atas; `bun run test` untuk locale parity.
 - **UAT:**
-  1. Login semua role → tidak ada pemilih organisasi dan menu Organisasi.
-  2. Data dan hak sama seperti sebelum perubahan.
-  3. Membuka `/organizations` langsung diarahkan ke halaman Pengguna.
-- **Bergantung pada:** **M12-14 selesai lebih dulu** (rencana langkah 7 bagian 5), P7-4.
+  1. Login Aqim → halaman Organisasi tampil tanpa tombol Tambah organisasi;
+     profil, anggota, dan role tetap bisa diubah.
+  2. Sidebar web-admin dan portal karyawan tidak menampilkan pemilih
+     organisasi; data tampil seperti biasa.
+  3. Panggil `POST /organizations` saat sudah ada organisasi → ditolak
+     dengan pesan Indonesia.
+  4. Undang pengguna tanpa isian organisasi → pengguna klaim dan masuk ke
+     organisasi tunggal dengan role yang dipilih.
+- **Bergantung pada:** P7-4.
+
+> **Catatan pengerjaan 2026-11-28 (AI, atas keputusan pemilik di sesi ini):**
+> pembuatan organisasi ditutup **total**, bukan hanya organisasi kedua.
+> `OrganizationService.createOrganization` selalu melempar
+> `OrganizationAlreadyExistsError` (409, `organization.singleOrganization`) dan
+> gerbang plugin `allowUserToCreateOrganization` mengembalikan `false`;
+> organisasi pertama hanya datang dari seeder (panggilan sistem Better Auth
+> dengan `userId` eksplisit). Ini menyimpang dari "Seharusnya" di atas yang
+> masih mengizinkan pembuatan pertama lewat HTTP. Konsekuensinya: test
+> "organisasi pertama bisa" diganti `test/unit/organization-single.test.ts`
+> ("selalu ditolak, gateway tidak dipanggil"), dan blok test pembuatan di
+> `organization-create-nested.test.ts`, `notification.producers.test.ts`, serta
+> `multi-organization.test.ts` dipangkas/dihapus. Tombol Tambah dihapus dari
+> halaman Organisasi dan sidebar (bukan hanya disembunyikan). ADR: ADR-0031.
 
 **Prompt AI (salin):**
 
 ```text
-Kerjakan M12-2 K12 tahap 1: sembunyikan Organisasi.
-Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M12-2 (Seharusnya, File yang diubah, Test, UAT).
-Buka hanya file ini: src/providers/better-auth/options/session.auth.ts, src/providers/better-auth/ac/auth-hooks.ts, components/sidebar/main-sidebar.tsx, components/sidebar/organization-switcher.tsx, components/sidebar/nav-config.ts, routes/_authed/organizations/*, lib/organization-store.ts, lib/use-active-organization.ts, apps/web-employee/src/lib/use-organization-switch.ts, apps/web-employee/src/components/organization/, packages/locales/src/{en,id}/nav.ts, apps/web-admin.
+Kerjakan M12-2 K12: satu organisasi, tambah organisasi dimatikan.
+Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M12-2 (Seharusnya, File yang diubah, Test, UAT). Organisasi TIDAK dihapus; database, undangan, role, dan organization_id tidak diubah.
+Buka hanya file ini: apps/backend/src/providers/better-auth/plugins/organization.auth.ts, src/app/organization/services/organization.service.ts, src/app/organization/errors/, src/app/organization/controllers/organization-bootstrap.controller.ts, src/providers/better-auth/options/session.auth.ts, src/providers/better-auth/ac/auth-hooks.ts, apps/web-admin/src/routes/_authed/organizations/index.tsx, components/sidebar/organization-switcher.tsx, components/sidebar/main-sidebar.tsx, components/organization/create-organization-dialog.tsx, apps/web-employee/src/lib/use-active-organization.ts, apps/web-employee/src/components/organization/, packages/locales/src/{en,id}/api.ts.
 Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
-Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
-Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
-Test: test/unit/organization-mine.test.ts (jalankan hanya ini saat iterasi).
+Tambahkan teks bantuan bila menyentuh halaman (RF-28–RF-34, A-11).
+Test: apps/backend/test/unit/organization*.test.ts (jalankan hanya ini saat iterasi), lalu bun run test.
 Selesai bila semua butir UAT di entri M12-2 terpenuhi; buat docs/adjustment/5-pengerjaan/uat/M12-2.md dari templat uat-pengerjaan.md.
 Laporkan hanya: file yang diubah dan hasil test.
 ```
@@ -380,7 +434,27 @@ Sama dengan [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-k
   1. Aqim membuka Pengguna → Ubah role Bilal → centang Penjualan + Gudang → simpan → kolom role menampilkan keduanya (setelah F5 tetap).
   2. Ubah data karyawan Bilal (jabatan) → role tambahan tidak hilang.
   3. Log Audit mencatat perubahan role.
-- **Bergantung pada:** P7-1, P7-4. Harus selesai sebelum M12-2.
+- **Bergantung pada:** P7-1, P7-4. (Halaman Organisasi tetap ada; K12 diubah 28/11.)
+
+> **Catatan pengerjaan 2026-11-28 (AI, atas permintaan pemilik):** langkah
+> KF-R1 dan perpindahan halaman organisasi dikerjakan **sekaligus**:
+> - `PATCH /admin/users/:userId/roles` (body `{ organizationId, roles }`,
+>   `member:update`) ditambahkan; menulis lewat port
+>   `IOrganizationMemberRolePort` (kontrak `user`, adapter `organization`),
+>   sehingga tangga role + penjaga pemilik terakhir tetap di
+>   `OrganizationService.updateMemberRolesByUser`. Audit `member.roleChanged`.
+> - Halaman `/organizations*` **dihapus total** (daftar, detail, edit profil,
+>   edit role anggota) beserta komponen `org-dashboard`,
+>   `organization-member-card`, `org-image-card`, dan dialog tambah.
+> - Profil organisasi pindah ke `/settings/organizations` (nav flag `ownerOnly`
+>   = owner atau app admin; backend tetap `organization:update`).
+> - Kartu identitas organisasi (nama, kode, deskripsi, dibuat) ditambahkan ke
+>   dashboard; angka proyek/penjualan/stok/laba-rugi/kas tetap di widget yang
+>   sudah ada (data nyata), tidak diduplikasi.
+> - KF-R2 (form karyawan M08 tidak menimpa role tambahan) **belum** dikerjakan:
+>   file `components/hr/employee-edit-form.tsx` di luar lingkup permintaan ini
+>   dan menyentuh modul Dafrin. Dicatat sebagai sisa tugas.
+> - UAT: `docs/adjustment/5-pengerjaan/uat/M12-14.md`.
 
 **Prompt AI (salin):**
 
@@ -1681,7 +1755,7 @@ Bukan Tinggi; dicatat karena baris O di peta halaman. M01-1..M01-4 semuanya Rend
 
 ### X-1 Autentikasi dan organisasi (Tinggi)
 
-Pecah ke [M12-2](#m12-2-k12-tahap-1-sembunyikan-organisasi-tinggi-oa1-oa2), [PH-MASUK](#ph-masuk-halaman-masuk-tanpa-google-pesan-nonaktif-tinggi-k13-oa3-oa14), [PH-UNDANG](#ph-undang-pengguna--undang-tinggi-oa12-oa13-k12), [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-10-b4). Portal pelanggan (OA4) di Dafrin.
+Pecah ke [M12-2](#m12-2-k12-satu-organisasi-tambah-organisasi-dimatikan-tinggi-oa1-oa2), [PH-MASUK](#ph-masuk-halaman-masuk-tanpa-google-pesan-nonaktif-tinggi-k13-oa3-oa14), [PH-UNDANG](#ph-undang-pengguna--undang-tinggi-oa12-oa13-k12), [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-kl-10-b4). Portal pelanggan (OA4) di Dafrin.
 
 **Prompt AI (salin):** tugas ini penunjuk; pakai prompt di entri yang dirujuk.
 
@@ -1794,7 +1868,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 
 | ID | Alasan |
 |---|---|
-| M12-3, M12-4, M12-6..M12-13, M12-17 | Bukan Tinggi (M12-4/M12-9 Tinggi lewat PH-MASUK) |
+| M12-4, M12-6..M12-13, M12-17 | Bukan Tinggi (M12-4/M12-9 Tinggi lewat PH-MASUK). M12-3 (role ke tingkat pengguna) gugur: K12 diubah 28/11, role tetap per organisasi |
 | M09-5, M09-6, M09-9..M09-14 | Sedang/Rendah (M09-5 tercakup P7-4/M09-4; M09-10 tercakup M12-16) |
 | M10-4..M10-8, M10-10 | Sedang/Rendah (M10-4 bersama Dafrin, OC4) |
 | M06-4, M06-5, M06-7..M06-13, M06-15 | Sedang/Rendah (M06-4, M06-7 tercakup PH-PINJAM) |

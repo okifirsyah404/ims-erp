@@ -141,6 +141,32 @@ export async function deleteUser(organizationId: string, userId: string) {
 	await request(`/admin/users/${userId}`, { method: 'DELETE', organizationId });
 }
 
+/**
+ * Replaces a user's organization roles (M12-14).
+ *
+ * @remarks
+ * `organizationId` is the membership the roles belong to, sent in the body so
+ * the route stays user-scoped; `organizationId` in the request options is the
+ * caller's active organization (the `x-organization-id` header the guard
+ * validates). The server enforces the role-tier ladder and the last-owner
+ * guard through the organization module.
+ */
+export async function updateUserRoles(
+	organizationId: string,
+	userId: string,
+	roles: string[],
+) {
+	const envelope = await request<{ id: string; role: string }>(
+		`/admin/users/${userId}/roles`,
+		{
+			method: 'PATCH',
+			organizationId,
+			body: JSON.stringify({ organizationId, roles }),
+		},
+	);
+	return envelope.data;
+}
+
 // ---------------------------------------------------------------------------
 // Roles
 // ---------------------------------------------------------------------------

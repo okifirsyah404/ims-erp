@@ -130,12 +130,9 @@ const nav = {
 	'theme.system': 'System theme',
 
 	'organization.manage': 'Manage',
-	'organization.new': 'New organization',
 	'organization.none': 'No organization',
 	'organization.setUp': 'Set up your organization',
 	'organization.required': 'Select an organization to continue.',
-	'organization.switchFailed': 'Could not switch organization',
-	'organization.switched': 'Organization switched',
 
 	'access.denied': 'You do not have access to that page.',
 
@@ -144,9 +141,6 @@ const nav = {
 	'user.logOut': 'Log out',
 
 	'breadcrumb.home': 'Home',
-	'breadcrumb.organizations': 'Organizations',
-	'breadcrumb.organizationEdit': 'Edit',
-	'breadcrumb.memberEdit': 'Edit member',
 	'breadcrumb.quotationNew': 'New quotation',
 	'breadcrumb.quotationEdit': 'Edit',
 	'breadcrumb.print': 'Print',

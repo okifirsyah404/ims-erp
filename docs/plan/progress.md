@@ -75,6 +75,176 @@ index or status change). No route or guard change, so
 
 **Next task.** P7-5 Penomoran (Dafrin), or P7-3 once P7-1/P7-2 are merged;
 the P7-6 PR needs Oki's review (K11: shared `src/http` + `packages/common`).
+## 2026-11-28 - M12-14 (KF-R1): roles from the Users page, organization pages folded into Settings
+
+**Scope.** Follow-up to M12-2 at the owner's request: `/organizations` was
+redundant with `/admin/users` and the dashboard, so it is deleted outright and
+its two remaining jobs moved. Backlog ERP-0180. No schema, migration or seed
+change.
+
+**Owner decisions (this session).** Role editing moves to `/admin/users`; the
+old `/organizations*` routes are removed with **no redirect** (and the sidebar
+entry with them); there is no delete-organization UI; the organization identity
+card moves to the dashboard (real figures already have their own widgets); the
+Settings entry is visible to an app admin or the organization owner only.
+
+**Backend.**
+- `user/contracts/organization-member-role.port.ts` (new): `user`-owned port
+  `updateRolesByUser`, so the module never touches `auth.members`.
+- `user/constants/di.ts`: `ORGANIZATION_MEMBER_ROLE_TOKEN`.
+- `organization/repositories/organization.repository.ts` (+ interface):
+  `findMemberByUser`, sharing the projection with `findMemberById`.
+- `organization/services/organization.service.ts`:
+  `updateMemberRolesByUser` resolves the member then reuses
+  `updateMemberRole` (one place for the tier ladder, last-owner guard, gateway).
+- `organization/adapters/organization-member-role.ts` (new) + `container.ts`:
+  implements the port; retells `MemberNotFoundError` /
+  `MemberRoleNotAssignableError` / `LastOwnerError` as
+  `OrganizationMemberRoleError` (added to `user/errors/invitation.errors.ts`)
+  so the module boundary holds and the existing `onError` arm maps it.
+- `user/contracts/admin.contract.ts`: `updateUserRolesSchema`
+  (`{ organizationId, roles[] min 1 }`).
+- `user/services/user-admin.service.ts`: `updateRoles` (audit
+  `member.roleChanged`; user must exist).
+- `user/controllers/user-admin.controller.ts`: `PATCH
+  /admin/users/:userId/roles`, `erp: { permission: ['member:update'] }`.
+- `docs/architecture/role-permission.md` regenerated (816 routes).
+
+**web-admin.**
+- Deleted: `routes/_authed/organizations/{index,$organizationId,$organizationId.edit,$organizationId.members.$memberId.edit}.tsx`,
+  `components/organization/{org-dashboard,organization-member-card,index,org-image-card}`,
+  and `createOrganization` in `lib/organization-api.ts` (dead since M12-2).
+- New `routes/_authed/settings/organizations/index.tsx`: profile form (name,
+  description), read-only slug with its hint, logo dropzone, save through
+  `PATCH /organizations/:id`. No members tab, no invite, no delete.
+- `components/admin/user-roles-dialog.tsx` (new) + row action in
+  `routes/_authed/admin/users/index.tsx` (`member.update`, hidden for a user
+  with no membership) → `updateUserRoles` in `lib/admin-api.ts`.
+- Sidebar: Organizations entry moved from Administration to Settings with the
+  new `ownerOnly` flag (`sidebar-item.ts`, `filter-nav.ts`,
+  `internal-role.ts#isOwnerRole`, `main-sidebar.tsx`, `lib/route-guard.ts`).
+- `components/dashboard/dashboard-page.tsx`: read-only `OrganizationCard`
+  (name, code, description, created; "manage" link only with
+  `organization.update`), gated by `organization.read`.
+- Breadcrumbs: `/organizations*` entries and their enricher branches removed,
+  `/settings/organizations` added; `notification-bell.tsx` sends organization
+  notifications to the dashboard (`/`); the two no-organization links now point
+  at `/settings/organizations`.
+- `routeTree.gen.ts` regenerated via `vite build`.
+
+**Locales.** `settings` en/id: `organizationSettings.*` (A-11 help text);
+`admin` en/id: `users.editRoles`, `users.rolesDialog.*`, and the now-dead
+`orgs.*`, `orgDetail.*`, `orgDashboard.*`, `orgEdit.*`, `memberEdit.*`,
+`orgImage.*` keys removed; `nav` en/id: `breadcrumb.organizations`,
+`breadcrumb.organizationEdit`, `breadcrumb.memberEdit` removed; `dashboard`
+en/id: `organization.*` for the new card. `locale-parity.test.ts` allows
+`settings:organizationSettings.image` ("Logo").
+
+**Tests.** `test/unit/user-admin.service.test.ts` +3 (port delegation, audit
+action, unknown user short-circuit). `web-admin/test/build-crumbs.test.ts`
+rewritten for the settings route; `filter-nav.test.ts` gained `isOwner` and two
+M12-2/M12-14 nav assertions.
+
+**Checks.**
+- `bun test test/unit/user-admin.service.test.ts` (backend): 13 pass.
+- `bun run test` (root): 8/8 tasks — backend 1644, web-admin 217, locales 110,
+  web-employee 5, web-landing 25, web-customer-portal 68, react-email 6; 0 fail.
+- `bun run lint`: 7/7 tasks, 0 errors.
+- `bunx tsc --noEmit` (backend) and `bunx tsc -p tsconfig.app.json --noEmit`
+  (web-admin): clean. `bunx vite build` (web-admin): built, route tree
+  regenerated.
+- `bun docs/database/validate-dbml.ts`: `OK`. `docs/database/` reviewed: no
+  structural change.
+
+**Docs.** UAT `docs/adjustment/5-pengerjaan/uat/M12-14.md` (steps 1, 2, 4-6
+need a browser pass; step 3 proven by unit test), M12-2 UAT revised (its steps
+1-2 described the deleted pages), peta-kode M12-14 work note, backlog ERP-0180,
+`features.md` M12.
+
+**Open.** Browser UAT; KF-R2 (the HR employee form still replaces the whole
+role list on save) belongs to M08/Dafrin and is untouched.
+
+## 2026-11-28 - M12-2 (K12): one organization, organization creation closed
+
+**Scope.** Backend + web-admin + web-employee + locales. No schema, migration
+or seed change: `auth.organizations`, `auth.members`, `auth.user_invitations`,
+roles in `auth.members.role`, the `x-organization-id` header and every
+`organization_id` column stay as they are. Decision: K12 as amended
+2026-11-28 (organization layer is NOT removed), ADR-0031. Backlog ERP-0179.
+
+**Owner decision taken during the work.** Creation is closed **entirely**,
+not only for the second organization: the first organization comes from the
+seeder's Better Auth system call. This deviates from the M12-2 entry's
+"Seharusnya" (which still allowed the first HTTP create) and is recorded in
+`docs/adjustment/5-pengerjaan/peta-kode-oki.md` (Catatan pengerjaan).
+
+**Backend.**
+- `providers/better-auth/plugins/organization.auth.ts`:
+  `allowUserToCreateOrganization: () => false` (system calls with an explicit
+  `userId` still bypass the gate, which is how the seeder works).
+- `app/organization/errors/organization.errors.ts`: new
+  `OrganizationAlreadyExistsError` (409, key `organization.singleOrganization`).
+- `app/organization/services/organization.service.ts`: `createOrganization`
+  throws that error before the gateway (guard `singleOrganizationOnly()`).
+- `app/organization/controllers/organization-bootstrap.controller.ts`: local
+  `onError` maps the new error to a 409 envelope with the translated message;
+  route description updated. `POST /organizations` stays mounted (UAT 3).
+- `session.auth.ts` / `ac/auth-hooks.ts`: unchanged; the session hook already
+  activates the caller's only internal-role organization.
+
+**Web-admin.** `routes/_authed/organizations/index.tsx`: create button (header
+and empty state) and the dialog removed; list + Restore unchanged.
+`components/sidebar/organization-switcher.tsx`: static identity card (logo,
+name, slug), no dropdown/switch/create. `create-organization-dialog.tsx`
+deleted. `components/sidebar/main-sidebar.tsx` unchanged (the static card is
+not a picker).
+
+**Web-employee.** `components/organization/portal-organization-switcher.tsx`:
+static identity card. `lib/use-active-organization.ts`: doc only, still no
+client-side fallback.
+
+**Locales.** `api` en/id: `organization.singleOrganization`. `admin` en/id:
+`orgs.description` now explains the single company, `orgs.empty` no longer
+tells the user to create one; dead keys removed (`orgs.new`, `orgs.created`,
+`orgs.newTitle`, `orgs.newDescription`, `orgs.name`, `orgs.slug`, `orgs.create`,
+`orgs.creating`, `orgs.slugDescription`, `orgs.slugInvalid`,
+`orgImage.removeSelection`). `nav` en/id: `organization.new`,
+`organization.switchFailed`, `organization.switched` removed. `employee` en/id:
+`org.switch` removed.
+
+**Tests.** New `test/unit/organization-single.test.ts` (always rejected, gateway
+never called, restore still works). `organization-create-nested.test.ts` keeps
+the zod contract + profile-update + image + worker tests; the nested-create
+tests were removed. `notification.producers.test.ts`: the `createOrganization`
+producer describe was removed (path unreachable). `multi-organization.test.ts`
+deleted (its rule is gone).
+
+**Checks.**
+- `cd apps/backend && bun test test/unit/organization-single.test.ts
+  test/unit/organization-create-nested.test.ts test/unit/organization-mine.test.ts
+  test/unit/notification.producers.test.ts`: 19 pass, 0 fail.
+- `cd packages/locales && bun test`: 110 pass, 0 fail (parity + dead keys).
+- `cd apps/backend && bunx tsc --noEmit`: clean.
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit`: clean.
+- `cd apps/web-employee && bunx tsc -p tsconfig.app.json --noEmit`: clean.
+- `oxlint` on the touched backend/web-admin/web-employee paths: no new
+  warnings (pre-existing warnings elsewhere unchanged).
+- `bun run test` (root): 8/8 tasks — backend 1641 pass, web-admin 218,
+  locales 110, web-employee 5, web-landing 25, web-customer-portal 68,
+  react-email 6; 0 fail.
+- `bun run lint` (root): 7/7 tasks, 0 errors.
+- `bun docs/database/validate-dbml.ts`: `OK` (210 tables, 169 refs, 0 drift).
+
+**Docs.** ADR-0031 (`docs/architecture/decisions/`), UAT
+`docs/adjustment/5-pengerjaan/uat/M12-2.md` (steps 1, 2, 4 still need a browser
+pass; step 3 proven by unit test), peta-kode note, `backlog.md` ERP-0179
+(implemented), `features.md` M12 entry. `docs/database/` reviewed: no
+table/column/index/constraint change, `docs.dbml` unchanged,
+`validate-dbml.ts` not affected. `role-permission.md` not regenerated: no
+route, guard option or role grant changed.
+
+**Open.** Browser UAT (`/organizations`, both sidebars) and PH-UNDANG (invite
+form without the organization field) before push.
 
 ## 2026-11-28 - Adjustment program: notes done, step 7 next (docs only)
 

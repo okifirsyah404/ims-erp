@@ -83,13 +83,19 @@ function makeService(options: {
 		),	};
 	const gateway = { revokeSessions: mock(() => Promise.resolve()) };
 	const audit = { record: mock(() => Promise.resolve()) };
+	const memberRoles = {
+		updateRolesByUser: mock(() =>
+			Promise.resolve({ id: 'member-1', role: 'sales' }),
+		),
+	};
 
 	const service = new UserAdminService(
 		users as unknown as IUserManagementRepository,
 		gateway as unknown as IUserManagementAuthGateway,
 		audit as unknown as AuditService,
+		memberRoles as never,
 	);
-	return { service, users, gateway, audit };
+	return { service, users, gateway, audit, memberRoles };
 }
 
 describe('UserAdminService.list', () => {
@@ -262,5 +268,68 @@ describe('UserAdminService.remove', () => {
 		expect(users.delete).toHaveBeenCalledWith('user-1');
 		expect(gateway.revokeSessions).toHaveBeenCalledWith('user-1');
 		expect(audit.record).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe('UserAdminService.updateRoles (M12-14)', () => {
+	test('delegates to the organization member-role port with the caller tier', async () => {
+		const { service, memberRoles } = makeService({ user: makeUser() });
+
+		await service.updateRoles(
+			'user-1',
+			'org-1',
+			['sales', 'finance'],
+			ACTOR,
+			{ callerRoles: ['owner'], isPlatformAdmin: false },
+			new Headers(),
+		);
+
+		expect(memberRoles.updateRolesByUser).toHaveBeenCalledTimes(1);
+		expect(memberRoles.updateRolesByUser).toHaveBeenCalledWith(
+			expect.objectContaining({
+				organizationId: 'org-1',
+				userId: 'user-1',
+				roles: ['sales', 'finance'],
+				callerRoles: ['owner'],
+				isPlatformAdmin: false,
+			}),
+		);
+	});
+
+	test('audits the change as member.roleChanged', async () => {
+		const { service, audit } = makeService({ user: makeUser() });
+
+		await service.updateRoles(
+			'user-1',
+			'org-1',
+			['sales'],
+			ACTOR,
+			{ callerRoles: ['owner'], isPlatformAdmin: false },
+			new Headers(),
+		);
+
+		expect(audit.record).toHaveBeenCalledWith(
+			expect.objectContaining({
+				action: 'member.roleChanged',
+				targetId: 'user-1',
+				meta: expect.objectContaining({ organizationId: 'org-1' }),
+			}),
+		);
+	});
+
+	test('refuses an unknown user before touching the organization module', async () => {
+		const { service, memberRoles } = makeService({ user: null });
+
+		await expect(
+			service.updateRoles(
+				'user-missing',
+				'org-1',
+				['sales'],
+				ACTOR,
+				{ callerRoles: ['owner'], isPlatformAdmin: false },
+				new Headers(),
+			),
+		).rejects.toBeInstanceOf(UserNotFoundError);
+		expect(memberRoles.updateRolesByUser).not.toHaveBeenCalled();
 	});
 });

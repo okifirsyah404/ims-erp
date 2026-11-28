@@ -4,10 +4,12 @@ import { translator, type ApiKey } from '@providers/i18n/translator';
 import { domainPlugin } from '@http/plugin';
 import { errorEnvelope, ok, okPaginated } from '@http/response';
 import {
+	updateUserRolesSchema,
 	userIdParamsSchema,
 	userQuerySchema,
 } from '../contracts/admin.contract';
 import { USER_ADMIN_SERVICE_TOKEN } from '../constants/di';
+import { roleAssignmentContext } from '@authorization/role-assignment';
 import type { UserAdminService } from '../../user/services/user-admin.service';
 import { UserManagementError } from '../errors/invitation.errors';
 import type { TActor } from '../../user/services/invitation.service';
@@ -117,6 +119,30 @@ export class UserAdminController {
 					return ok(null);
 				},
 				{ erp: { permission: ['member:delete'] } },
+			)
+			.patch(
+				'/users/:userId/roles',
+				async ({ params, body, erp, request }) => {
+					const { userId } = userIdParamsSchema.parse(params);
+					const { organizationId, roles } = updateUserRolesSchema.parse(body);
+					return ok(
+						await userAdmin.updateRoles(
+							userId,
+							organizationId,
+							roles,
+							actorFrom(erp, request),
+							roleAssignmentContext(erp),
+							request.headers,
+						),
+					);
+				},
+				{
+					erp: { permission: ['member:update'] },
+					detail: {
+						description:
+							'Replaces a user\'s organization roles (M12-14). The role-tier ladder and the last-owner guard are enforced by the organization module; the change is audited as `member.roleChanged`.',
+					},
+				},
 			);
 		// `GET /admin/audit` moved to `AuditController` (@app/audit) in W6 —
 		// the ledger is a cross-cutting module, not a user-management concern.

@@ -71,6 +71,6 @@ erDiagram
 | Perubahan | Sumber | Dampak ke schema | Status |
 |---|---|---|---|
 | Data gudang dan rak dikelola role Gudang, bukan hanya admin aplikasi | B3 (`bahan-keputusan.md`) | none (guard halaman/hak) | disetujui 27/11 (B3): data gudang dan rak ikut hak role / PIC |
-| Penerimaan ADR-0010 (link gudang-organisasi) | ERP-0031, ADR-0010 `proposed` | none (tabel sudah ada) | ikut K12 (disetujui 27/11): tautan gudang–organisasi hilang saat organisasi dihapus (tahap 3) |
+| Penerimaan ADR-0010 (link gudang-organisasi) | ERP-0031, ADR-0010 `proposed` | none (tabel sudah ada) | ikut K12 (disetujui 27/11): tautan gudang–organisasi tetap (K12 diubah 28/11: satu organisasi, tidak dihapus) |
 | Pindah stok antar gudang/rak | ERP-0032 (lihat `inventory.md`) | none di schema ini | usulan (ADR-0010 belum diterima) |
 | Hapus kolom `image_url` lewat migrasi baru | Temuan dokumen ini | kolom | usulan |

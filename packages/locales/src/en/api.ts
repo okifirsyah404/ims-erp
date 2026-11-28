@@ -336,6 +336,8 @@ const api = {
 	'organization.memberNotFound': 'Member not found',
 	'organization.lastOwner': 'Cannot remove or demote the last owner',
 	'organization.roleNotAssignable': 'Role not assignable: {{roles}}',
+	'organization.singleOrganization':
+		'This application uses a single company',
 
 	'aftersales.ticketState.comment': 'A closed ticket takes no new messages',
 	'portal.stage.preparation': 'Preparation',

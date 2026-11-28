@@ -129,121 +129,18 @@ const admin_: Record<keyof typeof admin, string> = {
 	'audit.to': 'Sampai',
 	'audit.empty': 'Entri audit tidak ditemukan',
 
-	'orgs.title': 'Organisasi',
-	'orgs.description':
-		'Organisasi internal perusahaan. Masing-masing memiliki anggota dan peran sendiri.',
-	'orgs.new': 'Organisasi baru',
-	'orgs.deletedBadge': 'Dihapus',
-	'orgs.activeBadge': 'Aktif',
-	'orgs.empty':
-		'Belum ada organisasi. Buat yang pertama untuk memulai.',
-	'orgs.emptyTitle': 'Belum ada organisasi',
-	'orgs.restored': 'Organisasi dipulihkan',
-	'orgs.created': 'Organisasi dibuat',
-	'orgs.newTitle': 'Organisasi baru',
-	'orgs.newDescription':
-		'Anda menjadi pemilik organisasi yang Anda buat, dan organisasi tersebut menjadi organisasi aktif Anda.',
-	'orgs.name': 'Nama',
-	'orgs.descriptionLabel': 'Deskripsi',
-	'orgs.descriptionPlaceholder':
-		'Apa yang dilakukan organisasi ini, siapa yang dilayani, hal lain yang perlu diketahui (opsional).',
-	'orgs.slug': 'Slug',
-	'orgs.create': 'Buat',
-	'orgs.creating': 'Membuat…',
-	'orgs.slugDescription':
-		'Slug bersifat permanen dan dipakai di URL serta konteks API.',
-	'orgs.slugInvalid': 'Gunakan huruf kecil, angka, dan satu tanda hubung.',
-	// Gambar profil organisasi (ERP-0041).
-	'orgImage.title': 'Gambar profil',
-	'orgImage.description':
-		'PNG, JPG, WebP, atau HEIC — otomatis dikonversi ke WebP. Gambar inisial DiceBear dibuat bila belum ada.',
-	'orgImage.dropHint': 'Tarik gambar ke sini, atau klik untuk memilih',
-	'orgImage.replaceHint': 'Tarik gambar baru untuk mengganti, atau klik untuk memilih',
-	'orgImage.invalidType': 'Hanya berkas gambar yang didukung',
-	'orgImage.tooLarge': 'Gambar lebih besar dari 20 MB',
-	'orgImage.decodeFailed':
-		'Berkas ini tidak dapat dibaca sebagai gambar. Coba berkas lain.',
-	'orgImage.uploading': 'Mengunggah…',
-	'orgImage.uploaded': 'Gambar profil diperbarui',
-	'orgImage.cleared': 'Gambar profil dihapus',
-	'orgImage.removeSelection': 'Buang pilihan',
-	'orgs.stats.members': 'Anggota',
-	'orgs.stats.warehouses': 'Gudang',
-	'orgs.stats.projects': 'Proyek',
-
-	'orgDetail.created': 'Dibuat',
-	'orgDetail.members': 'Anggota',
-	'orgDetail.membersCount': 'Anggota ({{count}})',
-	'orgDetail.addMember': 'Tambah anggota',
-	'orgDetail.info': 'Info',
-	'orgDetail.details': 'Detail',
-	'orgDetail.membersDescription': 'Orang-orang yang memiliki akses ke organisasi ini.',
-	'orgDetail.membersEmpty': 'Belum ada anggota.',
-	'orgDetail.name': 'Nama',
-	'orgDetail.description': 'Deskripsi',
-	'orgDetail.code': 'Kode',
-	'orgDetail.notFound': 'Organisasi tidak ditemukan (atau Anda tidak memiliki akses).',
-	'orgDetail.backToList': 'Kembali ke daftar organisasi',
-	'orgDetail.createdOn': '{{slug}} · dibuat {{date}}',
-	'orgDetail.deleted': 'Organisasi dihapus (lunak)',
-	'orgDetail.deleteTitle': 'Hapus organisasi “{{name}}”?',
-	'orgDetail.deleteDescription':
-		'Organisasi akan dihapus secara lunak. Datanya masih dapat dipulihkan, tetapi pengalih organisasi dan akses keanggotaan berhenti berfungsi sampai dipulihkan.',
-	'orgDetail.deleting': 'Menghapus…',
-
-	'orgDashboard.roles.title': 'Pengguna per peran',
-	'orgDashboard.roles.owner': 'Pemilik',
-	'orgDashboard.roles.admin': 'Admin',
-	'orgDashboard.roles.project_manager': 'Manajer proyek',
-	'orgDashboard.roles.technician': 'Teknisi',
-	'orgDashboard.roles.member': 'Anggota',
-	'orgDashboard.roles.total': 'Total',
-	'orgDashboard.projects.title': 'Proyek',
-	'orgDashboard.projects.status.planned': 'Direncanakan',
-	'orgDashboard.projects.status.in_progress': 'Berjalan',
-	'orgDashboard.projects.status.done': 'Selesai',
-	'orgDashboard.projects.status.on_hold': 'Ditunda',
-	'orgDashboard.sales.title': 'Penjualan',
-	'orgDashboard.sales.total6m': '6 bulan terakhir: {{total}}',
-	'orgDashboard.inventory.title': 'Inventaris',
-	'orgDashboard.inventory.totalItems': 'Total item',
-	'orgDashboard.inventory.totalValue': 'Total nilai stok',
-	'orgDashboard.inventory.lowStock': 'Stok rendah',
-	'orgDashboard.inventory.qtyOf': '{{quantity}} dari min {{min}}',
-	'orgDashboard.activity.title': 'Aktivitas',
-	'orgDashboard.activity.actions.project.created': 'membuat proyek',
-	'orgDashboard.activity.actions.invoice.paid': 'menandai faktur lunas',
-	'orgDashboard.activity.actions.inventory.received': 'menerima barang',
-	'orgDashboard.activity.actions.member.invited': 'mengundang anggota',
-	'orgDashboard.activity.actions.task.assigned': 'menugaskan tugas',
-	'orgDashboard.pl.title': 'Laba rugi',
-	'orgDashboard.pl.net': 'Laba bersih (6 bulan): {{net}}',
-	'orgDashboard.cash.title': 'Kas dan bank',
-	'orgDashboard.cash.bank': 'Bank',
-	'orgDashboard.cash.cash': 'Kas',
-	'orgDashboard.cash.total': 'Total saldo',
-
-	'orgEdit.title': 'Ubah organisasi',
-	'orgEdit.description': 'Slug bersifat permanen dan tidak dapat diubah.',
-	'orgEdit.details': 'Detail organisasi',
-	'orgEdit.name': 'Nama',
-	'orgEdit.saved': 'Organisasi diperbarui',
-
-	'memberEdit.title': 'Ubah anggota',
-	'memberEdit.description':
-		'Ubah peran anggota ini atau keluarkan mereka dari organisasi.',
-	'memberEdit.role': 'Peran',
-	'memberEdit.rolesLocked':
-		'Peran yang tidak dapat Anda ubah disembunyikan: {{roles}}. Hanya pemilik yang dapat mengubahnya.',
-	'memberEdit.updated': 'Peran anggota diperbarui',
-	'memberEdit.remove': 'Keluarkan anggota',
-	'memberEdit.removeTitle': 'Keluarkan {{name}} dari organisasi?',
-	'memberEdit.removeDescription':
-		'Pengguna kehilangan seluruh akses ke organisasi. Akunnya sendiri tidak dihapus. Pemilik terakhir tidak dapat dikeluarkan.',
-	'memberEdit.removeConfirm': 'Keluarkan',
-	'memberEdit.removing': 'Mengeluarkan…',
-	'memberEdit.removed': 'Anggota dikeluarkan',
-};
+	// Ubah peran dari tabel pengguna (M12-14): pengganti kunci `memberEdit.*`.
+	'users.editRoles': 'Ubah peran',
+	'users.rolesDialog.title': 'Ubah peran',
+	'users.rolesDialog.description':
+		'Peran {{name}} di organisasi ini. Centang semua peran yang harus dipegang orang tersebut.',
+	'users.rolesDialog.roles': 'Peran',
+	'users.rolesDialog.hint':
+		'Peran menentukan menu dan tindakan yang tersedia. Setiap perubahan dicatat di log audit.',
+	'users.rolesDialog.rolesLocked':
+		'Peran di atas tingkat Anda tidak ditawarkan: {{roles}}. Peran itu tetap seperti sekarang kecuali dicabut oleh pemilik.',
+	'users.rolesDialog.saved': 'Peran diperbarui',
+} as const;
 
 export default admin_;
 
